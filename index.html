@@ -1081,11 +1081,30 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
 @keyframes boot-slide { from { translate: -110% 0; } to { translate: 290% 0; } }
 @media (prefers-reduced-motion: reduce) { .boot-bar i { animation: none; width: 100%; opacity: 0.5; } }
 
+/* ── 指示28: 動きの間は線を淡く消す ──────────────
+ * 並べ替えと倍率の変更の間は、線（数百本）を描き直さずに淡く隠し、止まって描き直したところで静かに戻す。
+ * 隠している間は線に触れても反応しない。読み込みに失敗したときの案内は、帯の動きを止めて読みやすく */
+.ts-svg g.edges-layer { transition: opacity 320ms var(--ease-out); }
+.ts-svg g.edges-layer.away { opacity: 0; pointer-events: none; transition-duration: 120ms; }
+.boot.failed .boot-bar i { animation: none; width: 100%; background: var(--warn); }
+.boot.failed .boot-s { color: var(--ink-2); font-size: var(--fs-sm); letter-spacing: 0.02em; max-width: 22em; text-align: center; }
+
 </style>
 
 <div class="boot" id="boot" role="status" aria-live="polite">
   <div class="boot-in"><p class="boot-t">平泉澄先生 学統マップ</p><div class="boot-bar" aria-hidden="true"><i></i></div><p class="boot-s">図を整えています</p></div>
 </div>
+<script>
+  // 読み込みが終わっても図が描けていないとき（図の部品が届かなかったなど）は、読み込み中の表示を案内に替える
+  window.addEventListener("load", function () {
+    setTimeout(function () {
+      var b = document.getElementById("boot");
+      if (!b || window.SG_READY) return;
+      b.classList.add("failed");
+      b.querySelector(".boot-s").textContent = "図を読み込めませんでした。通信の状態を確かめて、ページを開き直してください。";
+    }, 1500);
+  });
+</script>
 <div class="site">
   <header class="site-head" id="siteHead">
     <div class="head-in wrap">
@@ -3510,11 +3529,19 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       };
       const end = () => { if (this.opts.onK) this.opts.onK(); };
       if (!animate || reducedMotion()) { step(to, true); end(); return; }
+      if (this.opts.onZoomStart) this.opts.onZoomStart(this); // 動き出す前の支度（地図は線を隠す）は、押したときに済ませる
       const t0 = performance.now(), dur = 520;
+      let frame = 0, slowRun = 0;
       this.kTimer = d3.timer(() => {
         const t = Math.min(1, (performance.now() - t0) / dur);
+        const a = performance.now();
         step(t >= 1 ? to : from + (to - from) * d3.easeCubicInOut(t), t >= 1);
-        if (t >= 1) { this.kTimer.stop(); this.kTimer = null; end(); }
+        // 一こまの描き直しが重い端末では、動かさずに最後の倍率へ移る（かくつく動きを見せない。指示28）。
+        // 重いこまが二度続いたときだけ（たまの一こまでは替えない）。最初のこまは支度の分重いので数えない
+        slowRun = frame++ > 0 && performance.now() - a > 18 ? slowRun + 1 : 0;
+        const slow = t < 1 && slowRun >= 2;
+        if (slow) step(to, true);
+        if (t >= 1 || slow) { this.kTimer.stop(); this.kTimer = null; end(); }
       });
     }
     draw() {
@@ -3828,7 +3855,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
 
 </script>
 <script>
-/* 右の札
+/* 札（人物・組織の詳しい説明。押すと図の上に重ねて出す）
  * 何も選んでいないとき＝「読み方」（形・色・線の約束と、つながりの多い人）。
  * 人や組織を選んだとき＝その札（平泉澄へのつながり、源流・門流、所属、分け方の根拠、著作と出典）。
  */
@@ -3898,9 +3925,9 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
 
   // ── 読み方 ────────────────────────────────
   const LEAD = {
-    map: "縦は時代と天皇の御代で、下へスクロールすると時代が下ります。横は上のタブで選んだ分け方です。人や組織を押すと、ここにその札が出ます。",
-    ancestry: "起点の人から、師や祖を一段ずつ開いていきます。縦の位置は年代と御代で、下ほど新しい時代です。短冊を押すと、ここにその人の札が出ます。",
-    relations: "関係を一本ずつ、または人と組織を一行ずつ並べた表です。行を押すと、ここにその札が出ます。"
+    map: "縦は時代と天皇の御代で、下へスクロールすると時代が下ります。横は上のタブで選んだ分け方です。人や組織を押すと、図の上にその札が出ます。",
+    ancestry: "起点の人から、師や祖を一段ずつ開いていきます。縦の位置は年代と御代で、下ほど新しい時代です。短冊を押すと、図の上にその人の札が出ます。",
+    relations: "関係を一本ずつ、または人と組織を一行ずつ並べた表です。行を押すと、表の上にその札が出ます。"
   };
   function selBox(sel) {
     const what = sel.isOrg ? "に関わる人と組織" : sel.id === SG.FOCUS ? "の系譜（神代から門下まで）" : "から平泉澄先生へ届く道";
@@ -4009,7 +4036,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
         ? `<p>師弟・家系の系譜では平泉澄先生につながりません。${via.length ? `<b>${E(via.join("・"))}</b> を介するなど、` : ""}後援・交流・組織も含めた関係をたどると <b>${info.steps}段</b> です。</p>${chainHtml(info)}`
         : `<p>師弟・家系の系譜では平泉澄先生につながりません。組織などを含めた関係をたどっても <b>${info.steps}段</b> 離れた、遠いつながりです。</p>`;
     }
-    return `<p>見本データの中では、平泉澄先生へのつながりがまだありません。</p>`;
+    return `<p>収めた資料の範囲では、平泉澄先生へのつながりはまだ見つかっていません。</p>`;
   }
   function personCard(p) {
     const info = SG.pathInfo(p.id);
@@ -4055,7 +4082,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
         ${p.r ? `<dt>立場・職</dt><dd>${E(p.r)}</dd>` : ""}
         ${(p.st || []).length ? `<dt>唱えた説</dt><dd>${p.st.map((x) => tl(x)).join("、")}</dd>` : ""}
       </dl></section>
-      <section class="c-sec"><h3>著作・業績</h3>${works ? `<ul class="works">${works}</ul>` : "<p>見本データでは載せていません（確かめられたものだけを載せる方針）。</p>"}</section>
+      <section class="c-sec"><h3>著作・業績</h3>${works ? `<ul class="works">${works}</ul>` : "<p>まだ載せていません（確かめられたものだけを載せる方針です）。</p>"}</section>
       <p class="c-src">出典の確認: ${p.src ? `<a href="${E(p.src[1])}" target="_blank" rel="noopener">${E(p.src[0])}</a>` : `<a href="${wpUrl(p)}" target="_blank" rel="noopener">Wikipedia「${E(p.wp || p.n)}」</a>`}</p>`;
   }
   function cardHtml(id) {
@@ -4127,12 +4154,12 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
         <div class="tb-groups" id="axisGroups" role="group" aria-label="分け方のまとまり">${SG.AXIS_GROUPS.map((g, i) => `<button type="button" class="ag" data-group="${g.id}" aria-pressed="${g.axes.includes(SG.state.axis)}"><kbd>${i + 1}</kbd>${E(g.label)}</button>`).join("")}</div>
         <div class="tb-main"><div class="tabs" id="axisTabs" role="tablist" aria-label="横の分け方"></div></div>
         <div class="tb-actions">
-          <button type="button" class="btn" data-act="conds" aria-haspopup="dialog" aria-controls="filterPop">${ICON_COND}<span class="l">条件</span><span class="n" hidden></span></button>
-          <button type="button" class="btn" data-act="filters" aria-haspopup="dialog" aria-controls="filterPop">${ICON_FILTER}<span class="l">絞り込み</span><span class="n" hidden></span></button>
+          <button type="button" class="btn" data-act="conds" aria-label="条件" aria-haspopup="dialog" aria-controls="filterPop">${ICON_COND}<span class="l">条件</span><span class="n" hidden></span></button>
+          <button type="button" class="btn" data-act="filters" aria-label="絞り込み" aria-haspopup="dialog" aria-controls="filterPop">${ICON_FILTER}<span class="l">絞り込み</span><span class="n" hidden></span></button>
           <div class="zoom" role="group" aria-label="縦の倍率"><button type="button" data-act="kout" aria-label="縦を狭く">−</button><span id="kLabel">${K_STEPS[this.kIndex].label}</span><button type="button" data-act="kin" aria-label="縦を広く">＋</button></div>
-          <button type="button" class="btn" data-act="fit" aria-pressed="false" title="神代から令和までの全部を、一画面に収めて見る">${ICON_FIT}<span class="l">全体</span></button>
+          <button type="button" class="btn" data-act="fit" aria-label="全体" aria-pressed="false" title="神代から令和までの全部を、一画面に収めて見る">${ICON_FIT}<span class="l">全体</span></button>
           ${SG.fullBtn()}${SG.guideBtn()}
-          <button type="button" class="btn" data-act="focus"><span class="lf">平泉澄先生へ</span><span class="sf">先生へ</span></button>
+          <button type="button" class="btn" data-act="focus" aria-label="平泉澄先生へ"><span class="lf">平泉澄先生へ</span><span class="sf">先生へ</span></button>
         </div>
         <p class="tb-now" id="nowAt" aria-live="off"></p>
         <div class="tb-conds" data-condbar hidden></div>
@@ -4211,6 +4238,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
         label: "学統マップ。縦は時代と天皇の御代、横は選んだ分け方。",
         onRender: () => this.render(),
         onZoomFrame: () => this.zoomFrame(),
+        onZoomStart: () => this.edgesAway(true),
         onHScroll: (sl) => this.syncHead(sl),
         onResize: () => { if (this.ts && Math.abs(this.ts.viewW() - (this.lastW || 0)) > 24) this.layout(!!this.cols); },
         onK: () => this.layout(true)
@@ -4531,8 +4559,8 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       const fs = d3.forceSimulation(sim)
         .force("x", d3.forceX((d) => d.tx).strength(0.3))
         .force("collide", d3.forceCollide((d) => d.r + 2.6).iterations(2))
-        .velocityDecay(0.3).stop();
-      let left = 240;
+        .velocityDecay(0.3).alphaDecay(0.0387).stop(); // 140 回で落ち着く速さ（240 回と比べて重なりは出ず、計算はおよそ半分。指示28）
+      let left = 140;
       return {
         // ms の間だけ進める。終わったら true
         step(ms) { const t0 = performance.now(); while (left > 0 && performance.now() - t0 < ms) { fs.tick(); left--; } return left <= 0; },
@@ -4622,6 +4650,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       });
       // 絞り込みで見せる人や線が変わったときは、動き出す前に一度だけ全部を描いて、点と線の組をそろえる
       if (this.setChanged) this.render();
+      this.edgesAway(true);
       if (this.timer) return;
       let last = now;
       this.timer = d3.timer(() => {
@@ -4639,6 +4668,13 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
         if (done) { this.timer.stop(); this.timer = null; this.render(); } else this.renderFast();
       });
     },
+    // 動いている間（並べ替え・倍率の変更）は、線を淡く消しておく。線の形を毎こま描き直すのが一番重いため（指示28: 軽く）。
+    // 止まって全部を描き直したところで、静かに戻す（render の終わり）
+    edgesAway(on) {
+      if (!this.gEdge || this.edgesHidden === on) return;
+      this.edgesHidden = on;
+      this.gEdge.classed("edges-layer", true).classed("away", on);
+    },
     // 動きの途中の軽い描き直し: いま描いてあるバブル・線・名前の位置だけを動かす（作り直さない・名前の重なりは計算しない）
     renderFast() {
       const ts = this.ts;
@@ -4647,7 +4683,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       const byId = this.byId;
       this.gNode.selectAll("g.node").each(function (d) { const n = byId.get(d.p.id); if (n) this.setAttribute("transform", `translate(${n.sx},${n.sy})`); });
       const self = this;
-      this.gEdge.selectAll("g.edge").each(function (e) {
+      if (!this.edgesHidden) this.gEdge.selectAll("g.edge").each(function (e) {
         const a = byId.get(e.s), b = byId.get(e.t);
         if (!a || !b) return;
         const d = self.edgePath(e);
@@ -4714,7 +4750,9 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
         const a = this.byId.get(e.s), b = this.byId.get(e.t);
         return !!a && !!b && Math.max(a.sy, b.sy) >= band.top && Math.min(a.sy, b.sy) <= band.bottom;
       });
-      SG.drawEdges(this.gEdge, list, (e) => this.edgePath(e), { mid: (e) => { const a = this.byId.get(e.s), b = this.byId.get(e.t); return [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2]; } });
+      // 動きが止まっていれば線を戻して描く。動いている間（線を隠している間）は、線の描き直しを省く（止まったときに一度だけ描く）
+      if (!this.timer && !ts.kTimer) this.edgesAway(false);
+      if (!this.edgesHidden) SG.drawEdges(this.gEdge, list, (e) => this.edgePath(e), { mid: (e) => { const a = this.byId.get(e.s), b = this.byId.get(e.t); return [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2]; } });
       const dots = this.items.filter((n) => (n.sy >= band.top && n.sy <= band.bottom) || keep.has(n.p.id)).map((n) => ({ p: n.p, sx: n.sx, sy: n.sy, r: n.r }));
       SG.drawNodes(this.gNode, dots);
       SG.drawLabels(this.gLab, dots, { width: W, height: H });
@@ -4739,6 +4777,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     zoomFrame() {
       const ts = this.ts;
       if (!ts || !this.cols) return;
+      this.edgesAway(true);
       this.gBg.selectAll("rect").attr("height", ts.height());
       SG.drawEras(this.gEra, ts, ts.w);
       SG.drawEvents(this.gEv, ts, ts.w);
@@ -5622,7 +5661,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
   ];
   const METHOD = [
     ["見せる順番", "マティーニグラス型の語り（Segel & Heer, 2010）。冒頭で作者が一本の道筋を示し（「平泉澄先生へ届く道を見る」）、そのあと読者が自由に探る。", "https://idl.uw.edu/papers/narrative", "論文の紹介（UW Interactive Data Lab）"],
-    ["探し方", "「まず全体、次に絞る、最後に詳しく」（Shneiderman, 1996）。全体の地図 → タブと絞り込み → 右の札、の三段にした。", "https://drum.lib.umd.edu/items/155a868e-fb83-4115-9899-9187ea8c0498/full", "原論文（メリーランド大学）"],
+    ["探し方", "「まず全体、次に絞る、最後に詳しく」（Shneiderman, 1996）。全体の地図 → タブと絞り込み → 押して開く札、の三段にした。", "https://drum.lib.umd.edu/items/155a868e-fb83-4115-9899-9187ea8c0498/full", "原論文（メリーランド大学）"],
     ["値の決まり", "デザイントークン。色・文字・余白・角の丸み・動きを名前つきの値として CSS の先頭に一か所で決め、明るい画面と暗い画面をその値の入れ替えで切り替える。2025年10月に仕様の最初の安定版が出た。", "https://www.w3.org/community/design-tokens/2025/10/28/design-tokens-specification-reaches-first-stable-version/", "Design Tokens 仕様 2025.10 の発表"],
     ["日本語の文字", "本文は 16px 以上、行の高さは 150% 以上、小さい文字の字間は 0.02em（デジタル庁デザインシステム）。見出しは約物を詰め（palt）、文節で折り返す。和文と数字のあいだに少し間をあける。", "https://design.digital.go.jp/dads/foundations/typography/", "デジタル庁デザインシステム「タイポグラフィ」"],
     ["日本語の組版", "行頭・行末の約物、和欧間、縦書きの扱いは、W3C の「日本語組版処理の要件」に沿う。目盛りの時代名と系譜の短冊は縦書きにした。", "https://www.w3.org/TR/jlreq/", "日本語組版処理の要件（JLREQ）"],
@@ -5685,7 +5724,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
           <p class="rule">確度（確実・有力など）は、データを作るときに確かめた関係の確かさです。資料の段階は、それとは別に、二人を結ぶ資料を自動で照合した結果です。学術の資料＝人名事典の本文に相手の名がある、または CiNii Research に二人を結ぶ論文・本がある（題に二人の名が並ぶ、一方が著して題にもう一方の名がある、または共著。著者は4人まで）。百科＝日本語版ウィキペディアの本文に相手の名かリンクがある、または Wikidata の記録。10月27日の指示18からは、調べて確かめた資料（論文・本・学術の目録・団体の公式の記録・ブログなど個人の記事）も関係ごとに載せ、段階に数えます（個人の記事だけなら D）。新しく加える関係は、二人の事典（コトバンクの各辞典）とウィキペディアの本文で相手の名を台本で照らし合わせ、事典に名があるか二種以上の資料があるときだけ「確実」にします。題に二人が並ばない文献の数は「参考」として載せ、段階には数えません。段階は資料の確かさで、関係の強さではありません。</p>
           <div class="axis-grid"><div><h3>線のある関係（人どうし）</h3>${bars(gradeLines)}</div><div><h3>細いつながり</h3>${bars(gradeThin)}<p class="rule">事典かウィキペディアに互いの名が出る二人だけを加えています（論文の一致だけでは加えない）。</p></div></div>
         </section>
-        <section class="a-sec wide"><h2>時代ごとの人数</h2><p class="rule">活動の中心の年（見本データの fl）で数えています。</p>${bars(eraItems)}</section>
+        <section class="a-sec wide"><h2>時代ごとの人数</h2><p class="rule">活動の中心の年で数えています。</p>${bars(eraItems)}</section>
         <section class="a-sec wide"><h2>分け方（${SG.AXES.length}通り）</h2><p class="rule">横の軸は一度に一つだけ。どの分け方でも、縁の色は学派の系統のままです。一人が二つ以上の値を持つ分け方（出来事・向き合い方）は、重ねて数えます。</p>${axisCards}</section>
         <section class="a-sec wide"><h2>画面の設計で拠った方法</h2>
           <p>2026年10月時点の資料から、見せ方・値の決まり・文字・動きの方法を選び、この画面に当てはめました。</p>
@@ -5753,11 +5792,12 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
   const ICON_FULL = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const ICON_UNFULL = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2.5V6H2.5M13.5 6H10V2.5M10 13.5V10h3.5M2.5 10H6v3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const fullInner = () => (state.full ? ICON_UNFULL + '<span class="l">元に戻す</span>' : ICON_FULL + '<span class="l">全面表示</span>');
-  SG.guideBtn = () => '<button type="button" class="btn guide-btn" data-act="guide" title="図の読み方を開く"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 6.2a1.8 1.8 0 1 1 2.6 1.6c-.6.3-.9.7-.9 1.3v.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".9" fill="currentColor"/></svg><span class="l">読み方</span></button>';
-  SG.fullBtn = () => `<button type="button" class="btn" data-act="full" aria-pressed="${!!state.full}" title="図を画面いっぱいに出す（Esc で戻る）">${fullInner()}</button>`;
+  SG.guideBtn = () => '<button type="button" class="btn guide-btn" data-act="guide" aria-label="読み方" title="図の読み方を開く"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 6.2a1.8 1.8 0 1 1 2.6 1.6c-.6.3-.9.7-.9 1.3v.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".9" fill="currentColor"/></svg><span class="l">読み方</span></button>';
+  SG.fullBtn = () => `<button type="button" class="btn" data-act="full" aria-label="${state.full ? "元に戻す" : "全面表示"}" aria-pressed="${!!state.full}" title="図を画面いっぱいに出す（Esc で戻る）">${fullInner()}</button>`;
   function syncFullButtons() {
     document.querySelectorAll('#view [data-act="full"]').forEach((b) => {
       b.setAttribute("aria-pressed", String(!!state.full));
+      b.setAttribute("aria-label", state.full ? "元に戻す" : "全面表示");
       b.innerHTML = fullInner();
       b.title = state.full ? "全面表示をやめる（Esc）" : "図を画面いっぱいに出す（Esc で戻る）";
     });
@@ -5974,6 +6014,13 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     const open = wide() || !!(state.card && state.sheet) || (!state.card && !!state.guide);
     insp.classList.toggle("open", open);
     insp.inert = !open;
+    // キーボードで開いたときは、札の「閉じる」へ移り、閉じたら元の所へ戻す（マウスで図を押したときは動かさない）
+    if (open && !insp._open) {
+      const ae = document.activeElement;
+      insp._back = ae && ae !== document.body && !insp.contains(ae) ? ae : null;
+      if (insp._back) requestAnimationFrame(() => $("inspClose").focus({ preventScroll: true }));
+    } else if (!open && insp._open && insp._back && insp._back.isConnected && insp.contains(document.activeElement)) insp._back.focus({ preventScroll: true });
+    insp._open = open;
   }
   function renderPill() {
     const pill = $("pill");
@@ -6522,6 +6569,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { moveNavInd(); setVars(); });
     renderFoot();
     showView(readHash());
+    window.SG_READY = true; // 読み込みに失敗したときの案内（index.src.html）が見る
     // 読み込み中の表示を、図が描けたところで静かに消す（指示24）
     const boot = $("boot");
     if (boot) {
