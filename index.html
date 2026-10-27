@@ -1135,7 +1135,7 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" integrity="sha384-su5kReKyYlIFrI62mbQRKXHzFobMa7BHp1cK6julLPbnYcCW9NIZKJiTODjLPeDh" crossorigin="anonymous"></script>
 <script>
-/* 神道学 学統図 — デモ用の見本データ
+/* 平泉澄先生 学統マップ — 元のデータ（このあと data/additions/ の追加分を日付の順に重ねる。js/additions.js）
  * 平泉澄から遡って数珠つなぎに集めた約 90 人。朱熹・ランケの先も、さらにさかのぼる（指示22）。
  * 年は西暦。紀元前は負の数（-660 = 前660年）。神代の神には年がないので、神代の帯の中の並び順だけを fl に入れる。
  * conf（確度）: 確実 = 事典類で一致 / 有力 = 通説だが細部に異説 / 伝承 = 神話・家伝 / 要確認 = 時期などから考えられるが、明記した資料が見つからなかった関係（2026-10-26 の事実確認による）
@@ -5378,7 +5378,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
           <label class="vh" for="relText">名前で絞る</label>
           <input type="search" id="relText" class="filter-text" placeholder="名前・よみで絞る" autocomplete="off">
         </div>
-        <div class="tb-actions"><button type="button" class="btn" data-act="conds" aria-haspopup="dialog" aria-controls="filterPop">条件<span class="n" hidden></span></button><button type="button" class="btn" data-act="filters" aria-haspopup="dialog" aria-controls="filterPop">絞り込み<span class="n" hidden></span></button></div>
+        <div class="tb-actions"><button type="button" class="btn" data-act="conds" aria-haspopup="dialog" aria-controls="filterPop">条件<span class="n" hidden></span></button><button type="button" class="btn" data-act="filters" aria-haspopup="dialog" aria-controls="filterPop">絞り込み<span class="n" hidden></span></button>${SG.guideBtn()}</div>
         <p class="tb-rule" id="relCount"></p>
         <div class="tb-conds" data-condbar hidden></div>
       </div></div>
