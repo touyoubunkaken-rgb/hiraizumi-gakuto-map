@@ -1199,6 +1199,13 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
 #inspMin[aria-pressed="true"] .i-restore { display: inline; }
 @media (max-width: 719px) { #inspMin { display: none; } }
 
+/* ── 指示53: 札を全体に広げる ─────────────
+ * 帯の「全体」で縦いっぱいに広げる（js/app.js の setFull）。広げている間は、つまんで動かさず、大きさの持ち手も出さない */
+#inspFull .i-unfull, #inspFull[aria-pressed="true"] .i-full { display: none; }
+#inspFull[aria-pressed="true"] .i-unfull { display: inline; }
+.inspector.full .insp-grip { display: none; }
+.inspector.full .insp-bar { cursor: default; }
+
 </style>
 
 <div class="boot" id="boot" role="status" aria-live="polite">
@@ -1257,6 +1264,7 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
     <button type="button" class="icon-btn insp-zoom" id="inspSmaller" aria-label="札の文字を小さく" title="文字を小さく"><span aria-hidden="true" style="font-size:11px">A</span></button>
     <button type="button" class="icon-btn insp-zoom" id="inspLarger" aria-label="札の文字を大きく" title="文字を大きく"><span aria-hidden="true" style="font-size:16px">A</span></button>
     <button type="button" class="btn ghost" id="inspGuide">案内へ</button>
+    <button type="button" class="icon-btn" id="inspFull" aria-label="札を全体に広げる" aria-pressed="false" title="全体に広げる（縦いっぱい）"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path class="i-full" d="M8.5 2.5h3v3M5.5 11.5h-3v-3M11.5 2.5L8 6M2.5 11.5L6 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path class="i-unfull" d="M8 2.5v3.5h3.5M6 11.5V8H2.5M8 6l3.5-3.5M6 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button type="button" class="icon-btn" id="inspMin" aria-label="札を最小にする" aria-pressed="false" title="最小にする（帯だけにする）"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path class="i-min" d="M3 10.5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="i-restore" d="M3.5 3.5h7v7h-7z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
     <button type="button" class="icon-btn" id="inspClose" aria-label="札を閉じる"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
   </div>
@@ -6640,20 +6648,31 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   // ── 札の位置と大きさ（指示34） ──────────────
   // 札は図の上に浮かべ、見る人が動かせる: 上の帯をつまんで動かす、右下の角を引いて大きさを変える、「A」で文字の大きさを替える。
   // 選んだバブルに札がかかるときは、反対の側へよける（広い画面は左右、狭い画面は上下）。置き場所と大きさは、この端末に覚えておく
-  const CARD_KEY = "sg-card-v1";
+  const CARD_KEY = "sg-card-v2"; // v2: パソコンのはじめの置き場を右下（名前まで見える高さ）にした版（指示53）
   const ZOOMS = [0.85, 1, 1.15, 1.3];
   let cardGeo = {};
-  try { cardGeo = JSON.parse(localStorage.getItem(CARD_KEY) || "{}") || {}; } catch (e) { cardGeo = {}; }
+  try {
+    cardGeo = JSON.parse(localStorage.getItem(CARD_KEY) || "null");
+    if (!cardGeo) { const old = JSON.parse(localStorage.getItem("sg-card-v1") || "{}") || {}; cardGeo = { z: old.z, min: old.min }; localStorage.removeItem("sg-card-v1"); }
+  } catch (e) { cardGeo = {}; }
   const narrow = () => window.innerWidth < 720;
   const geoKey = () => (narrow() ? "n" : "w");
   const cssPx = (k) => parseFloat(document.documentElement.style.getPropertyValue(k)) || 0;
   const barsTop = () => (cssPx("--head-h") || 56) + 8;
-  // はじめの位置: 広い画面は右の上（見出し帯と道具帯の下）、狭い画面は下
+  // はじめの位置: 広い画面は左下に、帯と名前の見出しが見える高さで（光の流れを札で隠さないように。指示53。
+  // 学派の「全体」では、左下は古い学派の新しい時代でバブルが少ない）。狭い画面は下
   function defGeo() {
     const vw = window.innerWidth, vh = window.innerHeight;
     if (narrow()) { const h = Math.round(vh * 0.46); return { x: 8, y: vh - h - 8, w: vw - 16, h }; }
-    const w = Math.min(400, vw - 32), top = barsTop() + cssPx("--tb-h");
-    return { x: vw - w - 16, y: top, w, h: Math.min(vh - top - 16, 640) };
+    const w = Math.min(400, vw - 32), h = 160;
+    return { x: 16, y: vh - h - 16, w, h };
+  }
+  // 全体に広げたときの位置と大きさ（見出し帯と道具帯の下から、画面の下まで。広い画面は幅も広げる）
+  function fullGeo() {
+    const vw = window.innerWidth, vh = window.innerHeight, top = barsTop() + (narrow() ? 0 : cssPx("--tb-h"));
+    const w = narrow() ? vw - 16 : Math.min(640, vw - 32), g = shown || curGeo();
+    const left = g.x + g.w / 2 < vw / 2; // いま札がある側のまま広げる
+    return { x: narrow() ? 8 : left ? 16 : vw - w - 16, y: top, w, h: vh - top - 8 };
   }
   // 画面の中に収める（狭い画面では、幅は画面いっぱい）
   function fitGeo(g) {
@@ -6674,16 +6693,16 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   }
   const saveGeo = () => { try { localStorage.setItem(CARD_KEY, JSON.stringify(cardGeo)); } catch (e) { /* 覚えておけない環境では、毎回はじめの位置 */ } };
   // 見る人が動かした（または、よけた）位置だけを覚える
-  const keepGeo = () => { if (shown) { cardGeo[geoKey()] = shown; saveGeo(); } };
+  const keepGeo = () => { if (shown && !INSP.classList.contains("full")) { cardGeo[geoKey()] = shown; saveGeo(); } };
   // 選んだバブルに札がかかっていたら、よける（その場だけ。見る人が決めた位置と大きさは覚えたまま。次に開くときは、そこに戻る）
   function avoidSelected() {
-    if (!INSP.classList.contains("open") || !state.selected || !current || !current.nodeRect) return;
-    const b = current.nodeRect(state.selected);
-    if (!b) return;
+    if (!INSP.classList.contains("open") || !state.selected || !current || !current.nodeRect || INSP.classList.contains("full")) return;
     const g = shown || curGeo(), m = 24, vw = window.innerWidth, vh = window.innerHeight;
     const gh = INSP.classList.contains("min") ? INSP.offsetHeight : g.h;
-    const hit = b.x + b.r + m > g.x && b.x - b.r - m < g.x + g.w && b.y + b.r + m > g.y && b.y - b.r - m < g.y + gh;
-    if (!hit) return;
+    // 選んだバブルと、広い画面では光の行き着く平泉澄先生のバブルにも、かからないようにする（指示53）
+    const ids = narrow() ? [state.selected] : [state.selected, SG.FOCUS];
+    const b = ids.map((id) => current.nodeRect(id)).find((r) => r && r.x + r.r + m > g.x && r.x - r.r - m < g.x + g.w && r.y + r.r + m > g.y && r.y - r.r - m < g.y + gh);
+    if (!b) return;
     if (narrow()) {
       if (b.y > vh / 2) { const y = barsTop(); applyGeo({ x: 8, y, w: g.w, h: Math.min(g.h, Math.max(160, b.y - b.r - m - y)) }, true); }
       else { const y = Math.max(b.y + b.r + m, vh - g.h - 8); applyGeo({ x: 8, y, w: g.w, h: Math.max(160, vh - 8 - y) }, true); }
@@ -6695,6 +6714,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     const start = (kind) => (ev) => {
       if (ev.pointerType === "mouse" && ev.button !== 0) return;
       if (kind === "move" && ev.target.closest("button")) return; // 帯のボタンは、ふつうに押せる
+      if (INSP.classList.contains("full")) return; // 全体に広げている間は動かさない
       drag = Object.assign({ kind, px: ev.clientX, py: ev.clientY }, shown || curGeo());
       INSP.classList.remove("gliding");
       INSP.classList.add("dragging");
@@ -6723,13 +6743,25 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     // 最小にする（パソコンだけ。指示49）: 本文を隠して帯だけを残し、帯の題に名前を出す。もう一度押すと元の大きさに戻る。この端末に覚えておく
     const minBtn = $("inspMin");
     minBtn.addEventListener("click", () => {
+      if (INSP.classList.contains("full")) setFull(false);
       cardGeo.min = !INSP.classList.contains("min");
       saveGeo();
       setMin(cardGeo.min);
       applyGeo(shown || curGeo());
     });
     setMin(cardGeo.min);
-    window.addEventListener("resize", () => { setMin(cardGeo.min); applyGeo(curGeo()); }, { passive: true });
+    // 全体に広げる（指示53）: 札を縦いっぱいに広げて全部を読めるようにする。もう一度押すと元に戻る。別の人を選ぶと元に戻す（光の流れが見えるように）
+    $("inspFull").addEventListener("click", () => setFull(!INSP.classList.contains("full")));
+    window.addEventListener("resize", () => { setMin(cardGeo.min); applyGeo(INSP.classList.contains("full") ? fullGeo() : curGeo()); }, { passive: true });
+  }
+  function setFull(on) {
+    const b = $("inspFull");
+    if (on && INSP.classList.contains("min")) { cardGeo.min = false; saveGeo(); setMin(false); }
+    INSP.classList.toggle("full", !!on);
+    b.setAttribute("aria-pressed", String(!!on));
+    b.setAttribute("aria-label", on ? "札を元の大きさに戻す" : "札を全体に広げる");
+    b.title = on ? "元の大きさに戻す" : "全体に広げる（縦いっぱい）";
+    applyGeo(on ? fullGeo() : curGeo(), true);
   }
   // 札を最小にする・戻す（狭い画面では使わない）
   function setMin(on) {
@@ -6755,6 +6787,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     if (force || insp._key !== key) {
       const body = $("inspBody");
       const swapped = insp._card !== state.card || insp._mode !== mode;
+      if (swapped && INSP.classList.contains("full")) setFull(false); // 別の札に替わったら、全体に広げたのを戻す（光の流れが見えるように。指示53）
       body.innerHTML = mode === "card" ? SG.cardHtml(state.card) : SG.guideHtml(state.view);
       if (swapped) {
         body.scrollTop = 0;
