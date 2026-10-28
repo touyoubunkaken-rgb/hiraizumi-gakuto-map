@@ -1183,6 +1183,12 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
   .ts-svg g.edges-layer, .ts-svg g.edges-layer.quiet, .ts-svg .event-line, .ts-svg .event-text { transition-duration: 1ms; transition-delay: 0s; }
 }
 
+/* ── 指示41: タップしたら、光が届いた人から順に出す ─────────────
+ * 光がまだ届いていない道すじの人の名前は、置き場だけ決めて透明にしておき、届いたら 0.24 秒で出す（バブルは view-map.js の reveal） */
+.ts-labels .node-label { transition: opacity 240ms var(--ease-out); }
+.ts-labels .node-label.pending { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .ts-labels .node-label { transition: none; } }
+
 </style>
 
 <div class="boot" id="boot" role="status" aria-live="polite">
@@ -3900,9 +3906,10 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     setA(el, "stroke-width", n.isOrg ? 2.1 : 2.3);
     setA(el, "stroke-dasharray", n.myth ? "3 2" : n.approx || n.legend ? "4 2" : null);
   }
-  // list は {p, sx, sy, r} の配列
-  function drawNodes(g, list) {
+  // list は {p, sx, sy, r} の配列。opts.pending: 光がまだ届いていない道すじの人（ほかの人と同じく淡く描く。指示41）
+  function drawNodes(g, list, opts) {
     const em = SG.emphasis();
+    const pending = opts && opts.pending;
     const j = g.selectAll("g.node").data(list, (d) => d.p.id);
     j.exit().remove();
     const e = j.enter().append("g").attr("class", "node").style("cursor", "pointer");
@@ -3919,7 +3926,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       const isSel = d.p.id === state.selected;
       setA(this, "transform", `translate(${d.sx},${d.sy})`);
       // 薄くするのは形と輪に（まとまり全体を半透明にしない。線と同じ理由）
-      const op = em.node(d.p), so = op < 1 ? op : null;
+      const op = pending && pending.has(d.p.id) ? Math.min(em.node(d.p), d.p.isOrg ? 0.4 : 0.3) : em.node(d.p), so = op < 1 ? op : null;
       setA(this, "opacity", null);
       if (this.classList.contains("is-sel") !== isSel) this.classList.toggle("is-sel", isSel);
       if (this.classList.contains("is-org") !== !!d.p.isOrg) this.classList.toggle("is-org", !!d.p.isOrg);
@@ -4024,7 +4031,8 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       // 平泉澄先生ご自身を選んでいるときは、道すじが系譜の全員になるので、ふだんの出し方（重なる名前は省く）にする
       const must = pri(d) <= 1 || (pri(d) === 2 && state.selected !== SG.FOCUS);
       if (!must && em.node(d.p) < 0.5) continue;
-      const cls = d.p.focus ? "node-label focus" : d.p.isOrg ? "node-label org" : pri(d) <= 2 ? "node-label strong" : "node-label";
+      // 光がまだ届いていない人の名前は、置き場だけ決めて透明にしておく（届いたら出す。指示41）
+      const cls = (d.p.focus ? "node-label focus" : d.p.isOrg ? "node-label org" : pri(d) <= 2 ? "node-label strong" : "node-label") + (opts.pending && opts.pending.has(d.p.id) ? " pending" : "");
       const right = d.sx + d.r + 6, left = d.sx - d.r - 6 - w, flip = right + w > W - 4;
       const a = flip ? left : right, o = flip ? right : left; // 好みの横（右。右端では左）と、反対の横
       // 横の置き場。dy は、名前の箱の中心をバブルの中心から上下にずらす量
@@ -5085,7 +5093,9 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       // 選んでいる間は、道すじと、選んだ人・指している人の線だけを手前の層に描き、ほかの線の層はスッと消す（指示37）。
       // 消えている層は描き直さない。選ぶのをやめたら、先に描き直してから戻す
       const sel = SG.state.selected, hov = SG.state.hover, em = SG.emphasis();
-      const keep = sel ? list.filter((e) => em.onPath(e) || e.s === sel || e.t === sel || (hov && (e.s === hov || e.t === hov))) : [];
+      const keepAll = sel ? list.filter((e) => em.onPath(e) || e.s === sel || e.t === sel || (hov && (e.s === hov || e.t === hov))) : [];
+      // 光が流れている間は、道すじの線を描かない（光の線が届いてから見せる。指示41）。名前は、流れ終わった形の線をよけて置く
+      const keep = this.flowDone === false ? keepAll.filter((e) => !em.onPath(e)) : keepAll;
       const mid = (e) => { const a = this.byId.get(e.s), b = this.byId.get(e.t); return [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2]; };
       if (!this.edgesHidden) {
         if (!sel) SG.drawEdges(this.gEdge, list, (e) => this.edgePath(e), { mid });
@@ -5093,15 +5103,52 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       }
       this.quiet(!!sel);
       const dots = this.items.map((n) => ({ p: n.p, sx: n.sx, sy: n.sy, r: n.r }));
-      SG.drawNodes(this.gNode, dots);
+      const nodeEl = new Map();
+      SG.drawNodes(this.gNode, dots, { pending: this.pending }).each(function (d) { nodeEl.set(d.p.id, this); });
+      this.nodeEl = nodeEl;
       // 選んでいるときは、名前の置き場を、残した線（と生涯の線）にかからない所から選ぶ。選んでいないときは線が何千本もあるので、よけない
       let lines = null;
       if (sel) {
-        lines = keep.map((e) => ({ pts: this.curvePts(e), w: em.onPath(e) ? 6 : 3 }));
+        lines = keepAll.map((e) => ({ pts: this.curvePts(e), w: em.onPath(e) ? 6 : 3 }));
         const life = this.gLife.select("line").node();
         if (life) lines.push({ pts: ["x1", "y1", "x2", "y2"].map((k) => +life.getAttribute(k)), w: 3 });
       }
-      SG.drawLabels(this.gLab, dots, { width: W, height: H, lines, top: 16, bottom: H - 6 });
+      SG.drawLabels(this.gLab, dots, { width: W, height: H, lines, top: 16, bottom: H - 6, pending: this.pending });
+      const labelEl = new Map();
+      this.gLab.selectAll("text.node-label").each(function (s) { labelEl.set(s.d.p.id, this); });
+      this.labelEl = labelEl;
+    },
+    // 光が届くまで、道すじの人のバブルを淡く、名前を透明にしておく（指示41: 線より先に出さない）。
+    // 選んだ人と、その人の直接の線の相手は、はじめから出す。動きを減らす設定では、はじめから全部を出す
+    revealStart() {
+      const sel = SG.state.selected;
+      this.pending = null;
+      this.flowDone = true;
+      if (!sel || !this.ts || !this.byId || SG.reducedMotion()) return;
+      const info = SG.pathInfo(sel);
+      this.pending = new Set([...info.nodes].filter((id) => id !== sel && this.byId.has(id)));
+      this.flowDone = false;
+    },
+    // 光が届いた人のバブルを濃くし、名前を出す（描き直さずに、その人の分だけ書き換える）
+    reveal(id) {
+      if (!this.pending || !this.pending.delete(id)) return;
+      const el = this.nodeEl && this.nodeEl.get(id), n = this.byId && this.byId.get(id);
+      if (el && n) {
+        const op = SG.emphasis().node(n.p), so = op < 1 ? String(op) : null;
+        [[".shape", ["fill-opacity", "stroke-opacity"]], [".ring", ["stroke-opacity"]]].forEach(([q, keys]) => {
+          const x = el.querySelector(q);
+          if (x) keys.forEach((k) => (so == null ? x.removeAttribute(k) : x.setAttribute(k, so)));
+        });
+        el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 260, easing: "ease-out" });
+      }
+      const t = this.labelEl && this.labelEl.get(id);
+      if (t) t.classList.remove("pending");
+    },
+    // 流れ終わったら、残りの人も出し、道すじの線を手前の層に戻す（線の説明が出るように）
+    endReveal() {
+      this.pending = null;
+      this.flowDone = true;
+      this.render();
     },
     // 選んでいる間は、ほかの線の層を消し、出来事の線と文字を淡くする（css: .quiet・.has-sel）
     quiet(on) {
@@ -5198,13 +5245,19 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
         (out.get(u) || []).forEach((g) => { const nd = du + g.len; if (!dist.has(g.to) || nd < dist.get(g.to)) { dist.set(g.to, nd); via.set(g.to, g); } });
       }
       const D = dist.get(SG.FOCUS);
-      if (!D) return;
+      if (!D) { if (this.pending) this.endReveal(); return; }
       const lit = arcs.filter((g) => g.len && dist.has(g.from));
       this.litArcs = lit.map((g) => ({ e: g.e }));
       if (SG.reducedMotion()) { this.drawLit(); return; } // 動きを減らす設定では、道の線をすぐに描く
       const far = Math.max(D, ...lit.map((g) => dist.get(g.from) + g.len));
       // 速さは一定（線から次の線へ、切れ目なく続く）。平泉澄先生に届くまでを 0.7〜4.2 秒、遠回りの枝も 5.2 秒までに収める
       const v = Math.max(D / Math.max(700, Math.min(4200, D / 0.9)), far / 5200);
+      // 光が届いた人から、バブルと名前を出す。流れ終わったら残りも出す（指示41）
+      const token = this.flowToken;
+      if (this.pending) {
+        this.pending.forEach((id) => { if (dist.has(id)) setTimeout(() => { if (this.flowToken === token) this.reveal(id); }, dist.get(id) / v); });
+        setTimeout(() => { if (this.flowToken === token && this.flowDone === false) this.endReveal(); }, far / v + 80);
+      }
       // 一本の線で描く（前は光のにじみと二本だった）。伸びきったら、動きを外して普通の線にする（届いたあとも残す。指示35）
       lit.forEach((g) => {
         const t = this.trimPath(g.e);
@@ -5239,17 +5292,27 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       }).sort((a, b) => a.source.fl - b.source.fl);
       const span = Math.min(1800, list.length * 45);
       let end = 0;
+      const at = new Map(); // 人ごとに、光が来る時刻
+      const soon = (id, t) => { if (!at.has(id) || t < at.get(id)) at.set(id, t); };
       list.forEach((e, i) => {
         const t = this.trimPath(e);
         if (!t) return;
         const delay = delayOf ? delayOf(e, i, list.length) : (span * i) / Math.max(1, list.length);
         end = Math.max(end, delay + 900);
+        soon(e.s, delay);
+        soon(e.t, delay + 900);
         const el = this.gFlow.append("path").attr("class", "flow").attr("d", t.d).attr("stroke-dasharray", `${t.len} ${t.len}`).attr("stroke-dashoffset", t.len).node();
         const an = el.animate([{ strokeDashoffset: t.len }, { strokeDashoffset: 0 }], { duration: 900, delay, easing: "ease-in-out", fill: "forwards" });
         an.onfinish = () => { el.removeAttribute("stroke-dasharray"); el.removeAttribute("stroke-dashoffset"); an.cancel(); };
       });
       const token = this.flowToken;
-      setTimeout(() => { if (this.flowToken === token && this.litArcs && !this.edgesHidden) this.drawLit(); }, end + 60);
+      if (this.pending) at.forEach((t, id) => { if (this.pending.has(id)) setTimeout(() => { if (this.flowToken === token) this.reveal(id); }, t); });
+      setTimeout(() => {
+        if (this.flowToken !== token) return;
+        const waiting = this.flowDone === false;
+        if (this.litArcs && !this.edgesHidden) this.drawLit();
+        if (waiting) this.endReveal(); // 見えていなかった所の人も出す
+      }, end + 60);
     },
     // 線の両端を、バブルの縁で切った曲線（光の線は図の上の層にあるので、バブルの上に重ねない）。len は制御点を通る折れ線の長さ
     trimPath(e) {
@@ -5267,6 +5330,8 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     },
     // 光った道の線を、動きなしで描き直す（並べ替え・倍率の変更で位置が変わったあとと、動きを減らす設定のとき）
     drawLit() {
+      this.pending = null;
+      this.flowDone = true;
       this.flowWidth();
       this.gFlow.selectAll("*").remove();
       (this.litArcs || []).forEach((g) => { const t = this.trimPath(g.e); if (t) this.gFlow.append("path").attr("class", "flow").attr("d", t.d); });
@@ -5313,6 +5378,8 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       if (!this.ts) return;
       this.stopTour();
       SG.select(SG.FOCUS, { quiet: true });
+      this.revealStart();
+      this.ts.draw();
       const ts = this.ts;
       const pageY = (y) => window.scrollY + ts.el.getBoundingClientRect().top + y;
       const p = SG.byId.get(SG.FOCUS);
@@ -5351,7 +5418,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       if (reason === "axis") { this.showRule(); this.layout(true); return; }
       if (reason === "filter") { this.build(); this.layout(true); return; }
       if (reason === "scale") { this.ts.size(); this.layout(true); return; }
-      if (reason === "select") { this.ts.draw(); this.flow(); return; }
+      if (reason === "select") { this.revealStart(); this.ts.draw(); this.flow(); return; }
       if (reason === "hover") { this.render(); return; } // 目盛りは変わらないので、図だけを描き直す
       if (reason === "full") { this.refit(); return; } // 全面表示の出入り: 幅の変化は、枠の大きさの見張りが並べ直す
       this.ts.draw();
@@ -6213,9 +6280,9 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       </div>
       <div class="wrap"><div class="about">
         <section class="a-sec"><h2>このデータについて</h2>
-          <p>平泉澄先生から、師弟・家系・思想の継承をさかのぼって集めたデータです。神道学に限らず、学塾や大学・学会・団体を通じて先生に関わる人も加えています。大陸の学問や聖賢（孔子・朱熹・王陽明など）と西洋の史学（ランケ）は、日本の学者が感化を受けた相手として置き、そこから先はさかのぼりません。</p>
+          <p>平泉澄先生から、師弟・家系・思想の継承をさかのぼって集めたデータです。神道学に限らず、学塾や大学・学会・団体を通じて先生に関わる人も加えています。大陸の学問や聖賢（孔子・朱熹・王陽明など）、西洋の学問の人、学問の肩書きがない人（武士・公家・政治家・軍人など）、蘭学・医学・兵学の人も、資料で図の人と結ばれていれば加えています。</p>
           <p>2026年10月26日に、生没年・出身地・家柄・著作・師弟関係・組織の創立年を、Wikipedia・コトバンク・国立国会図書館サーチで照らし合わせて直しました。各人の札に、確かめるための事典へのリンクがあります。</p>
-          <p>同じ日の夜に、Wikidata の師弟・親子の記録と日本語版ウィキペディアの本文から候補を集め、コトバンクの『日本人名大辞典+Plus』で肩書き・生没年・出身地・著作・師弟を確かめて、学者 70 人・組織 3 つ・関係 149 本を加えました。学問の肩書きがない人と、蘭学・医学・兵法だけの人は加えていません。</p>
+          <p>同じ日の夜に、Wikidata の師弟・親子の記録と日本語版ウィキペディアの本文から候補を集め、コトバンクの『日本人名大辞典+Plus』で肩書き・生没年・出身地・著作・師弟を確かめて、学者 70 人・組織 3 つ・関係 149 本を加えました。</p>
           <p>10月27日に、関係ごとに二人を結ぶ資料を自動で照合し（人名事典の本文、CiNii Research の論文・本、ウィキペディア・Wikidata）、資料の段階を付けました。あわせて、まだ線のない二人のうち、記事や文献で互いの名が出る組を「細いつながり」として加えました。人名事典の本文の言葉から、関わった出来事・向き合い方・最期も読み取っています。</p>
           <p>天皇の代数と在位年は宮内庁の数え方（南朝を正統とし、北朝は目盛りの細い帯で別に示す）です。初期の天皇の年は『日本書紀』の紀年による伝承の年代です。</p>
         </section>
