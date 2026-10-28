@@ -1167,6 +1167,22 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
  * 名前の層（.ts-labels）は、光の線の層（.ts-flow）のさらに上に重ねる。名前の縁取り（背景色）が、下を通る線を隠す */
 .ts-labels { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 
+/* ── 指示37: 選んでいる間は、ほかの線をスッと消す ─────────────
+ * 道すじと、選んだ人・指している人の線だけを手前の層（.keep）に残し、ほかの線の層は 0.26 秒で消す。
+ * 消えきったら描かない（visibility: hidden）。半透明のまま残すと、スクロールのたびに重ね合わせの下書きが要って重い（指示31）。
+ * pointer-events は付けない（受け継ぐ値なので、子の線 1,600 本に伝わり、タップの瞬間に約 11 ミリ秒かかる）。消えていく間は、線の説明を出さない（draw.js）。
+ * 出来事の線と文字も、一本ずつ淡くする（まとまりを半透明にしない） */
+.ts-svg g.edges-layer.quiet { opacity: 0; visibility: hidden; transition: opacity 260ms var(--ease-out), visibility 0s linear 260ms; }
+.ts-svg .event-line { transition: stroke 260ms var(--ease-out); }
+.ts-svg .event-text { transition: fill 260ms var(--ease-out); }
+.ts-svg.has-sel .event-line { stroke: color-mix(in oklab, var(--edge-hihan) 20%, transparent); }
+.ts-svg.has-sel .event-text { fill: color-mix(in oklab, var(--ink-3) 45%, transparent); }
+/* 近くに空きがなく、少し離して置いた名前と、そのバブルをつなぐ細い線 */
+.label-lead { stroke: var(--ink-3); stroke-width: 0.8; stroke-opacity: 0.75; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ts-svg g.edges-layer, .ts-svg g.edges-layer.quiet, .ts-svg .event-line, .ts-svg .event-text { transition-duration: 1ms; transition-delay: 0s; }
+}
+
 </style>
 
 <div class="boot" id="boot" role="status" aria-live="polite">
@@ -3811,7 +3827,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     enter.append("path").attr("class", "e-main").attr("fill", "none").attr("stroke-linecap", "round");
     enter.append("path").attr("class", "e-hit").attr("fill", "none").attr("stroke", "transparent").attr("stroke-width", 10)
       .style("cursor", "help")
-      .on("mousemove", (ev, e) => showTip(ev, edgeTip(e)))
+      .on("mousemove", (ev, e) => { if (!ev.currentTarget.closest(".quiet")) showTip(ev, edgeTip(e)); }) // 消えていく層の線には説明を出さない（指示37）
       .on("mouseleave", hideTip);
     const all = enter.merge(sel);
     // 二重線の内側と「略」の字は、要る線にだけ作る（線ごとの部品を減らして軽く。見た目は同じ）
@@ -3923,16 +3939,78 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     for (const ch of s) w += /[\u0000-ÿ]/.test(ch) ? fs * 0.56 : fs;
     return w;
   }
+  // 線分が箱にかかるか（線分を箱の四辺で切り取って、残るかどうか）
+  function segHitsBox(x0, y0, x1, y1, b) {
+    let t0 = 0, t1 = 1;
+    const clip = (p, q) => {
+      if (p === 0) return q >= 0;
+      const r = q / p;
+      if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+      return true;
+    };
+    const dx = x1 - x0, dy = y1 - y0;
+    return clip(-dx, x0 - b.x) && clip(dx, b.x + b.w - x0) && clip(-dy, y0 - b.y) && clip(dy, b.y + b.h - y0);
+  }
+  // opts.lines: 選んでいるときに残した線（{ pts: [x0, y0, x1, y1, …], w: 重み }）。あれば、名前をその線にかからない所へ置く（指示37）。
+  // opts.top・opts.bottom: 名前の箱を置いてよい上と下の端（図の上端は、貼り付く列の見出しに隠れることがある）
   function drawLabels(g, list, opts) {
     opts = opts || {};
     const em = SG.emphasis();
     const W = opts.width || 2000, H = opts.height || 2000;
+    const sel = !!opts.lines;
+    const top = opts.top != null ? opts.top : -4, bottom = opts.bottom != null ? opts.bottom : H + 4;
     const pri = (d) => (d.p.id === state.selected || d.p.id === state.hover ? 0 : d.p.focus ? 1 : em.nodeOnPath(d.p) ? 2 : d.p.isOrg ? 3 : 4);
     const cand = list.filter((d) => d.sy > -30 && d.sy < H + 30 && d.sx > -80 && d.sx < W + 80)
       .sort((a, b) => pri(a) - pri(b) || b.r - a.r);
     const boxes = [];
     const shown = [];
+    const meets = (o, b) => o.x < b.x + b.w && b.x < o.x + o.w && o.y < b.y + b.h && b.y < o.y + o.h;
     const hit = (b) => boxes.some((o) => o.x < b.x + b.w && b.x < o.x + o.w && o.y < b.y + b.h && b.y < o.y + o.h);
+    // 残した線。線を囲む箱を先に求めておき、名前の箱と重なる線だけを細かく調べる
+    const lines = (opts.lines || []).map((l) => {
+      const p = l.pts;
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (let i = 0; i < p.length; i += 2) { x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); y0 = Math.min(y0, p[i + 1]); y1 = Math.max(y1, p[i + 1]); }
+      return { p, w: l.w, x0, y0, x1, y1 };
+    });
+    const lineCost = (b) => {
+      let c = 0;
+      for (const l of lines) {
+        if (l.x1 < b.x || l.x0 > b.x + b.w || l.y1 < b.y || l.y0 > b.y + b.h) continue;
+        for (let i = 0; i + 3 < l.p.length; i += 2) if (segHitsBox(l.p[i], l.p[i + 1], l.p[i + 2], l.p[i + 3], b)) { c += l.w; break; }
+      }
+      return c;
+    };
+    // 名前の箱に隠れる、はっきり見えているバブルの数（名前でバブルを隠さないように）。
+    // 選んでいるときは、名前をたくさん置くので、バブルを 24 px の升目に入れて探す。選んでいないときに調べるのは、
+    // 必ず出す名前（1〜2 個）だけなので、升目は作らずに一つずつ見る（升目を作るほうが重い）
+    const CELL = 24, key = (gx, gy) => (gx + 4096) * 65536 + gy + 4096;
+    let bright = null, grid = null;
+    const under = (d, b) => { const nx = Math.max(b.x, Math.min(d.sx, b.x + b.w)), ny = Math.max(b.y, Math.min(d.sy, b.y + b.h)); return (nx - d.sx) ** 2 + (ny - d.sy) ** 2 < d.r * d.r; };
+    const bubbles = (b, self) => {
+      if (!bright) bright = list.filter((d) => em.node(d.p) >= 0.5);
+      let n = 0;
+      if (!sel) { for (const d of bright) if (d.p !== self.p && under(d, b)) n++; return n; }
+      if (!grid) {
+        grid = new Map();
+        for (const d of bright)
+          for (let gx = Math.floor((d.sx - d.r) / CELL); gx <= Math.floor((d.sx + d.r) / CELL); gx++)
+            for (let gy = Math.floor((d.sy - d.r) / CELL); gy <= Math.floor((d.sy + d.r) / CELL); gy++) {
+              const k = key(gx, gy);
+              if (!grid.has(k)) grid.set(k, []);
+              grid.get(k).push(d);
+            }
+      }
+      const seen = new Set();
+      for (let gx = Math.floor(b.x / CELL); gx <= Math.floor((b.x + b.w) / CELL); gx++)
+        for (let gy = Math.floor(b.y / CELL); gy <= Math.floor((b.y + b.h) / CELL); gy++)
+          for (const d of grid.get(key(gx, gy)) || []) {
+            if (d.p === self.p || seen.has(d)) continue;
+            seen.add(d);
+            if (under(d, b)) n++;
+          }
+      return n;
+    };
     for (const d of cand) {
       const text = d.p.short || d.p.n;
       const fs = d.p.focus ? 14 : d.p.isOrg ? 11.5 : 12;
@@ -3941,20 +4019,70 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       // 平泉澄先生ご自身を選んでいるときは、道すじが系譜の全員になるので、ふだんの出し方（重なる名前は省く）にする
       const must = pri(d) <= 1 || (pri(d) === 2 && state.selected !== SG.FOCUS);
       if (!must && em.node(d.p) < 0.5) continue;
-      // 置き場の候補: 右（右端では左）。必ず出す名前は、重なるときに反対の横・上・下の空いた所を探す
+      const cls = d.p.focus ? "node-label focus" : d.p.isOrg ? "node-label org" : pri(d) <= 2 ? "node-label strong" : "node-label";
       const right = d.sx + d.r + 6, left = d.sx - d.r - 6 - w, flip = right + w > W - 4;
-      const spots = [flip ? left : right, flip ? right : left].map((x) => ({ x, y: d.sy + fs * 0.36, box: { x: x - 2, y: d.sy - h / 2, w: w + 4, h } }));
-      const cx = Math.max(2, Math.min(W - w - 2, d.sx - w / 2)); // 上・下に置くときも、図の幅に収める
-      if (must) [d.sy - d.r - 4, d.sy + d.r + fs + 1].forEach((y) => spots.push({ x: cx, y, box: { x: cx - 2, y: y - fs, w: w + 4, h } }));
-      const inside = (c) => c.box.x >= 0 && c.box.x + c.box.w <= W; // 図の外へはみ出す置き場は使わない（切れて読めない）
-      let s = spots[0];
-      if (hit(s.box)) {
-        if (!must) continue;
-        s = spots.find((c) => inside(c) && !hit(c.box)) || spots[0]; // どこも空いていなければ、重ねて出す
+      const a = flip ? left : right, o = flip ? right : left; // 好みの横（右。右端では左）と、反対の横
+      // 横の置き場。dy は、名前の箱の中心をバブルの中心から上下にずらす量
+      const side = (x, dy) => { const cy = d.sy + dy; return { x, y: cy + fs * 0.36, box: { x: x - 2, y: cy - h / 2, w: w + 4, h } }; };
+      // 選んでいないときのふつうの名前は、これまでどおり好みの横にだけ置き、ほかの名前と重なれば省く
+      if (!must && !sel) {
+        const s = side(a, 0);
+        if (hit(s.box)) continue;
+        boxes.push(s.box);
+        shown.push({ d, x: s.x, y: s.y, text, cls });
+        continue;
       }
-      boxes.push(s.box);
-      shown.push({ d, x: s.x, y: s.y, text, cls: d.p.focus ? "node-label focus" : d.p.isOrg ? "node-label org" : pri(d) <= 2 ? "node-label strong" : "node-label" });
+      // 置き場の候補を好みの順に: 好みの横、その斜め上・斜め下、反対の横と斜め、真上・真下、一行ずらした横。
+      // ほかの名前・バブル・残した線との重なりを点数にし、いちばん少ない所に置く（指示37: できる限り線や文字と重ねない）
+      const dg = d.r * 0.6 + 1 + h / 2, d2 = dg + h / 2 + 1;
+      const cx = Math.max(2, Math.min(W - w - 2, d.sx - w / 2)); // 真上・真下に置くときも、図の幅に収める
+      const vert = (cy) => ({ x: cx, y: cy + fs * 0.36, box: { x: cx - 2, y: cy - h / 2, w: w + 4, h } });
+      const spots = [
+        [side(a, 0), 0], [side(a, -dg), 1], [side(a, dg), 1], [side(o, 0), 1.5], [side(o, -dg), 2], [side(o, dg), 2],
+        [vert(d.sy - d.r - 2 - h / 2), 2], [vert(d.sy + d.r + 2 + h / 2), 2],
+        [side(a, -d2), 3], [side(a, d2), 3], [side(o, -d2), 3.5], [side(o, d2), 3.5]
+      ];
+      // 近くに空きがないときだけ、必ず出す名前を二〜三行離れた横に置き、細い引き出し線でバブルとつなぐ
+      const far = (x, dy) => Object.assign(side(x, dy), { lead: true });
+      if (must) for (const k of [1, 2]) {
+        const dk = d2 + k * (h + 1), c = 4 + 1.5 * k;
+        spots.push([far(a, -dk), c], [far(a, dk), c], [far(o, -dk), c + 0.5], [far(o, dk), c + 0.5]);
+      }
+      // 引き出し線: バブルの縁から、名前の箱のいちばん近い点まで
+      const leadOf = (b) => {
+        const px = Math.max(b.x, Math.min(d.sx, b.x + b.w)), py = Math.max(b.y, Math.min(d.sy, b.y + b.h));
+        const dx = px - d.sx, dy = py - d.sy, L = Math.hypot(dx, dy) || 1;
+        return [d.sx + (dx / L) * (d.r + 1), d.sy + (dy / L) * (d.r + 1), px, py];
+      };
+      // 図の外へはみ出す置き場は使わない（切れて読めない）
+      const inside = (s) => s.box.x >= 0 && s.box.x + s.box.w <= W && s.box.y >= top && s.box.y + s.box.h <= bottom;
+      let best = null, bc = Infinity, covers = 0;
+      for (const [s, base] of spots) {
+        if (base >= bc) break; // 残りの候補は好みが低く、いまの一番を超えない
+        if (!inside(s)) continue;
+        const nm = boxes.reduce((k, b) => k + (meets(b, s.box) ? 1 : 0), 0), bu = bubbles(s.box, d);
+        let c = base + 100 * nm + 12 * bu + (sel ? lineCost(s.box) : 0);
+        if (s.lead) { const L = leadOf(s.box); c += 50 * boxes.reduce((k, b) => k + (segHitsBox(L[0], L[1], L[2], L[3], b) ? 1 : 0), 0); } // 引き出し線がほかの名前を横切らないように
+        if (c < bc) { bc = c; best = s; covers = nm + bu; }
+      }
+      // ふつうの名前は、ほかの名前やバブルにかかるなら省く。必ず出す名前は、どこも空いていなければ一番ましな所に重ねて出す
+      if (!must && (!best || covers)) continue;
+      if (!best) best = spots[0][0];
+      const lead = best.lead ? leadOf(best.box) : null;
+      // あとの名前は、この引き出し線もよける
+      if (lead) lines.push({ p: lead, w: 3, x0: Math.min(lead[0], lead[2]), x1: Math.max(lead[0], lead[2]), y0: Math.min(lead[1], lead[3]), y1: Math.max(lead[1], lead[3]) });
+      boxes.push(best.box);
+      shown.push({ d, x: best.x, y: best.y, text, cls, lead });
     }
+    // 引き出し線は名前の下に描く
+    const lj = g.selectAll("line.label-lead").data(shown.filter((s) => s.lead), (s) => s.d.p.id);
+    lj.exit().remove();
+    lj.enter().insert("line", "text").attr("class", "label-lead").merge(lj).each(function (s) {
+      setA(this, "x1", s.lead[0]);
+      setA(this, "y1", s.lead[1]);
+      setA(this, "x2", s.lead[2]);
+      setA(this, "y2", s.lead[3]);
+    });
     const j = g.selectAll("text.node-label").data(shown, (s) => s.d.p.id);
     j.exit().remove();
     j.enter().append("text").merge(j).each(function (s) {
@@ -3967,7 +4095,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
 
   Object.assign(SG, {
     reducedMotion, springStep, showTip, hideTip, personTip, edgeTip, tipForYear,
-    TimeScroll, drawRuler, drawEras, drawEvents, drawEdges, nodeShape, styleNode, drawNodes, drawLabels, textWidth
+    TimeScroll, drawRuler, drawEras, drawEvents, drawEdges, nodeShape, styleNode, drawNodes, drawLabels, textWidth, segHitsBox
   });
 })();
 
@@ -4043,7 +4171,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
 
   // ── 案内（読み方） ────────────────────────────────
   const LEAD = {
-    map: "縦は時代と天皇の御代で、下へ読み進めると時代が下ります（同じ年の人が多くて列に収まらない所だけ、少し上下にずらして並べます）。横は上のタブで選ぶ並べ方（全部で 19 通り）で、切り替えると人と組織が新しい列へ移ります。人や組織を押すと、平泉澄先生までの道すじが一本ずつ順に光って線が残り、道すじの人の名前と、図の上にその札が出ます。札は上の帯をつまんで動かし、右下の角で大きさを変えられます。",
+    map: "縦は時代と天皇の御代で、下へ読み進めると時代が下ります（同じ年の人が多くて列に収まらない所だけ、少し上下にずらして並べます）。横は上のタブで選ぶ並べ方（全部で 19 通り）で、切り替えると人と組織が新しい列へ移ります。人や組織を押すと、ほかの線は消え、平泉澄先生までの道すじが一本ずつ順に光って線が残ります。道すじの人の名前は、線やほかの名前にかからない所に出ます（近くに空きがなければ、細い線でつないで少し離します）。図の上にはその札が出ます。札は上の帯をつまんで動かし、右下の角で大きさを変えられます。",
     ancestry: "起点の人から、師や祖を一段ずつたどります。大陸や西洋の学者の、さらに先までさかのぼれます。「全部ひらく」を押すと、傍系（ほかの師・ほかの門下）まで残らず開きます。縦の位置は実際の年代と天皇の御代を表し、下へ読み進めると時代が下ります。短冊を押すと、図の上にその人の札が出ます。",
     relations: "図に描いた関係を、種類・確度・説明つきで一本ずつ並べました。人物・組織の表では、各タブでの分け方を一行にまとめています。行を押すと、表の上にその札が出ます。"
   };
@@ -4406,7 +4534,9 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       this.gEra = g.append("g");
       this.gEv = g.append("g");
       this.gLife = g.append("g");
-      this.gEdge = g.append("g");
+      this.gEdge = g.append("g").attr("class", "edges-layer");
+      // 選んでいる間に残す線（道すじと、選んだ人・指している人の線）の層。ほかの線の層（gEdge）は、その間スッと消す（指示37）
+      this.gKeep = g.append("g").attr("class", "edges-layer keep");
       // 光の線は、図とは別の透明な層に描く（線が伸びる間も、図の絵を描き直さずに済む。指示35: 軽く）
       this.flowSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       this.flowSvg.setAttribute("class", "ts-flow");
@@ -4862,7 +4992,8 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     edgesAway(on) {
       if (!this.gEdge || this.edgesHidden === on) return;
       this.edgesHidden = on;
-      this.gEdge.classed("edges-layer", true).classed("away", on);
+      this.gEdge.classed("away", on);
+      this.gKeep.classed("away", on);
       // 光った道の線も、動いている間は隠す。止まったら新しい位置で描き直す（render）
       if (this.flowSvg) this.flowSvg.classList.toggle("away", on);
       if (on) { this.stopFollow(); if (this.litArcs) this.litStale = true; }
@@ -4888,6 +5019,12 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
         }
       });
       this.gLab.selectAll("text.node-label").each(function (s) { const n = byId.get(s.d.p.id); if (n && near(n)) { this.setAttribute("x", s.x + (n.sx - s.d.sx)); this.setAttribute("y", s.y + (n.sy - s.d.sy)); } });
+      this.gLab.selectAll("line.label-lead").each(function (s) {
+        const n = byId.get(s.d.p.id);
+        if (!n || !near(n)) return;
+        const dx = n.sx - s.d.sx, dy = n.sy - s.d.sy;
+        this.setAttribute("x1", s.lead[0] + dx); this.setAttribute("y1", s.lead[1] + dy); this.setAttribute("x2", s.lead[2] + dx); this.setAttribute("y2", s.lead[3] + dy);
+      });
     },
 
     drawHeads(animated) {
@@ -4940,10 +5077,42 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       // 動きが止まっていれば線を戻して描く。動いている間（線を隠している間）は、線の描き直しを省く（止まったときに一度だけ描く）
       if (!this.timer && !ts.kTimer) this.edgesAway(false);
       if (!this.edgesHidden && this.litStale) { this.litStale = false; this.drawLit(); }
-      if (!this.edgesHidden) SG.drawEdges(this.gEdge, list, (e) => this.edgePath(e), { mid: (e) => { const a = this.byId.get(e.s), b = this.byId.get(e.t); return [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2]; } });
+      // 選んでいる間は、道すじと、選んだ人・指している人の線だけを手前の層に描き、ほかの線の層はスッと消す（指示37）。
+      // 消えている層は描き直さない。選ぶのをやめたら、先に描き直してから戻す
+      const sel = SG.state.selected, hov = SG.state.hover, em = SG.emphasis();
+      const keep = sel ? list.filter((e) => em.onPath(e) || e.s === sel || e.t === sel || (hov && (e.s === hov || e.t === hov))) : [];
+      const mid = (e) => { const a = this.byId.get(e.s), b = this.byId.get(e.t); return [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2]; };
+      if (!this.edgesHidden) {
+        if (!sel) SG.drawEdges(this.gEdge, list, (e) => this.edgePath(e), { mid });
+        SG.drawEdges(this.gKeep, keep, (e) => this.edgePath(e), { mid });
+      }
+      this.quiet(!!sel);
       const dots = this.items.map((n) => ({ p: n.p, sx: n.sx, sy: n.sy, r: n.r }));
       SG.drawNodes(this.gNode, dots);
-      SG.drawLabels(this.gLab, dots, { width: W, height: H });
+      // 選んでいるときは、名前の置き場を、残した線（と生涯の線）にかからない所から選ぶ。選んでいないときは線が何千本もあるので、よけない
+      let lines = null;
+      if (sel) {
+        lines = keep.map((e) => ({ pts: this.curvePts(e), w: em.onPath(e) ? 6 : 3 }));
+        const life = this.gLife.select("line").node();
+        if (life) lines.push({ pts: ["x1", "y1", "x2", "y2"].map((k) => +life.getAttribute(k)), w: 3 });
+      }
+      SG.drawLabels(this.gLab, dots, { width: W, height: H, lines, top: 16, bottom: H - 6 });
+    },
+    // 選んでいる間は、ほかの線の層を消し、出来事の線と文字を淡くする（css: .quiet・.has-sel）
+    quiet(on) {
+      if (this.quietOn === on) return;
+      this.quietOn = on;
+      this.gEdge.classed("quiet", on);
+      this.ts.svgEl.classList.toggle("has-sel", on);
+    },
+    // 線（edgePath と同じ二次の曲線）を 6 本の短い直線に分けた点の並び [x0, y0, x1, y1, …]。名前が線にかかるかを調べるのに使う
+    curvePts(e) {
+      const a = this.byId.get(e.s), b = this.byId.get(e.t);
+      const dx = b.sx - a.sx, dy = b.sy - a.sy;
+      const cx = (a.sx + b.sx) / 2 - dy * 0.1, cy = (a.sy + b.sy) / 2 + dx * 0.1;
+      const pts = [];
+      for (let i = 0; i <= 6; i++) { const t = i / 6, u = 1 - t; pts.push(u * u * a.sx + 2 * u * t * cx + t * t * b.sx, u * u * a.sy + 2 * u * t * cy + t * t * b.sy); }
+      return pts;
     },
     // 選んだ人の生涯（組織は続いた期間）の縦の線
     drawLife() {
