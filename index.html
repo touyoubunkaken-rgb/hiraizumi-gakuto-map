@@ -2844,6 +2844,11 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     scaleMode: "density",
     cats: new Set(["shitei", "kakei", "eikyo", "densho", "org", "other"]),
     showUnverified: true,
+    // 著名な人物・組織の名前をふだんから出す（指示50）。広い画面ははじめから出し、狭い画面ははじめは出さない。選んだ方を端末に覚える
+    famousLabels: (() => {
+      try { const v = localStorage.getItem("sg-famous-v1"); if (v === "1") return true; if (v === "0") return false; } catch (e) { /* 覚えておけない環境では、画面の幅で決める */ }
+      return !(window.matchMedia && window.matchMedia("(max-width: 719px)").matches);
+    })(),
     onlyLinked: false,
     showOrgs: true,
     showEmperors: true, // 天皇のバブルを描く
@@ -3013,6 +3018,22 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     n.reach = n.isOrg ? 0 : bfs(n.id, "down").size - 1;
   });
   const maxOf = (k) => Math.max(1, ...nodes.map((n) => n[k]));
+  // 著名な人物・組織（指示50）: つながりの多い人を、時代が偏らないように百年ごとに 10 人まで、合わせて 72 人選ぶ（天皇・家・神と平泉澄先生は除く）。
+  // 組織は、つながりの多い 12。何も選んでいないとき（と平泉澄先生を選んだとき）に、名前をいつも出す
+  const famous = new Set();
+  {
+    const perCent = new Map();
+    nodes.filter((n) => !n.isOrg && !n.emperor && !n.house && !n.myth && n.id !== FOCUS && n.fl != null)
+      .sort((a, b) => b.degree - a.degree || (a.id < b.id ? -1 : 1))
+      .forEach((n) => {
+        if (famous.size >= 72) return;
+        const c = Math.floor(n.fl / 100), k = perCent.get(c) || 0;
+        if (k >= 10) return;
+        perCent.set(c, k + 1);
+        famous.add(n.id);
+      });
+    nodes.filter((n) => n.isOrg).sort((a, b) => b.degree - a.degree || (a.id < b.id ? -1 : 1)).slice(0, 12).forEach((n) => famous.add(n.id));
+  }
   const MAX = { degree: maxOf("degree"), reach: maxOf("reach") };
   const SIZE_RULES = {
     degree: { label: "つながりの数", desc: "直接の関係（師弟・家系・影響・組織など）の相手の数" },
@@ -3479,7 +3500,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
 
   const allEdges = edges.concat(thinEdges); // 細いつながりは描くときだけ混ぜる（大きさ・経路には数えない）
   window.SG = {
-    D, FOCUS, honor, state, on, emit, people, orgs, nodes, byId, edges: allEdges, realEdges: edges, lineageEdges, EDGE_TYPES, CATS, CAT_STYLE, CONF, CONF_RANK,
+    D, FOCUS, honor, state, famous, on, emit, people, orgs, nodes, byId, edges: allEdges, realEdges: edges, lineageEdges, EDGE_TYPES, CATS, CAT_STYLE, CONF, CONF_RANK,
     inL, outL, incident, nbrAll, ancH, descH, pathInfo, radius, SIZE_RULES, FAMILIES, familyOf, colorOf, schoolOf,
     AXES, AXIS, AXIS_GROUPS, groupOf, axisValue, axisValues, condMatch, regionOf, matches, visible, edgeShown, emphasis, esc, edgeOrder,
     evidenceOf, pairKey, thinEdges, thinOf, kinOf, KIN_VALUES, facetOf, FX, EV,
@@ -3985,7 +4006,10 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     const W = opts.width || 2000, H = opts.height || 2000;
     const sel = !!opts.lines;
     const top = opts.top != null ? opts.top : -4, bottom = opts.bottom != null ? opts.bottom : H + 4;
-    const pri = (d) => (d.p.id === state.selected || d.p.id === state.hover ? 0 : d.p.focus ? 1 : em.nodeOnPath(d.p) ? 2 : d.p.isOrg ? 3 : 4);
+    // 著名な人物・組織の名前（指示50）: 何も選んでいないときと、平泉澄先生を選んだときに、必ず出す（絞り込みで消せる）
+    const famOn = state.famousLabels && SG.famous && (!state.selected || state.selected === SG.FOCUS);
+    const isFam = (d) => famOn && SG.famous.has(d.p.id) && em.node(d.p) >= 0.5;
+    const pri = (d) => (d.p.id === state.selected || d.p.id === state.hover ? 0 : d.p.focus ? 1 : em.nodeOnPath(d.p) || isFam(d) ? 2 : d.p.isOrg ? 3 : 4);
     const cand = list.filter((d) => d.sy > -30 && d.sy < H + 30 && d.sx > -80 && d.sx < W + 80)
       .sort((a, b) => pri(a) - pri(b) || b.r - a.r);
     const boxes = [];
@@ -4008,15 +4032,13 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       return c;
     };
     // 名前の箱に隠れる、はっきり見えているバブルの数（名前でバブルを隠さないように）。
-    // 選んでいるときは、名前をたくさん置くので、バブルを 24 px の升目に入れて探す。選んでいないときに調べるのは、
-    // 必ず出す名前（1〜2 個）だけなので、升目は作らずに一つずつ見る（升目を作るほうが重い）
+    // 必ず出す名前が多い（選んでいないときも、著名な人物・組織の名前を出す。指示50）ので、バブルを 24 px の升目に入れて探す
     const CELL = 24, key = (gx, gy) => (gx + 4096) * 65536 + gy + 4096;
     let bright = null, grid = null;
     const under = (d, b) => { const nx = Math.max(b.x, Math.min(d.sx, b.x + b.w)), ny = Math.max(b.y, Math.min(d.sy, b.y + b.h)); return (nx - d.sx) ** 2 + (ny - d.sy) ** 2 < d.r * d.r; };
     const bubbles = (b, self) => {
       if (!bright) bright = list.filter((d) => em.node(d.p) >= 0.5);
       let n = 0;
-      if (!sel) { for (const d of bright) if (d.p !== self.p && under(d, b)) n++; return n; }
       if (!grid) {
         grid = new Map();
         for (const d of bright)
@@ -4043,10 +4065,10 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       const w = textWidth(text, fs), h = fs + 3;
       // 選んだ人・指した人・平泉澄先生・道すじの人は、必ず名前を出す（指示35）。
       // 平泉澄先生ご自身を選んでいるときは、道すじが系譜の全員になるので、ふだんの出し方（重なる名前は省く）にする
-      const must = pri(d) <= 1 || (pri(d) === 2 && state.selected !== SG.FOCUS);
+      const must = pri(d) <= 1 || (pri(d) === 2 && (state.selected !== SG.FOCUS || isFam(d)));
       if (!must && em.node(d.p) < 0.5) continue;
       // 光がまだ届いていない人の名前は、置き場だけ決めて透明にしておく（届いたら出す。指示41）
-      const cls = (d.p.focus ? "node-label focus" : d.p.isOrg ? "node-label org" : pri(d) <= 2 ? "node-label strong" : "node-label") + (opts.pending && opts.pending.has(d.p.id) ? " pending" : "");
+      const cls = (d.p.focus ? "node-label focus" : d.p.isOrg ? "node-label org" : pri(d) <= 1 || em.nodeOnPath(d.p) ? "node-label strong" : "node-label") + (opts.pending && opts.pending.has(d.p.id) ? " pending" : "");
       const right = d.sx + d.r + 6, left = d.sx - d.r - 6 - w, flip = right + w > W - 4;
       const a = flip ? left : right, o = flip ? right : left; // 好みの横（右。右端では左）と、反対の横
       // 横の置き場。dy は、名前の箱の中心をバブルの中心から上下にずらす量
@@ -4395,8 +4417,8 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
   // 縦の倍率。「全体」は、神代から令和までを一画面の高さに収める倍率（画面の高さから計算する。指示25: 画面一つで全部の根茎）
   const K_STEPS = [{ fit: true, label: "全体" }, { k: 0.5, label: "ひと目で" }, { k: 0.75, label: "標準" }, { k: 1.1, label: "広く" }, { k: 1.6, label: "もっと広く" }];
   const K_DEFAULT = 2;
-  const LAYOUT_STORE = "sg-layouts-v5"; // 並びの覚え書き（この端末の中だけ。並べ方を変えたら番号を上げる。v5 はバブルを列の外へ出さない版）
-  try { ["sg-layouts-v1", "sg-layouts-v2", "sg-layouts-v3", "sg-layouts-v4"].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* 前の並べ方の覚え書きは消す */ }
+  const LAYOUT_STORE = "sg-layouts-v6"; // 並びの覚え書き（この端末の中だけ。並べ方を変えたら番号を上げる。v6 はパソコンの「全体」のバブルを大きくした版）
+  try { ["sg-layouts-v1", "sg-layouts-v2", "sg-layouts-v3", "sg-layouts-v4", "sg-layouts-v5"].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* 前の並べ方の覚え書きは消す */ }
   // はちの巣の詰め方: 縦の位置（年代）の順に一つずつ、もう置いた点と重ならない、列の中心にいちばん近い横の位置へ置く。
   // 縦に近い点だけを見る（年代の順に並べて、遠くなった点は見ない）ので、全部の組を調べずに済む。
   // 同じ年の人が多くて列の幅に収まらないときは、隣の列へはみ出さないように、少しだけ上下にずらす（半径の 1.5 倍まで。指示33）。
@@ -4714,7 +4736,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       return Math.round(Math.max(0.03, Math.min(0.45, avail / SG.TS.h)) * 1000) / 1000;
     },
     // 縮めたときはバブルも小さくする（「全体」で重なりすぎないように）
-    rScale(k) { return k >= 0.5 ? 1 : Math.max(0.45, Math.sqrt(k / 0.5)); },
+    rScale(k) { return k >= 0.5 ? 1 : Math.max(window.matchMedia("(max-width: 719px)").matches ? 0.45 : 0.8, Math.sqrt(k / 0.5)); }, // パソコンは 8 割より小さくしない（指示50: 触りやすく）
     setKIndex(i) {
       i = Math.max(0, Math.min(K_STEPS.length - 1, i));
       if (i === this.kIndex || !this.ts) return;
@@ -6952,6 +6974,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
         <label class="toggle" for="fEmp">天皇を表示する（◎）<input type="checkbox" class="sw" id="fEmp" ${state.showEmperors ? "checked" : ""}></label>
         <label class="toggle" for="fLinked">平泉澄先生に系譜でつながる人だけ<input type="checkbox" class="sw" id="fLinked" ${state.onlyLinked ? "checked" : ""}></label>
         <label class="toggle" for="fUnver">「要確認」の関係も描く<input type="checkbox" class="sw" id="fUnver" ${state.showUnverified ? "checked" : ""}></label>
+        <label class="toggle" for="fFamous">著名な人物・組織の名前を出す<input type="checkbox" class="sw" id="fFamous" ${state.famousLabels ? "checked" : ""}></label>
       </section>
       <section class="f-sec"><div class="f-lab">点の大きさ</div><div class="seg">${sizes}</div></section>
       <section class="f-sec"><div class="f-lab">縦の目盛り</div><div class="seg">${scales}</div></section>
@@ -7081,6 +7104,11 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       if (id === "fEmp") { state.showEmperors = ev.target.checked; SG.emit("filter"); }
       if (id === "fLinked") { state.onlyLinked = ev.target.checked; SG.emit("filter"); }
       if (id === "fUnver") { state.showUnverified = ev.target.checked; SG.emit("style"); }
+      if (id === "fFamous") {
+        state.famousLabels = ev.target.checked;
+        try { localStorage.setItem("sg-famous-v1", ev.target.checked ? "1" : "0"); } catch (e) { /* 覚えておけない環境では、その場だけ */ }
+        SG.emit("style");
+      }
     });
     document.addEventListener("pointerdown", (ev) => {
       if (!pop.classList.contains("open")) return;
