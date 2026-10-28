@@ -1189,6 +1189,16 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
 .ts-labels .node-label.pending { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .ts-labels .node-label { transition: none; } }
 
+/* ── 指示49: パソコンでは、札を最小（帯だけ）にできる ─────────────
+ * 帯の「最小にする」で本文と大きさの持ち手を隠す。帯の題には名前が出る（js/app.js の setMin）。狭い画面ではボタンを出さない */
+.inspector.min { height: auto; }
+.inspector.min .insp-body, .inspector.min .insp-grip, .inspector.min .insp-zoom, .inspector.min #inspGuide { display: none; }
+.inspector.min .insp-bar { border-bottom: 0; }
+.inspector.min .insp-title { color: var(--ink-2); letter-spacing: 0.04em; }
+#inspMin .i-restore, #inspMin[aria-pressed="true"] .i-min { display: none; }
+#inspMin[aria-pressed="true"] .i-restore { display: inline; }
+@media (max-width: 719px) { #inspMin { display: none; } }
+
 </style>
 
 <div class="boot" id="boot" role="status" aria-live="polite">
@@ -1247,6 +1257,7 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
     <button type="button" class="icon-btn insp-zoom" id="inspSmaller" aria-label="札の文字を小さく" title="文字を小さく"><span aria-hidden="true" style="font-size:11px">A</span></button>
     <button type="button" class="icon-btn insp-zoom" id="inspLarger" aria-label="札の文字を大きく" title="文字を大きく"><span aria-hidden="true" style="font-size:16px">A</span></button>
     <button type="button" class="btn ghost" id="inspGuide">案内へ</button>
+    <button type="button" class="icon-btn" id="inspMin" aria-label="札を最小にする" aria-pressed="false" title="最小にする（帯だけにする）"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path class="i-min" d="M3 10.5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="i-restore" d="M3.5 3.5h7v7h-7z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
     <button type="button" class="icon-btn" id="inspClose" aria-label="札を閉じる"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
   </div>
   <div class="insp-body" id="inspBody" aria-live="polite"></div>
@@ -6600,7 +6611,8 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     const vw = window.innerWidth, vh = window.innerHeight;
     const w = narrow() ? vw - 16 : Math.max(280, Math.min(g.w, vw - 16));
     const h = Math.max(160, Math.min(g.h, vh - 16));
-    return { x: narrow() ? 8 : Math.max(8, Math.min(g.x, vw - w - 8)), y: Math.max(8, Math.min(g.y, vh - h - 8)), w, h };
+    const eh = INSP.classList.contains("min") ? INSP.querySelector(".insp-bar").offsetHeight || 48 : h; // 最小のときは帯の高さで収める
+    return { x: narrow() ? 8 : Math.max(8, Math.min(g.x, vw - w - 8)), y: Math.max(8, Math.min(g.y, vh - eh - 8)), w, h };
   }
   const curGeo = () => fitGeo(cardGeo[geoKey()] || defGeo());
   let shown = null; // いま札が置かれている位置と大きさ
@@ -6620,7 +6632,8 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     const b = current.nodeRect(state.selected);
     if (!b) return;
     const g = shown || curGeo(), m = 24, vw = window.innerWidth, vh = window.innerHeight;
-    const hit = b.x + b.r + m > g.x && b.x - b.r - m < g.x + g.w && b.y + b.r + m > g.y && b.y - b.r - m < g.y + g.h;
+    const gh = INSP.classList.contains("min") ? INSP.offsetHeight : g.h;
+    const hit = b.x + b.r + m > g.x && b.x - b.r - m < g.x + g.w && b.y + b.r + m > g.y && b.y - b.r - m < g.y + gh;
     if (!hit) return;
     if (narrow()) {
       if (b.y > vh / 2) { const y = barsTop(); applyGeo({ x: 8, y, w: g.w, h: Math.min(g.h, Math.max(160, b.y - b.r - m - y)) }, true); }
@@ -6658,8 +6671,31 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     const zoom = (d) => { cardGeo.z = Math.max(0, Math.min(ZOOMS.length - 1, (cardGeo.z != null ? cardGeo.z : 1) + d)); applyGeo(shown || curGeo()); saveGeo(); };
     $("inspSmaller").addEventListener("click", () => zoom(-1));
     $("inspLarger").addEventListener("click", () => zoom(1));
-    window.addEventListener("resize", () => applyGeo(curGeo()), { passive: true });
+    // 最小にする（パソコンだけ。指示49）: 本文を隠して帯だけを残し、帯の題に名前を出す。もう一度押すと元の大きさに戻る。この端末に覚えておく
+    const minBtn = $("inspMin");
+    minBtn.addEventListener("click", () => {
+      cardGeo.min = !INSP.classList.contains("min");
+      saveGeo();
+      setMin(cardGeo.min);
+      applyGeo(shown || curGeo());
+    });
+    setMin(cardGeo.min);
+    window.addEventListener("resize", () => { setMin(cardGeo.min); applyGeo(curGeo()); }, { passive: true });
   }
+  // 札を最小にする・戻す（狭い画面では使わない）
+  function setMin(on) {
+    const m = !!on && !narrow(), b = $("inspMin");
+    INSP.classList.toggle("min", m);
+    b.setAttribute("aria-pressed", String(m));
+    b.setAttribute("aria-label", m ? "札を元の大きさに戻す" : "札を最小にする");
+    b.title = m ? "元の大きさに戻す" : "最小にする（帯だけにする）";
+    $("inspTitle").textContent = cardTitle(INSP._n);
+  }
+  // 帯の題。最小のときは、誰の札かが分かるように名前を添える
+  const cardTitle = (n) => {
+    const base = n ? (n.isOrg ? "組織の札" : "人物の札") : "案内";
+    return n && INSP.classList.contains("min") ? base + "：" + (n.short || n.n) : base;
+  };
   function renderInspector(force) {
     const insp = $("inspector");
     if (!current || !current.hasSide) return;
@@ -6681,7 +6717,8 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
     }
     insp.dataset.mode = mode;
     const n = state.card && SG.byId.get(state.card);
-    $("inspTitle").textContent = n ? (n.isOrg ? "組織の札" : "人物の札") : "案内";
+    insp._n = n;
+    $("inspTitle").textContent = cardTitle(n);
     $("inspBack").hidden = !back.length;
     const open = wide() || !!(state.card && state.sheet) || (!state.card && !!state.guide);
     insp.classList.toggle("open", open);
