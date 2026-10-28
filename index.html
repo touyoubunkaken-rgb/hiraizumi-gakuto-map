@@ -1163,6 +1163,10 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
 .ts-flow.away { opacity: 0; }
 .ts-flow .flow { stroke-width: var(--flow-w, 3.2px); }
 
+/* ── 指示36: 名前は光の線より上に ─────────────
+ * 名前の層（.ts-labels）は、光の線の層（.ts-flow）のさらに上に重ねる。名前の縁取り（背景色）が、下を通る線を隠す */
+.ts-labels { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+
 </style>
 
 <div class="boot" id="boot" role="status" aria-live="polite">
@@ -4410,7 +4414,12 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
       this.ts.contentEl.appendChild(this.flowSvg);
       this.gFlow = d3.select(this.flowSvg).append("g");
       this.gNode = g.append("g");
-      this.gLab = g.append("g");
+      // 名前は、光の線の層よりさらに上の、別の透明な層に描く（光の線が名前の上を通らないように。指示36）
+      this.labSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      this.labSvg.setAttribute("class", "ts-labels");
+      this.labSvg.setAttribute("aria-hidden", "true");
+      this.ts.contentEl.appendChild(this.labSvg);
+      this.gLab = d3.select(this.labSvg).append("g");
       this.pos = this.pos || new Map();
       this.nowHtml = null; // 「いま見ている所」は作り直した欄に書き直す
       this.bindPan();
