@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-visual">
 <meta name="robots" content="noindex, nofollow">
 <meta name="description" content="師弟・家系・思想の継承と学塾・大学などの組織から、平泉澄先生に連なる人々を、神代から令和まで時代と天皇の御代の順に並べた学統の図。">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
@@ -47,6 +47,7 @@
   --c6: #1f8a3b;
   --c7: #6551cf;
   --c8: #d6404a;
+  --pair: oklch(0.55 0.12 195); /* 重ねて見る二人目の色（指示65） */
   --c0: #8b8f96;
   --shadow-float: 0 22px 48px -22px oklch(0.2 0.03 165 / 0.38), 0 2px 8px oklch(0.2 0.03 165 / 0.08);
   --shadow-soft: 0 1px 0 oklch(0.2 0.03 165 / 0.04), 0 8px 22px -16px oklch(0.2 0.03 165 / 0.3);
@@ -120,6 +121,7 @@
     --c6: #1c9142;
     --c7: #8a7de6;
     --c8: #e5646a;
+    --pair: oklch(0.76 0.11 195);
     --c0: #7e828a;
     --shadow-float: 0 22px 48px -18px oklch(0 0 0 / 0.6), 0 2px 8px oklch(0 0 0 / 0.35);
     --shadow-soft: 0 1px 0 oklch(0 0 0 / 0.2), 0 8px 22px -14px oklch(0 0 0 / 0.55);
@@ -157,6 +159,7 @@
   --c6: #1c9142;
   --c7: #8a7de6;
   --c8: #e5646a;
+  --pair: oklch(0.76 0.11 195);
   --c0: #7e828a;
   --shadow-float: 0 22px 48px -18px oklch(0 0 0 / 0.6), 0 2px 8px oklch(0 0 0 / 0.35);
   --shadow-soft: 0 1px 0 oklch(0 0 0 / 0.2), 0 8px 22px -14px oklch(0 0 0 / 0.55);
@@ -1318,6 +1321,34 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
   .brand-name { display: none; }
 }
 
+/* ── 指示65: スマホで文字の欄に触れても、ページが拡大されないように（iPhone は 16 px より小さい欄で拡大する） ── */
+@media (pointer: coarse), (max-width: 719px) {
+  .search-field input, .filter-text, .sort-select { font-size: 16px; }
+}
+/* ── 指示65 の案1: 幹を巡る（いま送っている幹の人を、札の縁と丸の鼓動で示す） ── */
+.tk-st.touring .tk-card { border-color: var(--c); box-shadow: 0 0 0 3px color-mix(in oklab, var(--c) 35%, transparent), 0 8px 24px color-mix(in oklab, var(--c) 14%, transparent); }
+.tk-st.touring .tk-dot { animation: tk-pulse 1.5s var(--ease-out) 1; }
+@keyframes tk-pulse { 0% { scale: 1; } 30% { scale: 1.3; } 100% { scale: 1; } }
+@media (prefers-reduced-motion: reduce) { .tk-st.touring .tk-dot { animation: none; } }
+
+/* ── 指示65: 二つを重ねて見る（二人目の線とバブル）と、下の帯 ── */
+.ts-svg g.edge.e-b path.e-main, .ts-svg g.edge.e-b path.e-inner { stroke: var(--pair); }
+.ts-svg g.node.is-b .ring { stroke: var(--pair); stroke-width: 3px; }
+.ts-svg g.node.both .ring { stroke: var(--pair); stroke-width: 2.5px; stroke-dasharray: 2.5 2; }
+.pill .pill-plus { font-style: normal; margin: 0 6px; opacity: 0.7; }
+.pill .pill-b { color: color-mix(in oklab, var(--pair) 55%, var(--paper)); }
+#inspPair[aria-pressed="true"] { color: var(--pair); border-color: var(--pair); }
+
+/* ── 指示65: 点検（Impeccable の audit の決まり）で見つけた所 ──
+ * 文字の濃さ（小さな字は 4.5 : 1 以上）: 確度の「伝承」の印と、用語集の分類の数。
+ * 指で押す所（24 px 以上。スマホなど指で触る端末では上下に余白を足す）: 幹の名前と、一覧の名前 */
+.conf.c2 { color: color-mix(in oklab, var(--edge-densho) 78%, var(--ink)); }
+.seg.t-cats .n { color: var(--ink-2); }
+.tk-pl { min-height: 28px; }
+@media (pointer: coarse), (max-width: 719px) {
+  .table-wrap .plink { display: inline-block; padding-block: 5px; }
+}
+
 </style>
 
 <div class="boot" id="boot" role="status" aria-live="polite">
@@ -1376,6 +1407,7 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
     <span class="insp-title" id="inspTitle">読み方</span>
     <button type="button" class="icon-btn insp-zoom" id="inspSmaller" aria-label="札の文字を小さく" title="文字を小さく"><span aria-hidden="true" style="font-size:11px">A</span></button>
     <button type="button" class="icon-btn insp-zoom" id="inspLarger" aria-label="札の文字を大きく" title="文字を大きく"><span aria-hidden="true" style="font-size:16px">A</span></button>
+    <button type="button" class="btn ghost" id="inspPair" aria-pressed="false" hidden title="次に選ぶ人・組織の線を、別の色で重ねる">重ねる</button>
     <button type="button" class="btn ghost" id="inspGuide">案内へ</button>
     <button type="button" class="icon-btn" id="inspFull" aria-label="札を全体に広げる" aria-pressed="false" title="全体に広げる（縦いっぱい）"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path class="i-full" d="M8.5 2.5h3v3M5.5 11.5h-3v-3M11.5 2.5L8 6M2.5 11.5L6 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path class="i-unfull" d="M8 2.5v3.5h3.5M6 11.5V8H2.5M8 6l3.5-3.5M6 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button type="button" class="icon-btn" id="inspMin" aria-label="札を最小にする" aria-pressed="false" title="最小にする（帯だけにする）"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path class="i-min" d="M3 10.5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path class="i-restore" d="M3.5 3.5h7v7h-7z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
@@ -1388,7 +1420,8 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
 <div class="pop" id="filterPop" role="dialog" aria-labelledby="popTitle"></div>
 <div class="pill" id="pill" aria-live="polite"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" integrity="sha384-su5kReKyYlIFrI62mbQRKXHzFobMa7BHp1cK6julLPbnYcCW9NIZKJiTODjLPeDh" crossorigin="anonymous"></script>
+<!-- D3 7.8.5 は自前で持つ（js/vendor/d3.min.js。cdnjs の同じ版と同じ中身で、照合値 sha384-su5kReKy… が一致。指示65）。build.mjs が埋め込む -->
+<script src="d3.min.js?v=7.8.5"></script>
 <script>
 /* 平泉澄先生 学統マップ — 元のデータ（このあと data/additions/ の追加分を日付の順に重ねる。js/additions.js）
  * 平泉澄から遡って数珠つなぎに集めた約 90 人。朱熹・ランケの先も、さらにさかのぼる（指示22）。
@@ -2922,7 +2955,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=a29927bb9f";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=9e47776582";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -3658,12 +3691,17 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     const hovN = hov ? new Set([hov, ...nbrAll.get(hov)]) : null;
     const selInc = state.selected ? new Set(incident.get(state.selected).map((e) => e.id)) : new Set();
     const selNbr = state.selected ? new Set([state.selected, ...nbrAll.get(state.selected)]) : new Set();
+    // 重ねて見る二人目（指示65）: その人の道すじと、直接の関係
+    const sec = state.selected && state.second ? pathInfo(state.second) : null;
+    const secNbr = sec ? new Set([state.second, ...nbrAll.get(state.second)]) : null;
+    const secInc = sec ? new Set(incident.get(state.second).map((e) => e.id)) : null;
     return {
       node(n) {
         if (!matches(n)) return 0.1;
         if (hovN) return hovN.has(n.id) ? 1 : 0.2;
         if (!sel) return 1;
         if (sel.nodes.has(n.id) || selNbr.has(n.id)) return 1;
+        if (sec && (sec.nodes.has(n.id) || secNbr.has(n.id))) return 1;
         return n.isOrg ? 0.4 : 0.3;
       },
       edge(e) {
@@ -3673,10 +3711,15 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         if (!sel) return base * 0.75;
         if (sel.edges.has(e.id)) return base;
         if (selInc.has(e.id)) return base * 0.85;
+        if (sec && (sec.edges.has(e.id) || secInc.has(e.id))) return base * 0.85;
         return e.org ? 0.06 : 0.1;
       },
       onPath(e) { return !!(sel && sel.edges.has(e.id)); },
-      nodeOnPath(n) { return !!(sel && sel.nodes.has(n.id)); }
+      nodeOnPath(n) { return !!(sel && sel.nodes.has(n.id)); },
+      onSecond(e) { return !!(sec && (sec.edges.has(e.id) || secInc.has(e.id))); },
+      nodeOnSecond(n) { return !!(sec && (sec.nodes.has(n.id) || secNbr.has(n.id))); },
+      // 二人の両方と直接つながる人・組織（重ねたときに、輪で示す）
+      both(n) { return !!(sec && n.id !== state.selected && n.id !== state.second && selNbr.has(n.id) && secNbr.has(n.id)); }
     };
   }
 
@@ -4193,7 +4236,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     // 著名な人物・組織の名前（指示50）: 何も選んでいないときと、平泉澄先生を選んだときに、必ず出す（絞り込みで消せる）
     const famOn = state.famousLabels && SG.famous && (!state.selected || state.selected === SG.FOCUS);
     const isFam = (d) => famOn && SG.famous.has(d.p.id) && em.node(d.p) >= 0.5;
-    const pri = (d) => (d.p.id === state.selected || d.p.id === state.hover ? 0 : d.p.focus ? 1 : em.nodeOnPath(d.p) || isFam(d) ? 2 : d.p.isOrg ? 3 : 4);
+    const pri = (d) => (d.p.id === state.selected || d.p.id === state.second || d.p.id === state.hover ? 0 : d.p.focus ? 1 : em.nodeOnPath(d.p) || (em.nodeOnSecond && em.nodeOnSecond(d.p)) || isFam(d) ? 2 : d.p.isOrg ? 3 : 4);
     const cand = list.filter((d) => d.sy > -30 && d.sy < H + 30 && d.sx > -80 && d.sx < W + 80)
       .sort((a, b) => pri(a) - pri(b) || b.r - a.r);
     const boxes = [];
@@ -4404,7 +4447,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
 
   // ── 案内（読み方） ────────────────────────────────
   const LEAD = {
-    trunk: "神代から平泉澄先生、平泉紀房まで、平泉史学の幹の人を時代の順に、まっすぐ一本の線で結びました（幹の人と枝葉の候補は「平泉史学の幹・選定案」による）。幹の人の「枝葉」を押すと、その人から分かれる人が開きます（案の人を先に、そのあとは、データの上で直接つながる人・組織を、平泉澄先生から見た大切さの順に）。幹の間の「間の人」を押すと、二人の時代のあいだにいる人だけを通り、系譜に近い関係（家系・師弟・影響・後援など）でつなぐ、いちばん短い道の人が並びます。名前を押すと札が開きます。",
+    trunk: "神代から平泉澄先生、平泉紀房まで、平泉史学の幹の人を時代の順に、まっすぐ一本の線で結びました（幹の人と枝葉の候補は「平泉史学の幹・選定案」による）。「幹を巡る」を押すと、神代から順に一人ずつ画面の真ん中へ送ります（もう一度押すか、画面に触ると止まります）。幹の人の「枝葉」を押すと、その人から分かれる人が開きます（案の人を先に、そのあとは、データの上で直接つながる人・組織を、平泉澄先生から見た大切さの順に）。幹の間の「間の人」を押すと、二人の時代のあいだにいる人だけを通り、系譜に近い関係（家系・師弟・影響・後援など）でつなぐ、いちばん短い道の人が並びます。名前を押すと札が開きます。",
     map: "縦は時代と天皇の御代で、下へ読み進めると時代が下ります（同じ年の人が多くて列に収まらない所だけ、少し上下にずらして並べます）。横は上のタブで選ぶ並べ方（全部で 19 通り）で、切り替えると人と組織が新しい列へ移ります。札を開いていないときは線を描かず、バブルと名前だけを出します。人や組織を押すと札が開き、平泉澄先生までの道すじが一本ずつ順に光って線が残ります（その人のほかの線も出ます）。道すじの人の名前は、線やほかの名前にかからない所に出ます（近くに空きがなければ、少し離して置きます）。図の上にはその札が出ます。札は上の帯をつまんで動かし、右下の角で大きさを変えられます。",
     ancestry: "起点の人から、師や祖を一段ずつたどります。大陸や西洋の学者の、さらに先までさかのぼれます。「全部ひらく」を押すと、傍系（ほかの師・ほかの門下）まで残らず開きます。縦の位置は実際の年代と天皇の御代を表し、下へ読み進めると時代が下ります。短冊を押すと、図の上にその人の札が出ます。",
     relations: "図に描いた関係を、種類・確度・説明つきで一本ずつ並べました。人物・組織の表では、各タブでの分け方を一行にまとめています。行を押すと、表の上にその札が出ます。"
@@ -4601,9 +4644,13 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   const E = SG.esc;
   // 縦の倍率。「全体」は、神代から令和までを一画面の高さに収める倍率（画面の高さから計算する。指示25: 画面一つで全部の根茎）
   const K_STEPS = [{ fit: true, label: "全体" }, { k: 0.5, label: "ひと目で" }, { k: 0.75, label: "標準" }, { k: 1.1, label: "広く" }, { k: 1.6, label: "もっと広く" }];
-  const K_DEFAULT = 2;
-  const LAYOUT_STORE = "sg-layouts-v8"; // 並びの覚え書き（この端末の中だけ。並べ方を変えたら番号を上げる。v8 は、ばねで散らすのをやめた版）
-  try { ["sg-layouts-v1", "sg-layouts-v2", "sg-layouts-v3", "sg-layouts-v4", "sg-layouts-v5"].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* 前の並べ方の覚え書きは消す */ }
+  const K_DEFAULT = 2; // 「全体」から戻るときの倍率（標準）
+  // 全体でないときのバブルの大きさ（触りやすく。大切さの段の差はそのまま。指示66）
+  const ZOOM_R = 1.45;
+  const LAYOUT_STORE = "sg-layouts-v9"; // 並びの覚え書き（この端末の中だけ。並べ方を変えたら番号を上げる。v9 は、全体でないときのバブルを大きくした版）
+  try { ["sg-layouts-v1", "sg-layouts-v2", "sg-layouts-v3", "sg-layouts-v4", "sg-layouts-v5", "sg-layouts-v6", "sg-layouts-v7", "sg-layouts-v8"].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* 前の並べ方の覚え書きは消す */ }
+  // 文字を打っている間（スマホではキーボードが出ている）
+  const typing = () => { const a = document.activeElement; return !!a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.tagName === "SELECT" || a.isContentEditable); };
   // はちの巣の詰め方: 縦の位置（年代）の順に一つずつ、もう置いた点と重ならない、列の中心にいちばん近い横の位置へ置く。
   // 縦に近い点だけを見る（年代の順に並べて、遠くなった点は見ない）ので、全部の組を調べずに済む。
   // 同じ年の人が多くて列の幅に収まらないときは、隣の列へはみ出さないように、少しだけ上下にずらす（半径の 1.5 倍まで。指示33）。
@@ -4689,10 +4736,10 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   const view = {
     id: "map",
     hasSide: true,
-    kIndex: null, // 初めて開いたときに決める（スマホは「全体」、広い画面は「標準」。指示35）
+    kIndex: null, // 初めて開いたときに決める（スマホもパソコンも「全体」。指示65）
 
     mount(host) {
-      if (this.kIndex == null) this.kIndex = window.matchMedia("(max-width: 719px)").matches ? 0 : K_DEFAULT;
+      if (this.kIndex == null) this.kIndex = 0;
       // 冒頭の説明・数・ボタン・見方の例は「案内」の欄（card.js の aboutHtml）にまとめた。見出し帯のすぐ下に分け方の段が来る（指示31: 図を大きく）
       host.innerHTML = `
       <h1 class="vh" tabindex="-1">平泉澄先生 学統マップ</h1>
@@ -4820,7 +4867,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       this.chTrack.addEventListener("pointerdown", manual, { passive: true });
       window.addEventListener("scroll", this.onScroll, { passive: true });
       // 画面の大きさが変わったら（向きの変更など）、「全体」の倍率を合わせ直す
-      this.onWinResize = () => { this.refit(); };
+      // 文字を打っている間は合わせ直さない（スマホでキーボードが出て画面が低くなるたびに、「全体」の倍率が変わって図が動いていた。指示65）
+      this.onWinResize = () => { if (!typing()) this.refit(); };
       window.addEventListener("resize", this.onWinResize, { passive: true });
       this.tabRO = new ResizeObserver(() => this.moveIndicator());
       this.tabRO.observe(this.tabs);
@@ -4933,7 +4981,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       return Math.round(Math.max(0.03, Math.min(0.45, avail / SG.TS.h)) * 1000) / 1000;
     },
     // 縮めたときはバブルも小さくする（「全体」で重なりすぎないように）
-    rScale(k) { return k >= 0.5 ? 1 : Math.max(window.matchMedia("(max-width: 719px)").matches ? 0.45 : 0.8, Math.sqrt(k / 0.5)); }, // パソコンは 8 割より小さくしない（指示50: 触りやすく）
+    rScale(k) { return k >= 0.5 ? ZOOM_R : Math.max(window.matchMedia("(max-width: 719px)").matches ? 0.45 : 0.8, Math.sqrt(k / 0.5)); }, // パソコンは 8 割より小さくしない（指示50: 触りやすく）。全体でないときは大きく（指示66）
     setKIndex(i) {
       i = Math.max(0, Math.min(K_STEPS.length - 1, i));
       if (i === this.kIndex || !this.ts) return;
@@ -5344,18 +5392,21 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (!this.edgesHidden && this.litStale) { this.litStale = false; this.drawLit(); }
       // 線は、札を開いている間だけ、道すじと、選んだ人・指している人の線を描く（指示37）。札を開いていないときは、
       // 選んでいても、マウスを重ねても線を描かず、バブルと名前だけにする（指示56）
-      const sel = SG.state.selected, hov = SG.state.hover, em = SG.emphasis(), on = this.linesOn();
-      const keepAll = on ? list.filter((e) => em.onPath(e) || e.s === sel || e.t === sel || (hov && (e.s === hov || e.t === hov))) : [];
+      // 重ねて見る二人目がいれば、その人の道すじと関係の線も別の色で重ねる（指示65）
+      const sel = SG.state.selected, hov = SG.state.hover, em = SG.emphasis(), on = this.linesOn(), sec = SG.state.second;
+      const keepAll = on ? list.filter((e) => em.onPath(e) || e.s === sel || e.t === sel || (hov && (e.s === hov || e.t === hov)) || (sec && em.onSecond(e))) : [];
+      this.linesShown = on;
       // 光が流れている間は、道すじの線を描かない（光の線が届いてから見せる。指示41）。名前は、流れ終わった形の線をよけて置く
       const keep = this.flowDone === false ? keepAll.filter((e) => !em.onPath(e)) : keepAll;
       const mid = (e) => { const a = this.byId.get(e.s), b = this.byId.get(e.t); return [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2]; };
-      if (!this.edgesHidden) SG.drawEdges(this.gKeep, keep, (e) => this.edgePath(e), { mid });
+      if (!this.edgesHidden) { SG.drawEdges(this.gKeep, keep, (e) => this.edgePath(e), { mid }); this.markSecond(em); }
       this.quiet(!!sel);
       const dots = this.items.map((n) => ({ p: n.p, sx: n.sx, sy: n.sy, r: n.r }));
       const nodeEl = new Map();
       // バブルと名前は、マウスを重ねても薄くしない（指すたびに 1,000 個を書き換えていた。指示52）。重ねた人の名前は必ず出す
       const emStill = SG.emphasis({ ignoreHover: true });
-      SG.drawNodes(this.gNode, dots, { pending: this.pending, em: emStill }).each(function (d) { nodeEl.set(d.p.id, this); });
+      SG.drawNodes(this.gNode, dots, { pending: this.pending, em: emStill }).each(function (d) { nodeEl.set(d.p.id, this); })
+        .classed("is-b", (d) => !!sec && d.p.id === sec).classed("both", (d) => !!sec && emStill.both(d.p));
       this.nodeEl = nodeEl;
       // 線を描いているときは、名前の置き場を、残した線（と生涯の線）にかからない所から選ぶ
       let lines = null;
@@ -5370,7 +5421,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       this.labelEl = labelEl;
     },
     // 線を描くのは、札を開いている間（と「平泉澄先生へ届く道を見る」の間）だけ（指示56）
-    linesOn() { return !!SG.state.selected && (!SG.cardOpen || SG.cardOpen() || !!this.tourLines); },
+    linesOn() { return !!SG.state.selected && (!SG.showLines || SG.showLines() || !!this.tourLines); },
     // 光の線を消し、あとから出す予定も取り消す（札を閉じたとき。指示56）
     clearFlow() {
       this.stopFollow();
@@ -5417,12 +5468,18 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     hoverFast() {
       const list = this.lastList;
       if (!this.ts || !this.cols || !list || this.edgesHidden || this.timer || this.ts.kTimer) { this.render(); return; }
-      const sel = SG.state.selected, hov = SG.state.hover, em = SG.emphasis();
+      const sel = SG.state.selected, hov = SG.state.hover, em = SG.emphasis(), sec = SG.state.second;
       if (!this.linesOn()) return;
-      const keepAll = list.filter((e) => em.onPath(e) || e.s === sel || e.t === sel || (hov && (e.s === hov || e.t === hov)));
+      const keepAll = list.filter((e) => em.onPath(e) || e.s === sel || e.t === sel || (hov && (e.s === hov || e.t === hov)) || (sec && em.onSecond(e)));
       const keep = this.flowDone === false ? keepAll.filter((e) => !em.onPath(e)) : keepAll;
       const mid = (e) => { const a = this.byId.get(e.s), b = this.byId.get(e.t); return [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2]; };
       SG.drawEdges(this.gKeep, keep, (e) => this.edgePath(e), { mid });
+      this.markSecond(em);
+    },
+    // 二人目だけの線に印を付ける（css の .e-b で色を替える。一人目の線と重なる所は一人目の色のまま）
+    markSecond(em) {
+      const sel = SG.state.selected, sec = SG.state.second;
+      this.gKeep.selectAll("g.edge").classed("e-b", (e) => !!sec && em.onSecond(e) && !(em.onPath(e) || e.s === sel || e.t === sel));
     },
     // 選んでいる間は、出来事の線と文字を淡くする（css: .has-sel）
     quiet(on) {
@@ -5713,6 +5770,9 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (reason === "filter") { this.build(); this.layout(true); return; }
       if (reason === "scale") { this.ts.size(); this.layout(true); return; }
       // 選んだとき・札を開け閉めしたとき（指示56）: 札が開いていれば光を流し、閉じていれば線と光を消して、バブルと名前だけにする
+      // 札の開け閉めでも線の出し入れが変わらないとき（スマホで選んだ人の札を開く・閉じる）は、描き直さない
+      if (reason === "card" && this.linesOn() === !!this.linesShown) return;
+      if (reason === "second") { this.ts.draw(); return; } // 重ねる二人目を足した・外した: 描き直すだけ（光は流し直さない）
       if (reason === "select" || reason === "card") {
         this.tourLines = false;
         if (!this.linesOn()) { this.clearFlow(); this.ts.draw(); return; }
@@ -6834,6 +6894,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       <h1 class="vh" tabindex="-1">平泉史学の幹</h1>
       <div class="toolbar"><div class="tb-in wrap">
         <div class="tb-main tk-tools">
+          <button type="button" class="btn primary" data-act="tour" aria-pressed="false">幹を巡る</button>
           <button type="button" class="btn" data-act="open-all">枝葉をすべて開く</button>
           <button type="button" class="btn" data-act="gaps-all">間の人をすべて出す</button>
           <button type="button" class="btn ghost" data-act="close-all">すべて閉じる</button>
@@ -6850,6 +6911,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       host.querySelector(".tk-tools").addEventListener("click", (ev) => {
         const b = ev.target.closest("[data-act]");
         if (!b) return;
+        if (b.dataset.act === "tour") { this.tour(); return; }
         if (b.dataset.act === "open-all") TRUNK.forEach((t) => this.open.add(t.id));
         if (b.dataset.act === "gaps-all") TRUNK.forEach((t) => this.gaps.add(t.id));
         if (b.dataset.act === "close-all") { this.open.clear(); this.gaps.clear(); this.all.clear(); }
@@ -6867,7 +6929,40 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       });
       this.render();
     },
-    unmount() {},
+    unmount() { this.stopTour(); },
+
+    // 幹を巡る（指示65 の案1）: 神代から平泉紀房まで、幹の人を一人ずつ画面の真ん中へ送り、少し止まって次へ（平泉澄先生では長めに）。
+    // もう一度押す・触る・回す・キーを押すと止まる。動きを減らす設定では、送るだけで動きは付けない
+    tour() {
+      if (this.touring) { this.stopTour(); return; }
+      const sts = [...this.list.querySelectorAll(".tk-st")];
+      if (!sts.length) return;
+      this.touring = true;
+      const btn = this.host.querySelector('[data-act="tour"]');
+      btn.setAttribute("aria-pressed", "true");
+      btn.textContent = "止める";
+      let i = 0;
+      const step = () => {
+        if (!this.touring) return;
+        this.list.querySelectorAll(".tk-st.touring").forEach((x) => x.classList.remove("touring"));
+        if (i >= sts.length) { this.stopTour(); return; }
+        const el = sts[i++];
+        el.classList.add("touring");
+        el.scrollIntoView({ block: "center", behavior: SG.reducedMotion() ? "auto" : "smooth" });
+        this.tourTimer = setTimeout(step, el.classList.contains("center") ? 2800 : 1800);
+      };
+      this.tourStop = (ev) => { if (ev && ev.target && ev.target.closest && ev.target.closest('[data-act="tour"]')) return; this.stopTour(); };
+      setTimeout(() => { if (this.touring) ["wheel", "touchstart", "keydown", "pointerdown"].forEach((t) => window.addEventListener(t, this.tourStop, { passive: true })); }, 0);
+      step();
+    },
+    stopTour() {
+      this.touring = false;
+      clearTimeout(this.tourTimer);
+      if (this.tourStop) { ["wheel", "touchstart", "keydown", "pointerdown"].forEach((t) => window.removeEventListener(t, this.tourStop)); this.tourStop = null; }
+      if (this.list) this.list.querySelectorAll(".tk-st.touring").forEach((x) => x.classList.remove("touring"));
+      const btn = this.host && this.host.querySelector('[data-act="tour"]');
+      if (btn) { btn.setAttribute("aria-pressed", "false"); btn.textContent = "幹を巡る"; }
+    },
 
     // 開け閉めは、その所だけを書き換える（全部を作り直さない）
     toggle(set, id, btn) {
@@ -7035,15 +7130,24 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   SG.select = function (id, opts) {
     opts = opts || {};
     if (id && !SG.byId.has(id)) return; // ない id（古いリンクなど）は選ばない
+    // 「重ねる」で二人目を選んでいるところなら、選んだ人はそのままで、二人目として線を重ねる（指示65）
+    if (id && state.pickSecond && !opts.quiet) {
+      state.pickSecond = false;
+      if (id !== state.selected) state.second = id;
+      SG.emit("second");
+      return;
+    }
     const prev = state.card;
     state.selected = id;
-    if (!id) { state.card = null; back = []; }
+    if (!id) { state.card = null; back = []; state.picked = false; state.second = null; state.pickSecond = false; }
     else if (opts.quiet) { if (state.card) state.card = id; } // 札を出していれば中身だけ替え、閉じた札は開かない
     else {
       if (opts.fromCard && prev && prev !== id) back.push(prev);
-      else if (!opts.fromCard) back = [];
+      else if (!opts.fromCard) { back = []; state.second = null; } // 別の人を選び直したら、重ねた二人目は外す
       state.card = id;
-      state.sheet = true;
+      state.picked = true; // 見る人が選んだ（はじめの平泉澄先生とは別）
+      // スマホでは、押しただけでは札を出さず、下の「札を開く」で全画面に開く（指示65）。札の中から別の人へ移るときは開いたまま
+      state.sheet = !narrow() || !!opts.fromCard || !!opts.open;
       state.guide = false;
     }
     SG.emit("select");
@@ -7051,6 +7155,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   };
   // 人物・組織の札が開いているか。図の線は、この間だけ描く（指示56）
   SG.cardOpen = () => !!state.card && !!state.sheet;
+  // 図の線を描くか: 札を開いている間（指示56）。スマホでは、押して選んだ人なら、札を開く前から描く（指示65: 押すと下に開くボタンだけが出る）
+  SG.showLines = () => SG.cardOpen() || (narrow() && !!state.picked);
   // 指が通り過ぎるだけのときは強調しない（ちらつきを防ぐ）
   SG.setHover = function (id) {
     clearTimeout(hoverTimer);
@@ -7323,7 +7429,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     if (force || insp._key !== key) {
       const body = $("inspBody");
       const swapped = insp._card !== state.card || insp._mode !== mode;
-      if (swapped && INSP.classList.contains("full")) setFull(false); // 別の札に替わったら、全体に広げたのを戻す（光の流れが見えるように。指示53）
+      if (swapped && INSP.classList.contains("full") && !narrow()) setFull(false); // 別の札に替わったら、全体に広げたのを戻す（光の流れが見えるように。指示53。スマホは全画面のまま）
       body.innerHTML = mode === "card" ? SG.cardHtml(state.card) : SG.guideHtml(state.view);
       if (swapped) {
         body.scrollTop = 0;
@@ -7334,6 +7440,11 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       insp._mode = mode;
     }
     insp.dataset.mode = mode;
+    // 「重ねる」: 人物・組織の札のときだけ出す。重ねているときは「重ねを外す」（指示65）
+    const pair = $("inspPair");
+    pair.hidden = mode !== "card";
+    pair.textContent = state.second ? "重ねを外す" : "重ねる";
+    pair.setAttribute("aria-pressed", String(!!state.second));
     const n = state.card && SG.byId.get(state.card);
     insp._n = n;
     $("inspTitle").textContent = cardTitle(n);
@@ -7363,12 +7474,31 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   function renderPill() {
     const pill = $("pill");
     const n = state.selected && SG.byId.get(state.selected);
-    const show = !!(n && current && current.hasSide && !wide() && !(state.card && state.sheet));
-    if (show) pill.innerHTML = `<span>選択中 <b>${E(n.n)}</b></span><button type="button" data-act="open">札を開く</button><button type="button" data-act="clear" aria-label="選択を外す">×</button>`;
+    const b = state.second && SG.byId.get(state.second);
+    const cardShown = !!(state.card && state.sheet);
+    // 下の帯: 札を開いていないときの「札を開く」（スマホ）と、重ねて見ているとき・重ねる人を選んでいるとき（どの幅でも。指示65）
+    const show = !!(n && current && current.hasSide && ((!wide() && !cardShown) || b || state.pickSecond));
+    if (show) pill.innerHTML = state.pickSecond
+      ? '<span>重ねる人・組織を、図か検索で選んでください</span><button type="button" data-act="pair-cancel">やめる</button>'
+      : `<span>選択中 <b>${E(n.n)}</b>${b ? `<i class="pill-plus">＋</i><b class="pill-b">${E(b.n)}</b>` : ""}</span>${cardShown ? "" : '<button type="button" data-act="open">札を開く</button>'}<button type="button" data-act="${b ? "pair-off" : "pair"}">${b ? "重ねを外す" : "重ねる"}</button><button type="button" data-act="clear" aria-label="選択を外す">×</button>`;
     pill.classList.toggle("show", show);
     pill.inert = !show;
   }
-  function openCard(id) { state.card = id; state.sheet = true; renderInspector(); renderPill(); }
+  function openCard(id) { state.card = id; state.sheet = true; renderInspector(); renderPill(); if (narrow()) setFull(true); } // スマホは全画面で開く（指示65）
+  function closeCard() {
+    state.sheet = false;
+    state.guide = false;
+    if (narrow() && INSP.classList.contains("full")) setFull(false);
+    renderInspector();
+    renderPill();
+  }
+  // 「重ねる」: 次に選んだ人・組織を二人目として、線を重ねて見る（指示65）。スマホで札を開いていれば、図が見えるように閉じる
+  function startPair() {
+    if (!state.selected) return;
+    if (state.second) { state.second = null; SG.emit("second"); return; }
+    state.pickSecond = true;
+    if (narrow() && state.sheet) closeCard(); else renderPill();
+  }
   function bindInspector() {
     $("inspector").addEventListener("click", (ev) => {
       const t = ev.target;
@@ -7421,7 +7551,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (current && current.focus) current.focus(id);
     });
     $("inspGuide").addEventListener("click", () => { state.card = null; back = []; state.guide = true; renderInspector(); });
-    $("inspClose").addEventListener("click", () => { state.sheet = false; state.guide = false; renderInspector(); renderPill(); });
+    $("inspClose").addEventListener("click", closeCard);
+    $("inspPair").addEventListener("click", startPair);
     // 「案内」のボタン（道具帯）: 案内の欄を図の上に重ねて開く。もう一度押すと閉じる
     $("view").addEventListener("click", (ev) => {
       if (!ev.target.closest('[data-act="guide"]')) return;
@@ -7436,6 +7567,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (!b) return;
       if (b.dataset.act === "open") openCard(state.selected);
       if (b.dataset.act === "clear") SG.select(null);
+      if (b.dataset.act === "pair" || b.dataset.act === "pair-off") startPair();
+      if (b.dataset.act === "pair-cancel") { state.pickSecond = false; renderPill(); }
     });
   }
 
@@ -7870,9 +8003,10 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || ev.target.isContentEditable;
       if (ev.key === "/" && !typing) { ev.preventDefault(); openSearch(); return; }
       if (ev.key === "Escape") {
+        if (state.pickSecond) { state.pickSecond = false; renderPill(); return; }
         if (TP.classList.contains("open")) { closeTerm(true); return; }
         if ($("filterPop").classList.contains("open")) { closePop(true); return; }
-        if (!wide() && state.card && state.sheet) { state.sheet = false; renderInspector(); renderPill(); return; }
+        if (!wide() && state.card && state.sheet) { closeCard(); return; }
         if (!state.card && state.guide) { state.guide = false; renderInspector(); return; }
         if (state.full) { SG.setFull(false); return; }
         if (state.card) { state.card = null; back = []; renderInspector(); return; }
