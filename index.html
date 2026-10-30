@@ -611,6 +611,22 @@ g.node.is-sel .ring { animation: ring-in 700ms var(--spring-snappy) both; }
 .pill b { font-family: var(--font-display); }
 .pill button { flex: none; height: 32px; padding: 0 12px; border-radius: 999px; border: 0; background: color-mix(in oklab, var(--paper) 18%, transparent); color: var(--paper); cursor: pointer; font-size: var(--fs-sm); }
 .pill button:hover { background: color-mix(in oklab, var(--paper) 28%, transparent); }
+/* 道の見せ方の 3 つのボタン（指示82）。スマホの下の帯では 2 段目に、幅いっぱいに並べる */
+.ps-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; }
+.ps-seg .rs-s { display: none; }
+.pill { flex-wrap: wrap; row-gap: 6px; border-radius: 24px; }
+.pill .ps-seg { flex: 1 0 100%; order: 9; margin: 0 0 0 -10px; background: color-mix(in oklab, var(--paper) 12%, transparent); }
+.pill .ps-seg button { flex: 1 1 0; min-width: 0; height: 34px; padding: 0 6px; background: transparent; font-size: var(--fs-xs); font-weight: 700; }
+.pill .ps-seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
+.pill .ps-seg .rs-l { display: none; }
+.pill .ps-seg .rs-s { display: inline; }
+/* パソコンの下の帯（指示82）: 名前と 3 つのボタンを一列に。名前は長い名で */
+.pill.wide { flex-wrap: nowrap; border-radius: 999px; padding-left: 16px; left: auto; right: max(16px, env(safe-area-inset-right, 0px)); translate: 0 calc(100% + 40px); } /* 札は左下なので、右下に */
+.pill.wide.show { translate: 0 0; }
+.pill.wide .ps-seg { flex: none; order: 0; margin: 0; }
+.pill.wide .ps-seg button { flex: none; padding: 0 12px; }
+.pill.wide .ps-seg .rs-l { display: inline; }
+.pill.wide .ps-seg .rs-s { display: none; }
 
 /* パソコンでは、選んでいる人の帯を見出しの行の空いている所に出す（指示67）。狭いほど「選択中」・名前・重ねる・× の順に省き、「札を開く」は残す */
 .head-sel { display: none; }
@@ -632,9 +648,15 @@ g.node.is-sel .ring { animation: ring-in 700ms var(--spring-snappy) both; }
 .hs-in button[data-act="open"] { background: var(--accent); color: var(--on-accent); font-weight: 700; }
 .hs-in button[data-act="open"]:hover { background: color-mix(in oklab, var(--accent) 86%, var(--ink)); }
 .hs-in button[data-act="clear"] { width: 30px; padding: 0; }
+.hs-in .ps-seg { background: color-mix(in oklab, var(--ink) 6%, transparent); margin: 0 4px; }
+.hs-in .ps-seg { order: 1; }
+.hs-in > button { order: 2; }
+.hs-in .ps-seg button { height: 26px; padding: 0 10px; font-size: var(--fs-xs); }
+.hs-in .ps-seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+@container (max-width: 640px) { .hs-in .ps-seg .rs-l { display: none; } .hs-in .ps-seg .rs-s { display: inline; } }
 @container (max-width: 420px) { .hs-in .ps-l { display: none; } }
 @container (max-width: 300px) { .hs-in .ps-who { display: none; } .hs-in { padding-left: 3px; } }
-@container (max-width: 260px) { .hs-in .ps-route { display: none; } }
+@container (max-width: 260px) { .hs-in .ps-seg { display: none; } }
 @container (max-width: 179px) { .hs-in button[data-act="pair"], .hs-in button[data-act="pair-off"] { display: none; } }
 @container (max-width: 125px) { .hs-in button[data-act="clear"] { display: none; } }
 
@@ -3069,7 +3091,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=b269b2dea3";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=8f85e7bdf9";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -4823,10 +4845,10 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       <h2 class="c-name" id="cardName" tabindex="-1">${o.k ? `<ruby>${E(o.n)}<rt>${E(o.k)}</rt></ruby>` : E(o.n)}</h2>
       <p class="c-when"><span class="num">${E(SG.lifeText(o))}</span><br>${E(o.legend ? "伝承の年代・" : "")}${E(SG.reignText(o.y))}（${E(SG.eraAt(o.y))}）</p>
       <div class="badges"><span class="badge"><i style="background:${fam.color}"></i>${E(SG.axisValue(o, "school").label)}</span>${o.place ? `<span class="badge">${E(o.place[0])}</span>` : ""}</div>
+      ${routeSec(o, SG.pathInfo(o.id))}
       ${actions(o)}
       <p class="c-note">${tl(o.note)}</p>
       <div class="metrics"><div><b>${o.degree}</b><span>つながりの数</span></div><div><b>${found.length}</b><span>創設・主宰した人</span></div><div><b>${mem.length}</b><span>所属した人</span></div></div>
-      ${routeSec(o, SG.pathInfo(o.id))}
       ${found.length ? `<section class="c-sec"><h3>創設・主宰</h3><ul class="rels">${found.map((e) => relItem(e, e.t)).join("")}</ul></section>` : ""}
       ${mem.length ? `<section class="c-sec"><h3>所属・在籍・教職</h3><ul class="rels">${mem.map((e) => relItem(e, e.t)).join("")}</ul></section>` : ""}
       ${setups.length ? `<section class="c-sec"><h3>組織どうしの関係</h3><ul class="rels">${setups.map((e) => relItem(e, e.s === o.id ? e.t : e.s)).join("")}</ul></section>` : ""}
@@ -4900,6 +4922,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         ${p.emperor && p.legend ? '<span class="badge">年代は『日本書紀』の紀年による伝承</span>' : ""}
         ${p.honor ? '<span class="badge">顕彰の対象</span>' : ""}
       </div>
+      ${routeSec(p, info)}
       ${actions(p)}
       <p class="c-note">${tl(p.note)}</p>
       <div class="metrics">
@@ -4907,7 +4930,6 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         <div><b>${p.reach}<small>人</small></b><span>後に続く人</span></div>
         <div><b>${info.kind === "self" ? "本人" : info.kind === "up" ? info.steps + "段" : info.kind === "down" ? "門下" : "—"}</b><span>平泉澄先生まで</span></div>
       </div>
-      ${routeSec(p, info)}
       <section class="c-sec"><h3>源流（師・祖・影響を受けた人）</h3>${ins.length ? `<ul class="rels">${ins.map((e) => relItem(e, e.s)).join("")}</ul>` : "<p>見本データにはありません。</p>"}</section>
       <section class="c-sec"><h3>門流（弟子・子孫・影響を与えた人）</h3>${outs.length ? `<ul class="rels">${outs.map((e) => relItem(e, e.t)).join("")}</ul>` : "<p>見本データにはありません。</p>"}</section>
       <section class="c-sec"><h3>所属した組織</h3>${p.orgs.length ? `<ul class="rels">${p.orgs.map(({ org, edge }) => relItem(edge, org.id)).join("")}</ul>` : "<p>見本データにはありません。</p>"}</section>
@@ -9085,17 +9107,25 @@ void main() {
     // 選んでいる人の帯: 札を開いていないときの「札を開く」と、重ねて見ているとき・重ねる人を選んでいるとき（どの幅でも。指示65）。
     // パソコンでは見出しの行の空いている所に、スマホでは画面の下に出す（指示67）
     const show = !!(n && current && current.hasSide && ((!wide() && !cardShown) || b || state.pickSecond || state.pickRoute));
+    // 「人への道」の相手と「広がり」を、名前の横に出す
+    const to = state.route === "to" && state.routeTo && state.routeTo !== state.selected ? SG.byId.get(state.routeTo) : null;
+    const via = to ? `<i class="pill-plus">→</i><b class="pill-b">${E(to.n)}</b>` : state.route === "reach" ? '<span class="ps-l">の広がり</span>' : "";
     const html = !show ? "" : state.pickRoute
       ? '<span class="ps-msg" title="道の相手を、図か検索で選んでください">道の相手を、図か検索で選んでください</span><button type="button" data-act="route-cancel">やめる</button>'
       : state.pickSecond
       ? '<span class="ps-msg" title="重ねる人・組織を、図か検索で選んでください">重ねる人・組織を、図か検索で選んでください</span><button type="button" data-act="pair-cancel">やめる</button>'
-      : `<span class="ps-who"><span class="ps-l">選択中 </span><b>${E(n.n)}</b>${b ? `<i class="pill-plus">＋</i><b class="pill-b">${E(b.n)}</b>` : ""}</span>${cardShown ? "" : '<button type="button" data-act="open">札を開く</button>'}${routeSelect()}<button type="button" data-act="${b ? "pair-off" : "pair"}">${b ? "重ねを外す" : "重ねる"}</button><button type="button" data-act="clear" aria-label="選択を外す">×</button>`;
+      : `<span class="ps-who"><span class="ps-l">選択中 </span><b>${E(n.n)}</b>${b ? `<i class="pill-plus">＋</i><b class="pill-b">${E(b.n)}</b>` : via}</span>${cardShown ? "" : '<button type="button" data-act="open">札を開く</button>'}<button type="button" data-act="${b ? "pair-off" : "pair"}">${b ? "重ねを外す" : "重ねる"}</button><button type="button" data-act="clear" aria-label="選択を外す">×</button>${narrow() ? routeSeg() : ""}`;
     const top = !narrow();
-    for (const [el, on, inner] of [[$("pill"), show && !top, html], [$("headSel"), show && top, `<div class="hs-in">${html}</div>`]]) {
+    // パソコンの地図では、画面の下の真ん中に、名前と道の見せ方の 3 つのボタンだけの帯を出す（札を開いていても。見出しの行と、
+    // はじめの小さな札では見えなかったため。指示82）。相手や重ねる人を選んでいる間は、見出しの行の案内だけ
+    const pc = !!(top && n && current && current.id === "map" && !state.pickRoute && !state.pickSecond);
+    const pcHtml = pc ? `<span class="ps-who"><b>${E(n.n)}</b>${b ? `<i class="pill-plus">＋</i><b class="pill-b">${E(b.n)}</b>` : via}</span>${routeSeg()}` : "";
+    for (const [el, on, inner] of [[$("pill"), (show && !top) || pc, top ? pcHtml : html], [$("headSel"), show && top, `<div class="hs-in">${html}</div>`]]) {
       if (on) el.innerHTML = inner;
       el.classList.toggle("show", on);
       el.inert = !on;
     }
+    $("pill").classList.toggle("wide", top);
   }
   function openCard(id) { state.card = id; state.sheet = true; renderInspector(); renderPill(); if (narrow()) setFull(true); } // スマホは全画面で開く（指示65）
   function closeCard() {
@@ -9121,7 +9151,9 @@ void main() {
     SG.emit("select");
   }
   const ROUTE_OPTS = [["focus", "先生への道"], ["to", "人への道"], ["reach", "広がり"]];
-  const routeSelect = () => `<select class="ps-route" aria-label="図に描く道">${ROUTE_OPTS.map(([v, l]) => `<option value="${v}"${(state.route || "focus") === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
+  // 道の見せ方の切り替え（指示71・82）。選び欄では気づきにくかったので、いつも見える 3 つのボタンにした。狭い所では短い名に
+  const ROUTE_SHORT = { focus: "先生への道", to: "人への道", reach: "広がり" }, ROUTE_LONG = { focus: "平泉澄先生への道", to: "ほかの人への道", reach: "知り合いの広がり" };
+  const routeSeg = () => `<span class="ps-seg" role="group" aria-label="図に描く道">${ROUTE_OPTS.map(([v]) => `<button type="button" data-act="route" data-route="${v}" aria-pressed="${(state.route || "focus") === v}"><span class="rs-l">${ROUTE_LONG[v]}</span><span class="rs-s">${ROUTE_SHORT[v]}</span></button>`).join("")}</span>`;
   function startPair() {
     if (!state.selected) return;
     if (state.second) { state.second = null; SG.emit("second"); return; }
@@ -9206,6 +9238,8 @@ void main() {
       if (b.dataset.act === "pair" || b.dataset.act === "pair-off") startPair();
       if (b.dataset.act === "pair-cancel") { state.pickSecond = false; renderPill(); }
       if (b.dataset.act === "route-cancel") { state.pickRoute = false; SG.emit("select"); }
+      // 「人への道」をもう一度押すと、相手を選び直す
+      if (b.dataset.act === "route") { if (b.dataset.route === "to" && state.route === "to") startRoutePick(); else SG.setRoute(b.dataset.route); }
     };
     const onRouteSel = (ev) => { const s = ev.target.closest("select.ps-route"); if (s) SG.setRoute(s.value); };
     $("pill").addEventListener("change", onRouteSel);
