@@ -428,6 +428,14 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .ruler .shindai-text { fill: var(--edge-densho); font-family: var(--font-display); font-weight: 700; font-size: 15px; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 0.4em; }
 .ruler .gyobi { fill: var(--ink); opacity: 0.8; }
 .ruler .life { fill: var(--accent); }
+/* 字のない細かい目盛りと、境目の取っ手（指示75）。取っ手は指したときだけ色を付ける */
+.ruler .minor-ticks { fill: none; stroke: var(--rule-2); stroke-width: 1; }
+.ruler .rr-rz { fill: transparent; cursor: row-resize; touch-action: none; }
+.ruler .rr-rz:hover, .ruler .rr-rz.on { fill: color-mix(in oklab, var(--accent) 30%, transparent); }
+/* 込み合って上下にずらしたバブルの、本当の年の印 */
+.true-layer { transition: opacity var(--dur-2) var(--ease-out); }
+.true-layer.away { opacity: 0; }
+.true-y { fill: none; stroke: var(--ink-3); stroke-width: 1; opacity: 0.6; }
 
 /* 図の中 */
 .band { fill: transparent; }
@@ -3010,7 +3018,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=69284b6d56";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=b7edb77862";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -3463,17 +3471,28 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     return `${b}–${d}`;
   }
 
+  // 御代の帯の高さを、見る人が目盛りの境目を引いて変えた倍率（指示75。エクセルの行の高さのように）。
+  // 尺度（mode）ごとに、帯の鍵（天皇の代数の e1… と shindai・regent）→ 倍率 を、この端末に覚える
+  const ROWH_STORE = "sg-rowh-v1";
+  let ROWH = {};
+  try { ROWH = JSON.parse(localStorage.getItem(ROWH_STORE) || "{}") || {}; } catch (e) { ROWH = {}; }
+  const segKey = (s) => (s.kind === "reign" ? "e" + s.emp.n : s.kind);
+  let segCounts = null; // 御代ごとの人数。人は起動のあと変わらないので一度だけ数える（境目を引いている間に、毎こま数え直さない）
+
   // 縦の時間軸の尺度。mode: density=人の多い御代を広げる / reign=御代ごとに等しく / linear=年の長さどおり
   function buildTimeScale(mode) {
     const segs = [{ kind: "shindai", a: -1000, b: -660 }].concat(bands.map((b) => Object.assign({}, b)));
-    const counts = segs.map(() => 0);
-    const idxOf = (year) => {
-      if (year < -660) return 0;
-      for (let i = 1; i < segs.length; i++) if (year >= segs[i].a && year < segs[i].b) return i;
-      return segs.length - 1;
-    };
-    // 天皇は御代ごとに一人ずついるので、目盛りの伸び縮みには数えない
-    nodes.forEach((n) => { if (!n.emperor) counts[idxOf(n.fl)] += n.isOrg ? 0.6 : 1; });
+    if (!segCounts) {
+      segCounts = segs.map(() => 0);
+      const idxOf = (year) => {
+        if (year < -660) return 0;
+        for (let i = 1; i < segs.length; i++) if (year >= segs[i].a && year < segs[i].b) return i;
+        return segs.length - 1;
+      };
+      // 天皇は御代ごとに一人ずついるので、目盛りの伸び縮みには数えない
+      nodes.forEach((n) => { if (!n.emperor) segCounts[idxOf(n.fl)] += n.isOrg ? 0.6 : 1; });
+    }
+    const counts = segCounts, fac = ROWH[mode] || {};
     segs.forEach((s, i) => {
       const yrs = s.b - s.a;
       let h;
@@ -3481,7 +3500,10 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       else if (mode === "linear") h = yrs * 0.72;
       else if (mode === "reign") h = 15;
       else h = 3 + yrs * 0.05 + 15 * counts[i];
-      s.h = Math.max(h, 0.3);
+      s.key = segKey(s);
+      s.base = Math.max(h, 0.3); // 引いて変える前の高さ
+      s.f = fac[s.key] || 1;
+      s.h = Math.max(h * s.f, 0.3);
       s.count = counts[i];
     });
     let acc = 0;
@@ -3512,10 +3534,21 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (r > 3.5 || r < 1 / 3.5) breaks.push({ year: c.a, score: Math.abs(Math.log(r)) });
     }
     breaks.sort((a, b) => b.score - a.score);
-    return { mode, segs, h: total, y, inv, breaks: [{ year: -660, score: 99 }].concat(breaks.slice(0, 4)) };
+    // sig は並びを覚える鍵に入れる（帯の高さが変われば、別の並び）
+    return { mode, segs, h: total, y, inv, sig: mode + JSON.stringify(fac), breaks: [{ year: -660, score: 99 }].concat(breaks.slice(0, 4)) };
   }
   let TS = buildTimeScale(state.scaleMode);
   function setScaleMode(mode) { state.scaleMode = mode; TS = buildTimeScale(mode); }
+  // 御代の帯の倍率を変える（{ 鍵: 倍率 }。null か 1 で元に戻す）。尺度を作り直すだけで、描き直しと覚えるのは呼ぶ側がする
+  function setRowFactors(map) {
+    const m = ROWH[state.scaleMode] || {};
+    Object.keys(map).forEach((k) => { const f = map[k]; if (f == null || Math.abs(f - 1) < 0.005) delete m[k]; else m[k] = Math.round(f * 1000) / 1000; });
+    if (Object.keys(m).length) ROWH[state.scaleMode] = m; else delete ROWH[state.scaleMode];
+    TS = buildTimeScale(state.scaleMode);
+  }
+  function rowsChanged() { return !!ROWH[state.scaleMode]; }
+  function saveRows() { try { localStorage.setItem(ROWH_STORE, JSON.stringify(ROWH)); } catch (e) { /* 覚えておけない環境では、その場だけ */ } }
+  function resetRows() { delete ROWH[state.scaleMode]; TS = buildTimeScale(state.scaleMode); saveRows(); }
 
   // ── 横の軸（タブ）と色 ─────────────────────────
   const REGION_OF_PREF = new Map();
@@ -3832,7 +3865,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     AXES, AXIS, AXIS_GROUPS, groupOf, axisValue, axisValues, condMatch, regionOf, matches, visible, edgeShown, emphasis, esc, edgeOrder,
     evidenceOf, loadEvidenceSrc, pairKey, thinEdges, thinOf, kinOf, KIN_VALUES, facetOf, FX, EV,
     toggleCond, clearConds, hasCond, PRESETS, applyPreset, GRADES, GRADE,
-    get TS() { return TS; }, setScaleMode, bandAt, reignText, eraAt, fmtYear, lifeText, emperorLabel,
+    get TS() { return TS; }, setScaleMode, setRowFactors, rowsChanged, saveRows, resetRows, bandAt, reignText, eraAt, fmtYear, lifeText, emperorLabel,
     emperors, bands, ERAS, NORTHERN, views: {}
   };
   if (window.performance && performance.mark) performance.mark("sg-core");
@@ -3942,6 +3975,12 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       this.contentEl.addEventListener("pointerleave", () => this.uncross());
       this.rulerEl.addEventListener("pointermove", (ev) => this.cross(ev, true));
       this.rulerEl.addEventListener("pointerleave", () => { this.uncross(); hideTip(); });
+      // 目盛りの境目を引いて、御代・時代の帯の高さを変える（指示75。エクセルの行の高さのように）。二度押しで元に戻す
+      this.rulerEl.addEventListener("pointerdown", (ev) => this.rowDown(ev));
+      this.rulerEl.addEventListener("pointermove", (ev) => this.rowMove(ev));
+      this.rulerEl.addEventListener("pointerup", () => this.rowUp());
+      this.rulerEl.addEventListener("pointercancel", () => this.rowUp());
+      this.rulerEl.addEventListener("dblclick", (ev) => this.rowReset(ev));
       this.size();
     }
     destroy() { this.dead = true; if (this.kTimer) this.kTimer.stop(); this.ro.disconnect(); this.el.remove(); hideTip(); }
@@ -4027,7 +4066,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     }
     // 指している高さに横の細い線を引き、その年と御代を目盛りに出す
     cross(ev, onRuler) {
-      if (ev.pointerType === "touch") return;
+      if (ev.pointerType === "touch" || this.rowDrag) return;
       const r = this.contentEl.getBoundingClientRect();
       const y = ev.clientY - r.top;
       if (y < this.opts.padTop - 6 || y > r.height - this.opts.padBottom + 6) { this.uncross(); return; }
@@ -4044,6 +4083,72 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       this.tag.classList.add("show");
     }
     uncross() { this.crossEl.classed("show", false); this.tag.classList.remove("show"); }
+    // 掴んだ境目の上の帯。御代なら一つ、時代ならその中にすっかり入る御代すべて（時代の端にまたがる御代は、そのまま）
+    rowGrab(h) {
+      const TS = SG.TS;
+      if (h.dataset.era != null) {
+        const e = SG.ERAS[+h.dataset.era];
+        const inside = e ? TS.segs.filter((s) => s.a >= e.a && s.b <= e.b) : [];
+        if (!inside.length) return null;
+        const all = TS.y(e.b) - TS.y(e.a), part = inside.reduce((a, s) => a + s.h, 0);
+        return { segs: inside, h0: all, fixed: all - part, part };
+      }
+      const s = TS.segs[+h.dataset.i];
+      return s ? { segs: [s], h0: s.h, fixed: 0, part: s.h } : null;
+    }
+    rowDown(ev) {
+      const h = ev.target.closest && ev.target.closest(".rr-rz");
+      if (!h || (ev.pointerType === "mouse" && ev.button !== 0)) return;
+      const g = this.rowGrab(h);
+      if (!g) return;
+      ev.preventDefault();
+      this.rowDrag = Object.assign(g, { y: ev.clientY, k: this.k, keys: g.segs.map((s) => s.key), f0: g.segs.map((s) => s.f), moved: false, el: h });
+      h.classList.add("on");
+      hideTip();
+      this.uncross();
+      try { this.rulerEl.setPointerCapture(ev.pointerId); } catch (e) { /* 指が離れていたときなど */ }
+    }
+    rowMove(ev) {
+      const d = this.rowDrag;
+      if (!d) return;
+      const dy = ev.clientY - d.y;
+      if (!d.moved && Math.abs(dy) < 2) return;
+      d.moved = true;
+      // 境目が指についてくるように: 帯の新しい高さ（尺度の px）＝ 掴んだときの高さ ＋ 引いた分 ÷ 縦の倍率
+      const want = Math.max(4 / d.k, d.h0 + dy / d.k);
+      const r = Math.max(0.05, (want - d.fixed) / d.part), m = {};
+      d.keys.forEach((k, i) => { m[k] = Math.max(0.1, Math.min(80, d.f0[i] * r)); });
+      SG.setRowFactors(m);
+      if (this.rowRaf) return;
+      // 引いている間は、目盛りと、点・線の位置だけを軽く描き直す（倍率を変えるときと同じ。並べ直しは離したときに一度だけ）
+      this.rowRaf = requestAnimationFrame(() => {
+        this.rowRaf = 0;
+        if (this.dead) return;
+        this.size();
+        drawRuler(this.rulerEl, (px) => this.Ypx(px), { W: this.rulerW || this.rulerEl.clientWidth, H: Math.round(this.height()) });
+        if (this.opts.onZoomFrame) this.opts.onZoomFrame(this); else this.draw();
+      });
+    }
+    rowUp() {
+      const d = this.rowDrag;
+      if (!d) return;
+      this.rowDrag = null;
+      if (d.el) d.el.classList.remove("on");
+      if (this.rowRaf) { cancelAnimationFrame(this.rowRaf); this.rowRaf = 0; }
+      if (!d.moved) return;
+      SG.saveRows();
+      SG.emit("scale"); // 見ている図が、新しい尺度で並べ直す
+    }
+    rowReset(ev) {
+      const h = ev.target.closest && ev.target.closest(".rr-rz");
+      const g = h && this.rowGrab(h);
+      if (!g) return;
+      const m = {};
+      g.segs.forEach((s) => { m[s.key] = null; });
+      SG.setRowFactors(m);
+      SG.saveRows();
+      SG.emit("scale");
+    }
   }
 
   // ── 御代の目盛り: [時代][御代][北朝][年] ─────────────────
@@ -4058,7 +4163,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     let g = root.select("g.rr");
     if (g.empty()) {
       g = root.append("g").attr("class", "rr");
-      ["bands", "life", "eras", "north", "ticks", "breaks"].forEach((c) => g.append("g").attr("class", c));
+      ["bands", "life", "eras", "north", "minor", "ticks", "breaks", "rz"].forEach((c) => g.append("g").attr("class", c));
     }
     const sel = state.selected && byId.get(state.selected);
     const selBand = sel && !sel.myth ? SG.bandAt(sel.fl) : null;
@@ -4124,17 +4229,37 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     nj.exit().remove();
     nj.enter().append("rect").merge(nj).attr("x", eraW + reignW + 1).attr("width", nW - 2).attr("y", (d) => d.y0)
       .attr("height", (d) => Math.max(0.5, d.y1 - d.y0 - 1)).attr("fill", "var(--c0)").attr("opacity", (d, i) => (i % 2 ? 0.35 : 0.55));
-    // 年の目盛り（間隔に応じて 1000/500/100/50/25/10 年の順に詰める）
-    const placed = [];
-    for (const step of [1000, 500, 100, 50, 25, 10]) {
-      for (let yr = Math.ceil(-660 / step) * step; yr <= 2020; yr += step) {
+    // 年の目盛り（間隔に応じて 1000/500/100/50/25/10/5/1 年の順に詰める。指示75 で 5 年・1 年まで細かくした）。
+    // 字は 22 px より近づけない。置いた所は 11 px ごとの箱に入れ、近くの箱だけを見る（1 年きざみでも速いように）
+    const placed = [], boxes = new Map(), bk = (y) => Math.floor(y / 11);
+    const crowded = (y) => { for (let b = bk(y) - 2; b <= bk(y) + 2; b++) { const l = boxes.get(b); if (l && l.some((v) => Math.abs(v - y) < 22)) return true; } return false; };
+    for (const step of [1000, 500, 100, 50, 25, 10, 5, 1]) {
+      for (let yr = Math.ceil(-660 / step) * step; yr <= 2026; yr += step) {
         if (yr === 0) continue;
         const y = Ypx(TS.y(yr));
-        if (y < -10 || y > H + 10) continue;
-        if (placed.some((p) => Math.abs(p.y - y) < 22)) continue;
+        if (y < -10 || y > H + 10 || crowded(y)) continue;
         placed.push({ yr, y });
+        if (!boxes.has(bk(y))) boxes.set(bk(y), []);
+        boxes.get(bk(y)).push(y);
       }
     }
+    // 字のない細かい目盛り: 1 年が 4 px 以上なら 1 年ごと、5 年が 5 px 以上なら 5 年ごと、10 年が 5 px 以上なら 10 年ごと。
+    // 御代ごとに 1 年の長さが違うので、帯ごとに決める。一本の path にまとめる（数千本でも軽いように）
+    let md = "";
+    for (const s of TS.segs) {
+      if (s.kind === "shindai") continue;
+      const y0 = Ypx(s.top), y1 = Ypx(s.top + s.h);
+      if (y1 < -10 || y0 > H + 10) continue;
+      const ppy = (y1 - y0) / (s.b - s.a), step = ppy >= 4 ? 1 : ppy >= 1 ? 5 : ppy >= 0.5 ? 10 : 0;
+      if (!step) continue;
+      for (let yr = Math.ceil(s.a / step) * step; yr < s.b; yr += step) {
+        if (yr === 0) continue;
+        md += `M${W - tickW},${(y0 + (yr - s.a) * ppy).toFixed(1)}h${yr % 10 === 0 ? 6 : yr % 5 === 0 ? 4 : 2.5}`;
+      }
+    }
+    let mp = g.select(".minor").select("path");
+    if (mp.empty()) mp = g.select(".minor").append("path").attr("class", "minor-ticks");
+    mp.attr("d", md);
     const tj = g.select(".ticks").selectAll("g.tk").data(placed, (d) => d.yr);
     tj.exit().remove();
     const te = tj.enter().append("g").attr("class", "tk");
@@ -4149,6 +4274,16 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     const kj = g.select(".breaks").selectAll("text").data(brk, (d) => d.b.year);
     kj.exit().remove();
     kj.enter().append("text").attr("class", "break-mark").merge(kj).attr("x", W - tickW + 2).attr("y", (d) => d.y + 4).text("≈");
+    // 境目の取っ手（指示75）: 御代の帯の下の端（画面で 9 px 以上ある帯だけ）と、時代の下の端。上下に引くと、その帯の高さが変わる。
+    // 時代の取っ手は、その時代の中の御代すべてを同じ割合で伸ばす。指で触る端末では、掴みやすいように太くする
+    const hh = isTouch() ? 16 : 8, rz = [];
+    segs.forEach((d) => { if (d.y1 - d.y0 >= 9 && d.y1 > -10 && d.y1 < H + 10) rz.push({ k: "s" + d.i, i: d.i, x: eraW, w: W - eraW, y: d.y1 }); });
+    eras.forEach((d) => { if (d.y1 > -10 && d.y1 < H + 10 && TS.segs.some((s) => s.a >= d.e.a && s.b <= d.e.b)) rz.push({ k: "e" + d.i, era: d.i, x: 0, w: eraW, y: d.y1 }); });
+    const rj = g.select(".rz").selectAll("rect").data(rz, (d) => d.k);
+    rj.exit().remove();
+    rj.enter().append("rect").attr("class", (d) => "rr-rz" + (d.era != null ? " era" : "")).attr("pointer-events", "all")
+      .merge(rj).attr("x", (d) => d.x).attr("width", (d) => d.w).attr("y", (d) => d.y - hh / 2).attr("height", hh)
+      .attr("data-i", (d) => (d.i != null ? d.i : null)).attr("data-era", (d) => (d.era != null ? d.era : null));
   }
 
   // 時代の境目（図の中の細い線）と出来事
@@ -4955,6 +5090,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       this.gEra = g.append("g");
       this.gEv = g.append("g");
       this.gLife = g.append("g");
+      this.gTrue = g.append("g").attr("class", "true-layer"); // 込み合って上下にずらしたバブルの、本当の年の印（指示75）
       // 線の層。選んでいる間だけ、道すじと、選んだ人・指している人の線を描く。札を開いていない（だれも選んでいない）ときは
       // 線を描かず、バブルと名前だけにする（指示56。前は全部の線の層を別に描いておき、選ぶとスッと消していた。指示37）
       this.gKeep = g.append("g").attr("class", "edges-layer keep");
@@ -5267,7 +5403,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       return { cols, width: Math.max(W, x) };
     },
     // 並びを覚えておく鍵: 分け方・幅・縦の倍率・見せる人の組
-    layoutKey(axisId, W, k) { return [axisId, Math.round(W), Math.round((k != null ? k : this.ts.k) * 1000) / 1000, this.itemsSig, SG.state.sizeBy, JSON.stringify(COLW[axisId] || {})].join("|"); },
+    layoutKey(axisId, W, k) { return [axisId, Math.round(W), Math.round((k != null ? k : this.ts.k) * 1000) / 1000, this.itemsSig, SG.state.sizeBy, JSON.stringify(COLW[axisId] || {}), SG.TS.sig].join("|"); },
     // 並びの覚え書きを、この端末に残す（次に開いたとき、最初の並びの計算を省いてすぐ出す。データが変わったら使わない）
     stamp() {
       if (this._stamp) return this._stamp;
@@ -5438,6 +5574,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (!this.gKeep || this.edgesHidden === on) return;
       this.edgesHidden = on;
       this.gKeep.classed("away", on);
+      if (this.gTrue) this.gTrue.classed("away", on);
       // 光った道の線も、動いている間は隠す。止まったら新しい位置で描き直す（render）
       if (this.flowSvg) this.flowSvg.classList.toggle("away", on);
       if (on) { this.stopFollow(); if (this.litArcs) this.litStale = true; }
@@ -5506,16 +5643,22 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         setColW(SG.state.axis, h.dataset.col, null); saveColW(); this.layout(true);
       });
       const head = ci.closest(".colhead");
-      if (head) head.addEventListener("click", (ev) => { if (!ev.target.closest(".ch-reset")) return; delete COLW[SG.state.axis]; saveColW(); this.layout(true); });
+      // 元に戻す: 列の幅と、御代の帯の高さ（変えていれば）
+      if (head) head.addEventListener("click", (ev) => {
+        if (!ev.target.closest(".ch-reset")) return;
+        delete COLW[SG.state.axis]; saveColW();
+        if (SG.rowsChanged()) { SG.resetRows(); SG.emit("scale"); } else this.layout(true);
+      });
     },
-    // 列の幅を変えた分け方では、「御代」の横に「元に戻す」を出す
+    // 列の幅か御代の帯の高さを変えたときは、「御代」の横に「元に戻す」を出す
     drawColReset() {
       const r = this.chInner && this.chInner.closest(".colhead") && this.chInner.closest(".colhead").querySelector(".ch-ruler");
       if (!r) return;
-      const has = !!COLW[SG.state.axis];
-      if (r.dataset.reset === String(has)) return;
-      r.dataset.reset = String(has);
-      r.innerHTML = has ? '御代<button type="button" class="ch-reset" title="列の幅を元に戻す" aria-label="列の幅を元に戻す">↺</button>' : "御代";
+      const c = !!COLW[SG.state.axis], w = SG.rowsChanged(), key = (c ? "c" : "") + (w ? "r" : "");
+      if (r.dataset.reset === key) return;
+      r.dataset.reset = key;
+      const t = c && w ? "列の幅と御代の高さを元に戻す" : c ? "列の幅を元に戻す" : "御代の高さを元に戻す";
+      r.innerHTML = key ? `御代<button type="button" class="ch-reset" title="${t}" aria-label="${t}">↺</button>` : "御代";
     },
     drawHeads(animated) {
       const dot = SG.state.axis === "school";
@@ -5553,6 +5696,18 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         .attr("x", (c) => c.x0).attr("width", (c) => c.w).attr("height", H);
     },
 
+    // 込み合って上下にずらしたバブルは、本当の年の高さに短い横の印を付け、バブルと細い線でつなぐ（指示75: 人の置き場所を正確に）
+    drawTrue() {
+      const ts = this.ts;
+      const data = this.items.filter((n) => Math.abs(n.dy || 0) >= 3);
+      const j = this.gTrue.selectAll("path").data(data, (n) => n.id);
+      j.exit().remove();
+      j.enter().append("path").attr("class", "true-y").merge(j).attr("d", (n) => {
+        const y = ts.Y(n.p.fl), edge = n.sy + (n.dy > 0 ? -n.r : n.r);
+        return `M${n.sx - 4},${y}h8M${n.sx},${y}V${edge}`;
+      });
+    },
+
     render() {
       const ts = this.ts;
       if (!ts || !this.cols) return;
@@ -5587,6 +5742,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       SG.drawNodes(this.gNode, dots, { pending: this.pending, em: emStill }).each(function (d) { nodeEl.set(d.p.id, this); })
         .classed("is-b", (d) => !!sec && d.p.id === sec).classed("both", (d) => !!sec && emStill.both(d.p));
       this.nodeEl = nodeEl;
+      this.drawTrue();
       // 線を描いているときは、名前の置き場を、残した線（と生涯の線）にかからない所から選ぶ
       let lines = null;
       if (on) {
@@ -5967,7 +6123,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (!this.ts) return;
       if (reason === "axis") { this.showRule(); this.layout(true); return; }
       if (reason === "filter") { this.build(); this.layout(true); return; }
-      if (reason === "scale") { this.ts.size(); this.layout(true); return; }
+      // 尺度が変わったとき（御代の帯の高さを引いて変えたときも）。「全体」では、画面の高さに収め直す（収め直すと onK が並べ直す）
+      if (reason === "scale") { if (this.refit()) return; this.ts.size(); this.layout(true); return; }
       // 選んだとき・札を開け閉めしたとき（指示56）: 札が開いていれば光を流し、閉じていれば線と光を消して、バブルと名前だけにする
       // 札の開け閉めでも線の出し入れが変わらないとき（スマホで選んだ人の札を開く・閉じる）は、描き直さない
       if (reason === "card" && this.linesOn() === !!this.linesShown) return;
