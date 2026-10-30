@@ -29,6 +29,10 @@
   --accent: oklch(0.43 0.11 262);
   --gold: oklch(0.66 0.12 80); /* 幹の金の光（指示73） */
   --trunk-ink: oklch(0.33 0.035 60); /* 幹の墨（少し茶） */
+  --soil-top: oklch(0.7 0.05 68); /* 木の舞台の土（上） */
+  --soil-deep: oklch(0.47 0.05 55); /* 土（深い所） */
+  --root: oklch(0.88 0.03 78); /* 根（土の中で明るく） */
+  --grass: oklch(0.58 0.11 138);
   --accent-soft: oklch(0.935 0.03 262);
   --on-accent: oklch(0.99 0.004 262);
   --warn: oklch(0.53 0.15 42);
@@ -105,6 +109,10 @@
     --accent: oklch(0.79 0.09 262);
     --gold: oklch(0.8 0.12 84);
     --trunk-ink: oklch(0.74 0.025 75);
+    --soil-top: oklch(0.36 0.035 62);
+    --soil-deep: oklch(0.24 0.025 55);
+    --root: oklch(0.66 0.03 75);
+    --grass: oklch(0.5 0.09 138);
     --accent-soft: oklch(0.31 0.055 262);
     --on-accent: oklch(0.2 0.03 262);
     --warn: oklch(0.75 0.13 50);
@@ -145,6 +153,10 @@
   --accent: oklch(0.79 0.09 262);
   --gold: oklch(0.8 0.12 84);
   --trunk-ink: oklch(0.74 0.025 75);
+  --soil-top: oklch(0.36 0.035 62);
+  --soil-deep: oklch(0.24 0.025 55);
+  --root: oklch(0.66 0.03 75);
+  --grass: oklch(0.5 0.09 138);
   --accent-soft: oklch(0.31 0.055 262);
   --on-accent: oklch(0.2 0.03 262);
   --warn: oklch(0.75 0.13 50);
@@ -1376,6 +1388,27 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
 .tk-live .tk-ld { visibility: hidden; }
 .tk-live .tk-st.touring .tk-card { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in oklab, var(--gold) 38%, transparent), 0 10px 30px color-mix(in oklab, var(--gold) 22%, transparent); }
 .tk-live .tk-st .tk-card { transition: border-color 600ms var(--ease-out), box-shadow 600ms var(--ease-out); }
+/* ── 指示77・78: 平泉史学の木（地面に立つ一本の木を一画面に。下から上へ時代の順）。絵は trunk-fx.js、名前はここ ── */
+.tk-tree { position: relative; height: calc(100dvh - var(--sticky-top, 56px) - var(--tb-h, 80px) - 20px); min-height: 440px; max-height: 1080px; margin: 4px 0 28px; }
+.tt-labels { position: absolute; inset: 0; }
+.tt-pl { position: absolute; translate: 0 -50%; display: block; max-width: 12em; padding: 1px 6px 2px; border: 0; border-radius: 6px; background: color-mix(in oklab, var(--paper) 84%, transparent); color: var(--ink); font: 700 14.5px/1.25 var(--font-display); text-align: left; white-space: nowrap; cursor: pointer; }
+.tt-pl.l { translate: -100% -50%; text-align: right; }
+.tt-pl .tt-sub { display: block; font: 400 10.5px/1.3 var(--font-body); letter-spacing: 0.06em; color: var(--ink-3); }
+.tt-pl.center { font-size: 19px; padding: 2px 8px 3px; box-shadow: 0 0 0 1.5px color-mix(in oklab, var(--gold) 60%, transparent); }
+.tt-pl.leaf { font: 600 11.5px/1.3 var(--font-body); padding: 0 4px; background: color-mix(in oklab, var(--paper) 72%, transparent); }
+.tt-pl.gap { font: 600 11px/1.3 var(--font-body); color: var(--ink-2); padding: 0 4px; }
+.tt-pl.gap.tiny { font-size: 10px; }
+.tt-pl.root { background: color-mix(in oklab, var(--paper) 90%, transparent); }
+.tt-pl:hover { color: var(--accent); }
+.tt-pl:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tt-pl.sel { color: var(--accent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.tt-pl.touring { box-shadow: 0 0 0 2px var(--gold), 0 0 18px color-mix(in oklab, var(--gold) 45%, transparent); }
+.tk-tree.first .tt-pl { animation: tt-in 700ms var(--ease-out) 1.2s backwards; }
+@keyframes tt-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tk-tree.first .tt-pl { animation: none; } }
+@media (max-width: 559px) { .tt-pl { font-size: 13px; } .tt-pl.center { font-size: 16px; } .tt-pl .tt-sub { font-size: 9.5px; } }
+/* スマホは、画面の下の「選択中」の帯の分だけ低くして、根の先（天照大神）が隠れないように */
+@media (max-width: 719px) { .tk-tree { height: calc(100dvh - var(--sticky-top, 56px) - var(--tb-h, 80px) - 88px); min-height: 420px; } }
 .tk-st.touring .tk-dot { animation: tk-pulse 1.5s var(--ease-out) 1; }
 @keyframes tk-pulse { 0% { scale: 1; } 30% { scale: 1.3; } 100% { scale: 1; } }
 @media (prefers-reduced-motion: reduce) { .tk-st.touring .tk-dot { animation: none; } }
@@ -3032,7 +3065,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=9d9152e2ff";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=4d1ae0795f";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -4684,7 +4717,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
 
   // ── 案内（読み方） ────────────────────────────────
   const LEAD = {
-    trunk: "神代から平泉澄先生、平泉紀房まで、平泉史学の幹の人を時代の順に、まっすぐ一本の線で結びました（幹の人と枝葉の候補は「平泉史学の幹・選定案」による）。「幹を巡る」を押すと、金の光が神代から幹を下り、画面がそれを追います。光が着いた人では少し止まり、輪が広がって札が光ります（もう一度押すか、画面に触ると止まります）。幹の人の「枝葉」を押すと、幹から枝が伸びて、その人から分かれる人が銀杏の葉とともに開きます（案の人を先に、そのあとは、データの上で直接つながる人・組織を、平泉澄先生から見た大切さの順に）。幹の間の「間の人」を押すと、二人の時代のあいだにいる人だけを通り、系譜に近い関係（家系・師弟・影響・後援など）でつなぐ、いちばん短い道の人が並びます。名前を押すと札が開きます。",
+    trunk: "神代から平泉澄先生、平泉紀房まで、平泉史学の幹の人を時代の順に、まっすぐ一本の線で結びました（幹の人と枝葉の候補は「平泉史学の幹・選定案」による）。上の木は、ふつうの地面に立つ一本の木で、下から上へ時代の順です。主な根の先が天照大神、ほかの根の先が神武天皇・聖徳太子・天智天皇、幹の真ん中が平泉澄先生、幹の先が平泉紀房で、幹の上には平泉澄先生の門下が葉の冠になって広がります。「幹を巡る」を押すと、金の光が根の先から幹を上り、着いた人では少し止まって、輪が広がり名前が光ります（もう一度押すか、画面に触ると止まります）。幹の人の「枝葉」を押すと、幹から枝が伸びて、その人から分かれる人が銀杏の葉とともに開きます（案の人を先に、そのあとは、データの上で直接つながる人・組織を、平泉澄先生から見た大切さの順に）。幹の間の「間の人」を押すと、二人の時代のあいだにいる人だけを通り、系譜に近い関係（家系・師弟・影響・後援など）でつなぐ、いちばん短い道の人が並びます。名前を押すと札が開きます。",
     map: "縦は時代と天皇の御代で、下へ読み進めると時代が下ります（同じ年の人が多くて列に収まらない所だけ、少し上下にずらして並べます）。横は上のタブで選ぶ並べ方（全部で 19 通り）で、切り替えると人と組織が新しい列へ移ります。札を開いていないときは線を描かず、バブルと名前だけを出します。人や組織を押すと札が開き、平泉澄先生までの道すじが一本ずつ順に光って線が残ります（その人のほかの線も出ます）。道すじの人の名前は、線やほかの名前にかからない所に出ます（近くに空きがなければ、少し離して置きます）。図の上にはその札が出ます。札は上の帯をつまんで動かし、右下の角で大きさを変えられます。",
     ancestry: "起点の人から、師や祖を一段ずつたどります。大陸や西洋の学者の、さらに先までさかのぼれます。「全部ひらく」を押すと、傍系（ほかの師・ほかの門下）まで残らず開きます。縦の位置は実際の年代と天皇の御代を表し、下へ読み進めると時代が下ります。短冊を押すと、図の上にその人の札が出ます。",
     relations: "図に描いた関係を、種類・確度・説明つきで一本ずつ並べました。人物・組織の表では、各タブでの分け方を一行にまとめています。行を押すと、表の上にその札が出ます。"
@@ -7147,6 +7180,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
  *   葉の色は学派の色で、縁は金。案の人の葉は金。ふだんは葉と枝がわずかに風に揺れ、金箔が少し舞う。
  * - 幹を巡る: 金の光が神代から幹を下り、画面がそれを追う。光が通った幹は金に染まる。着いた人では、輪が広がり、
  *   金箔が舞い、枝葉の数だけ光の筋が走る（平泉澄先生では大きく、長く）。
+ * - 平泉史学の木（指示77・78）: 画面の上の「木の舞台」に、ふつうの地面に立つ一本の木を描く（setScene）。土の中に根、上に幹と冠。
+ *   下から上へ時代の順で、巡る光も根の先（天照大神）から幹の先（平泉紀房）へ上る（tourScene）。名前は view-trunk.js の HTML。
  * WebGL2 が使えない・失われたときは作らない（今までの CSS の線と点のまま）。動きを減らす設定では、動かさずに描くだけ。
  */
 (function () {
@@ -7176,7 +7211,11 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     return v;
   }
   // 色を読めなかったときの決まった色（css の --gold・--trunk-ink を、明るい色・暗い色の画面でそれぞれ RGB にしたもの）
-  const FALLBACK = { gold: [[0.72, 0.54, 0.18], [0.89, 0.72, 0.36]], ink: [[0.26, 0.19, 0.14], [0.71, 0.66, 0.6]] };
+  const FALLBACK = {
+    gold: [[0.72, 0.54, 0.18], [0.89, 0.72, 0.36]], ink: [[0.26, 0.19, 0.14], [0.71, 0.66, 0.6]], paper: [[0.96, 0.97, 0.96], [0.1, 0.12, 0.11]],
+    soil0: [[0.69, 0.57, 0.43], [0.31, 0.25, 0.19]], soil1: [[0.44, 0.33, 0.24], [0.17, 0.13, 0.1]], root: [[0.9, 0.84, 0.72], [0.62, 0.55, 0.45]], grass: [[0.38, 0.55, 0.3], [0.3, 0.45, 0.26]]
+  };
+  const bez = (c, t) => { const u = 1 - t; return [u * u * u * c[0] + 3 * u * u * t * c[2] + 3 * u * t * t * c[4] + t * t * t * c[6], u * u * u * c[1] + 3 * u * u * t * c[3] + 3 * u * t * t * c[5] + t * t * t * c[7]]; };
   const GRAY = [0.55, 0.55, 0.55];
   const cssVar = (el, name) => getComputedStyle(el).getPropertyValue(name);
   const hash01 = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 10007) / 10007; };
@@ -7231,7 +7270,7 @@ uniform float u_time;
 uniform vec3 u_gold;
 uniform vec4 u_light;
 uniform float u_gild;
-uniform float u_gtop;
+uniform vec3 u_gband; // 金に染める範囲（上の y・下の y）と向き（1 なら光より上を、-1 なら光より下を）
 out vec4 o;
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h21(i), h21(i + vec2(1., 0.)), f.x), mix(h21(i + vec2(0., 1.)), h21(i + vec2(1., 1.)), f.x), f.y); }
@@ -7252,10 +7291,15 @@ void main() {
     float core = 1. - smoothstep(0., .45, across);
     float flow = .5 + .5 * sin(v_doc.y * .021 - u_time * 1.4);
     col = mix(col, u_gold, core * (.2 + .28 * flow));
-    float past = u_gild * smoothstep(u_gtop - 2., u_gtop + 2., v_doc.y) * (1. - smoothstep(u_light.y - 60., u_light.y + 4., v_doc.y));
+    float side = u_gband.z > 0. ? 1. - smoothstep(u_light.y - 60., u_light.y + 4., v_doc.y) : smoothstep(u_light.y - 4., u_light.y + 60., v_doc.y);
+    float past = u_gild * step(u_gband.x, v_doc.y) * step(v_doc.y, u_gband.y) * side;
     col = mix(col, u_gold, past * .6);
   } else if (v_k.x < 1.5) {
     al *= .82 + .18 * vn(vec2(v_m.x * 26., across * 2.5));
+  } else if (v_k.x > 2.5) {
+    // 根: 土の中で明るく見える色。真ん中を明るく、細かいすじ
+    col *= .8 + .28 * sqrt(max(0., 1. - across * across));
+    al *= .85 + .15 * vn(vec2(v_m.x * 40., across * 3.));
   } else {
     col = u_gold;
     al *= 1. - .65 * v_m.x;
@@ -7277,11 +7321,14 @@ out vec2 v_q;
 out vec4 v_col;
 out vec2 v_m;
 out float v_px;
+out vec2 v_wp;
 void main() {
   vec2 lq = a_q;
   lq.x *= a_m.z > 0. ? a_m.z : 1.;
   float s = a_pos.z, c = cos(a_pos.w), sn = sin(a_pos.w);
-  vec2 p = a_pos.xy + vec2(c * lq.x - sn * lq.y, sn * lq.x + c * lq.y) * s - (a_m.w > .5 ? vec2(0.) : u_scroll);
+  vec2 wp = a_pos.xy + vec2(c * lq.x - sn * lq.y, sn * lq.x + c * lq.y) * s;
+  vec2 p = wp - (a_m.w > .5 ? vec2(0.) : u_scroll);
+  v_wp = wp;
   gl_Position = vec4(p.x / u_view.x * 2. - 1., 1. - p.y / u_view.y * 2., 0., 1.);
   v_q = a_q;
   v_col = a_col;
@@ -7294,8 +7341,14 @@ in vec2 v_q;
 in vec4 v_col;
 in vec2 v_m;
 in float v_px;
+in vec2 v_wp;
 uniform vec3 u_gold;
+uniform vec3 u_paper;
+uniform vec3 u_soil0;
+uniform vec3 u_soil1;
 out vec4 o;
+float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h21(i), h21(i + vec2(1., 0.)), f.x), mix(h21(i + vec2(0., 1.)), h21(i + vec2(1., 1.)), f.x), f.y); }
 void main() {
   vec2 q = v_q;
   float shape = v_m.x, A = 0.;
@@ -7325,10 +7378,22 @@ void main() {
     float d = abs(length(q) - .84);
     A = 1. - smoothstep(0., .13 + v_px, d);
     col = u_gold;
-  } else {
+  } else if (shape < 4.5) {
     float d = length(q);
     A = (exp(-d * d * 7.) + .4 * exp(-d * d * 1.6)) * (1. - smoothstep(.85, 1., d));
     col = mix(vec3(1.), u_gold, smoothstep(0., .5, d));
+  } else if (shape < 5.5) {
+    // 土: 上は明るく、深いほど暗い。地層の縞と小石。左右の端は紙に溶かす
+    float depth = q.y * .5 + .5;
+    col = mix(u_soil0, u_soil1, smoothstep(0., 1., depth));
+    col *= .92 + .12 * vn(vec2(v_wp.x * .004, v_wp.y * .07));
+    col = mix(col, u_soil0 * 1.08, smoothstep(.8, .84, vn(v_wp * .11)) * .35);
+    A = (1. - smoothstep(.985, 1., abs(q.x))) * (1. - smoothstep(.82, 1., q.y));
+  } else {
+    // 人の点: 紙の色の丸に、学派の色の輪
+    float d = length(q);
+    A = 1. - smoothstep(1. - v_px * 1.5, 1., d);
+    col = mix(mix(u_paper, v_col.rgb, .3), v_col.rgb, smoothstep(.58 - v_px, .58 + v_px, d));
   }
   A *= v_col.a;
   if (A <= .002) discard;
@@ -7445,11 +7510,12 @@ void main() {
       ["a_pos", "a_col", "a_m"].forEach((n, i) => attr(sp, n, 4, SPR * 4, i * 16, 1));
       gl.bindVertexArray(null);
       const U = (p, names) => Object.fromEntries(names.map((n) => [n, gl.getUniformLocation(p, n)]));
-      this.rU = U(rp, ["u_view", "u_scroll", "u_time", "u_gold", "u_light", "u_gild", "u_gtop"]);
-      this.sU = U(sp, ["u_view", "u_scroll", "u_gold"]);
+      this.rU = U(rp, ["u_view", "u_scroll", "u_time", "u_gold", "u_light", "u_gild", "u_gband"]);
+      this.sU = U(sp, ["u_view", "u_scroll", "u_gold", "u_paper", "u_soil0", "u_soil1"]);
       this.rib = new Pack(RIB);
       this.sprA = new Pack(SPR); // ふつうに重ねる形（葉・金箔）
       this.sprB = new Pack(SPR); // 光る形（後光・輪・光の玉）。暗い色の画面では足し合わせて光らせる
+      this.sprS = new Pack(SPR); // 土（いちばん後ろに描く）
       gl.enable(gl.BLEND);
     }
 
@@ -7460,6 +7526,11 @@ void main() {
       const k = this.dark ? 1 : 0;
       this.cInk = rgb(cssVar(root, "--trunk-ink")) || FALLBACK.ink[k];
       this.cGold = rgb(cssVar(root, "--gold")) || FALLBACK.gold[k];
+      this.cPaper = rgb(cssVar(root, "--paper")) || FALLBACK.paper[k];
+      this.cSoil0 = rgb(cssVar(root, "--soil-top")) || FALLBACK.soil0[k];
+      this.cSoil1 = rgb(cssVar(root, "--soil-deep")) || FALLBACK.soil1[k];
+      this.cRoot = rgb(cssVar(root, "--root")) || FALLBACK.root[k];
+      this.cGrass = rgb(cssVar(root, "--grass")) || FALLBACK.grass[k];
       this.kick();
     }
     resize() {
@@ -7509,6 +7580,18 @@ void main() {
       this.trunkX = st.length ? st[0].x : 0;
       this.kick();
     }
+    // 木の舞台（文書の座標）。view-trunk.js の layoutTree が作る。人の点と葉の色は、名前のボタンの --c から読む
+    setScene(sc) {
+      if (sc) {
+        const c = (el) => (el ? rgb(cssVar(el, "--c")) : null) || GRAY;
+        sc.nodes.forEach((n) => { n.col = c(n.el); });
+        sc.leaves.forEach((l) => { l.col = l.deco ? this.cGrass : c(l.el); });
+        if (!this.scene && !this.reduced) { sc.born = this.now(); this.animUntil = Math.max(this.animUntil, sc.born + 4.5); }
+        else sc.born = this.scene ? this.scene.born : -1e9;
+      }
+      this.scene = sc;
+      this.kick();
+    }
     // 枝葉を開いた・閉じた（ids は幹の人。いくつも開いたときは、上から順に少しずつ遅らせて伸ばす）
     grow(ids, on) {
       const now = this.now();
@@ -7542,6 +7625,15 @@ void main() {
       this.kick();
       return true;
     }
+    tourScene(seq, cb, band) {
+      this.stopTour();
+      if (this.dead || !seq.length) return false;
+      const last = seq[seq.length - 1];
+      this.tourS = { seq, k: 0, cb: cb || {}, end: last.a + last.d, arrived: -1, scene: true };
+      this.gband = [band[0], band[1], -1];
+      this.kick();
+      return true;
+    }
     stopTour() {
       if (!this.tourS) return;
       this.tourS = null;
@@ -7550,8 +7642,11 @@ void main() {
     }
     arrive(i, now) {
       const s = this.st[i];
-      if (!s) return;
-      const big = s.center ? 1.9 : 1;
+      if (s) this.arrivePoint(s.x, s.y, s.center ? 1.9 : 1, s.branches, now);
+    }
+    // 着いた所で、光がはじけ、輪が広がり、金箔が舞い、枝葉の数だけ光の筋が走る（big は平泉澄先生で大きく）
+    arrivePoint(x, y, big, branches, now) {
+      const s = { x, y, center: big > 1.5, branches };
       this.rings.push({ x: s.x, y: s.y, born: now, life: 0.9 * big, size: 46 * big, flash: true });
       this.rings.push({ x: s.x, y: s.y, born: now, life: 1.5 * big, size: 70 * big });
       this.rings.push({ x: s.x, y: s.y, born: now + 0.22, life: 1.3 * big, size: 44 * big });
@@ -7591,8 +7686,8 @@ void main() {
       const still = this.reduced;
       const T = still ? 0 : now; // 動きを減らす設定では、揺れも流れも止める
       const ink = this.cInk, gold = this.cGold;
-      const rib = this.rib, sa = this.sprA, sb = this.sprB;
-      rib.n = sa.n = sb.n = 0;
+      const rib = this.rib, sa = this.sprA, sb = this.sprB, ss = this.sprS;
+      rib.n = sa.n = sb.n = ss.n = 0;
       const vis = (y0, y1) => y1 > sy - 120 && y0 < sy + H + 120;
 
       // 巡る光
@@ -7601,12 +7696,20 @@ void main() {
         const S = this.tourS;
         while (S.k < S.seq.length - 1 && now >= S.seq[S.k].a + S.seq[S.k].d) S.k++;
         const ph = S.seq[S.k], u = clamp01((now - ph.a) / ph.d), e = easeInOut(u);
-        const ly = ph.y0 + (ph.y1 - ph.y0) * e;
-        if (ph.i != null && S.arrived !== ph.i && now >= ph.a) { S.arrived = ph.i; this.arrive(ph.i, now); if (S.cb.onArrive) S.cb.onArrive(ph.i, this.st[ph.i].el); }
         const k = ph.fade ? u : ph.end ? 1 - u : 1;
-        lit = this.light = [this.trunkX, ly, this.phone ? 34 : 46, 0.85 * k];
+        if (S.scene) {
+          // 木の舞台: 画面は動かさない。光は根と幹の曲線に沿って上る
+          const p = ph.c ? bez(ph.c, e) : [ph.x, ph.y];
+          if (ph.i != null && S.arrived !== ph.i && now >= ph.a) { S.arrived = ph.i; this.arrivePoint(ph.x, ph.y, ph.big || 1, ph.rays || 0, now); if (S.cb.onArrive) S.cb.onArrive(ph.i, ph.el); }
+          lit = this.light = [p[0], p[1], this.phone ? 30 : 40, 0.85 * k];
+        } else {
+          const ly = ph.y0 + (ph.y1 - ph.y0) * e;
+          if (ph.i != null && S.arrived !== ph.i && now >= ph.a) { S.arrived = ph.i; this.arrive(ph.i, now); if (S.cb.onArrive) S.cb.onArrive(ph.i, this.st[ph.i].el); }
+          lit = this.light = [this.trunkX, ly, this.phone ? 34 : 46, 0.85 * k];
+          this.gband = null;
+          window.scrollTo({ top: Math.max(0, ly - window.innerHeight * 0.42), behavior: "auto" });
+        }
         this.gild = ph.fade ? 0 : 1;
-        window.scrollTo({ top: Math.max(0, ly - window.innerHeight * 0.42), behavior: "auto" });
         if (now >= S.end) { const cb = S.cb; this.tourS = null; this.fadeFrom = now; if (cb.onEnd) cb.onEnd(); }
       } else if (this.fadeFrom != null) {
         const u = clamp01((now - this.fadeFrom) / 1.6);
@@ -7660,6 +7763,8 @@ void main() {
         });
       }
 
+      if (this.scene) this.drawScene(this.scene, now, T, still, vis);
+
       // 着いた人の輪・金箔・光の筋
       this.rings = this.rings.filter((r) => now < r.born + r.life);
       this.rings.forEach((r) => {
@@ -7695,6 +7800,24 @@ void main() {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      const sprites = (pack, glow) => {
+        if (!pack.n) return;
+        gl.useProgram(this.sProg);
+        gl.uniform2f(this.sU.u_view, W, H);
+        gl.uniform2f(this.sU.u_scroll, sx, sy);
+        gl.uniform3f(this.sU.u_gold, gold[0], gold[1], gold[2]);
+        gl.uniform3f(this.sU.u_paper, this.cPaper[0], this.cPaper[1], this.cPaper[2]);
+        gl.uniform3f(this.sU.u_soil0, this.cSoil0[0], this.cSoil0[1], this.cSoil0[2]);
+        gl.uniform3f(this.sU.u_soil1, this.cSoil1[0], this.cSoil1[1], this.cSoil1[2]);
+        // 暗い色の画面では、光る形を足し合わせて光らせる。明るい色の画面では、ふつうに重ねる（足すと紙の白に消える）
+        if (glow && this.dark) gl.blendFunc(gl.ONE, gl.ONE); else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        gl.bindVertexArray(this.sVao);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.sBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, pack.a.subarray(0, pack.n * SPR), gl.DYNAMIC_DRAW);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, pack.n);
+      };
+      sprites(ss, false);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       if (rib.n) {
         gl.useProgram(this.rProg);
         gl.uniform2f(this.rU.u_view, W, H);
@@ -7703,29 +7826,75 @@ void main() {
         gl.uniform3f(this.rU.u_gold, gold[0], gold[1], gold[2]);
         gl.uniform4f(this.rU.u_light, lit[0], lit[1], lit[2], lit[3]);
         gl.uniform1f(this.rU.u_gild, this.gild);
-        gl.uniform1f(this.rU.u_gtop, st.length ? st[0].y - 90 : 0);
+        const gb = this.gband || [st.length ? st[0].y - 90 : 0, 1e9, 1];
+        gl.uniform3f(this.rU.u_gband, gb[0], gb[1], gb[2]);
         gl.bindVertexArray(this.rVao);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.rBuf);
         gl.bufferData(gl.ARRAY_BUFFER, rib.a.subarray(0, rib.n * RIB), gl.DYNAMIC_DRAW);
         gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, (SEG + 1) * 2, rib.n);
       }
-      const sprites = (pack, glow) => {
-        if (!pack.n) return;
-        gl.useProgram(this.sProg);
-        gl.uniform2f(this.sU.u_view, W, H);
-        gl.uniform2f(this.sU.u_scroll, sx, sy);
-        gl.uniform3f(this.sU.u_gold, gold[0], gold[1], gold[2]);
-        // 暗い色の画面では、光る形を足し合わせて光らせる。明るい色の画面では、ふつうに重ねる（足すと紙の白に消える）
-        if (glow && this.dark) gl.blendFunc(gl.ONE, gl.ONE); else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        gl.bindVertexArray(this.sVao);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.sBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, pack.a.subarray(0, pack.n * SPR), gl.DYNAMIC_DRAW);
-        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, pack.n);
-      };
       sprites(sb, true);
       sprites(sa, false);
       gl.bindVertexArray(null);
-      this.stats = { rib: rib.n, sprites: sa.n + sb.n };
+      this.stats = { rib: rib.n, sprites: sa.n + sb.n + ss.n };
+    }
+
+    // 木の舞台を描く。はじめて出したときは、根が下へ、幹が上へ伸び、そのあと冠の枝と葉が開く
+    drawScene(sc, now, T, still, vis) {
+      const rib = this.rib, sa = this.sprA, sb = this.sprB, ss = this.sprS, gold = this.cGold, ink = this.cInk, rc = this.cRoot, gr = this.cGrass;
+      const age = still ? 1e9 : now - sc.born;
+      if (sc.anchor && this.onSceneMove) {
+        const r = sc.anchor.getBoundingClientRect();
+        if (Math.abs(r.left + window.scrollX - sc.ox) > 0.5 || Math.abs(r.top + window.scrollY - sc.oy) > 0.5) this.onSceneMove();
+      }
+      if (!vis(sc.soil[1] - 40, sc.soil[3] + 40) && !vis(sc.band[0] - 60, sc.band[1])) return;
+      // 土（いちばん後ろ）と地面の線
+      const s0 = sc.soil, sw = s0[2] - s0[0], shh = (s0[3] - s0[1]) / 2;
+      ss.push((s0[0] + s0[2]) / 2, s0[1] + shh, shh, 0, 1, 1, 1, 0.95, 5, 0, sw / (2 * shh), 0);
+      rib.push(...sc.surface, 3, 3, 1, 0.5, this.cSoil1[0], this.cSoil1[1], this.cSoil1[2], 0.7, 1, 0, 0, 0);
+      // 根（下へ伸びる）
+      const gR = easeOut(clamp01(age / 1.3));
+      sc.roots.forEach((r) => {
+        const g = clamp01((gR - r.d0) / Math.max(0.05, 1 - r.d0));
+        if (g <= 0) return;
+        rib.push(...r.c, r.w0, r.w1, easeOut(g), r.seed, rc[0], rc[1], rc[2], 0.95, 3, 0, 0, 0);
+      });
+      // 幹（地面から上へ。高さの順に一本ずつ伸びる）
+      const gT = easeOut(clamp01((age - 0.4) / 1.6)), reach = sc.band[1] - gT * (sc.band[1] - sc.band[0]);
+      sc.trunk.forEach((t) => {
+        const a = t.c[1], b = t.c[7], g = clamp01((a - reach) / Math.max(1, a - b));
+        if (g <= 0) return;
+        rib.push(...t.c, t.w0, t.w1, g, 0.37, ink[0], ink[1], ink[2], this.dark ? 0.88 : 0.94, 0, 0, 0, 0);
+      });
+      // 草（地面に生える。わずかに揺れる）
+      sc.grass.forEach((b) => {
+        const g = clamp01((age - 0.2 - b[4] * 0.6) / 0.5);
+        if (g <= 0) return;
+        rib.push(b[0], b[1], b[0] + b[3] * 0.2, b[1] - b[2] * 0.4, b[0] + b[3] * 0.7, b[1] - b[2] * 0.8, b[0] + b[3], b[1] - b[2], 1.7, 0.3, easeOut(g), b[4], gr[0], gr[1], gr[2], 0.9, 1, 0, 1.4, 0);
+      });
+      // 冠の枝と葉
+      sc.boughs.forEach((bo, k) => {
+        const g = clamp01((age - 1.5 - k * 0.05) / 0.5);
+        if (g <= 0) return;
+        rib.push(...bo.c, bo.w0, bo.w1, easeOut(g), bo.seed, ink[0], ink[1], ink[2], 0.9, 1, 0, 1, 0);
+      });
+      sc.leaves.forEach((l, k) => {
+        const tl = clamp01((age - 1.8 - k * 0.05) / 0.6);
+        if (tl <= 0) return;
+        const sz = l.size * (tl < 1 ? easeBack(tl) : 1);
+        const rot = l.rot + (1 - easeOut(tl)) * -Math.sign(l.rot || 1) * 0.9 + (still ? 0 : Math.sin(T * 1.3 + l.seed * 6.28) * 0.06);
+        const c = l.col || gold;
+        const kx = l.x + Math.sin(rot) * 0.42 * sz, ky = l.y - Math.cos(rot) * 0.42 * sz;
+        sa.push(kx, ky, sz, rot, c[0], c[1], c[2], 0.96, 1, 0, 0, 0);
+      });
+      // 人の点と後光（根と幹が届いてから）
+      sc.nodes.forEach((n, i) => {
+        const on = this.tourS && this.tourS.scene && this.tourS.arrived === n.k ? 1 : 0;
+        if (!still && (n.root ? gR < 0.85 : n.y < reach - 2)) return;
+        const base = (n.center ? 0.36 : 0.2) + (still ? 0 : 0.06 * Math.sin(T * 1.2 + i * 1.7));
+        sb.push(n.x, n.y, n.r * (n.center ? 3.6 : 3) * (1 + on * 0.5), 0, gold[0], gold[1], gold[2], Math.min(0.9, base + on * 0.4), 0, 0, 0, 0);
+        sa.push(n.x, n.y, n.r, 0, n.col[0], n.col[1], n.col[2], 1, 6, 0, 0, 0);
+      });
     }
 
     destroy() {
@@ -7762,7 +7931,7 @@ void main() {
 
 </script>
 <script>
-/* 平泉史学の幹（指示62・63。絵と動きは指示73 で js/trunk-fx.js の WebGL2 の層に）
+/* 平泉史学の幹（指示62・63。絵と動きは指示73 で js/trunk-fx.js の WebGL2 の層に。指示77・78 で、上に地面に立つ一本の木の舞台を置き、下から上へ時代の順に）
  * 神代から平泉澄先生、平泉紀房まで、幹の人を時代の順に、まっすぐ一本の線（幹）で結ぶ。幹の人からは、関わりのある人が枝葉として分かれる。
  * 幹は開ける: 幹の人の「枝葉」を押すとその人から分かれる人が開き、幹の間の「間の人」を押すと、データの上で二人をつなぐ人が幹の上に並ぶ。
  * 名前を押すと札が開く。幹の人と枝葉の候補は、ユーザーの案「平泉史学の幹・選定案」による（docs/指示と要件.md の 63）。
@@ -7890,10 +8059,10 @@ void main() {
           <button type="button" class="btn ghost" data-act="close-all">すべて閉じる</button>
         </div>
         <div class="tb-actions">${SG.guideBtn()}</div>
-        <p class="tb-rule">神代から平泉澄先生へ、平泉史学の幹をまっすぐ一本に結びました。幹の人の「枝葉」で関わりのある人が開き、幹の間の「間の人」で、データの上で二人をつなぐ人が並びます。名前を押すと札が開きます。</p>
+        <p class="tb-rule">ふつうの地面に、平泉史学の木を一本立てました。下から上へ時代の順で、主な根の先が天照大神、幹の真ん中が平泉澄先生、幹の先が平泉紀房です。名前を押すと札が開きます。下の並びでは、幹の人の「枝葉」と、幹の間の「間の人」を開けます。</p>
       </div></div>
       <div class="stage wrap">
-        <div class="stage-main"><ol class="tk" id="tk" aria-label="平泉史学の幹（神代から平泉紀房まで）"></ol><p class="vh" id="tkLive" aria-live="polite"></p></div>
+        <div class="stage-main"><section class="tk-tree" id="tkTree" aria-label="平泉史学の木。下の根から上の幹の先へ、時代の順"><div class="tt-labels" id="ttLabels"></div></section><ol class="tk" id="tk" aria-label="平泉史学の幹（上が平泉紀房、下が神代。下ほど古い）"></ol><p class="vh" id="tkLive" aria-live="polite"></p></div>
         <div class="stage-side" data-side></div>
       </div>`;
       this.host = host;
@@ -7901,6 +8070,16 @@ void main() {
       this.live = host.querySelector("#tkLive");
       // 幹・枝・葉と金の光は WebGL2 の層が描く（指示73）。作れないときは null で、今までの CSS の線と点のまま
       this.fx = SG.TrunkFX ? SG.TrunkFX.create(host, this.list) : null;
+      // 木の舞台（指示77・78）。WebGL2 がないときは出さない（下の並びだけ）
+      this.tree = host.querySelector("#tkTree");
+      this.tlab = host.querySelector("#ttLabels");
+      if (!this.fx) this.tree.hidden = true;
+      else {
+        this.fx.onSceneMove = () => this.layoutTreeSoon();
+        this.treeRO = new ResizeObserver(() => this.layoutTreeSoon());
+        this.treeRO.observe(this.tree);
+        this.tlab.addEventListener("click", (ev) => { const b = ev.target.closest(".tt-pl"); if (b) SG.select(b.dataset.pid); });
+      }
       host.querySelector(".tk-tools").addEventListener("click", (ev) => {
         const b = ev.target.closest("[data-act]");
         if (!b) return;
@@ -7925,7 +8104,162 @@ void main() {
       });
       this.render();
     },
-    unmount() { this.stopTour(); if (this.fx) { this.fx.destroy(); this.fx = null; } },
+    unmount() {
+      this.stopTour();
+      if (this.treeRO) { this.treeRO.disconnect(); this.treeRO = null; }
+      if (this.ltRaf) { cancelAnimationFrame(this.ltRaf); this.ltRaf = 0; }
+      if (this.fx) { this.fx.destroy(); this.fx = null; }
+      this.treeGeo = null;
+    },
+
+    // ── 平泉史学の木（指示77・78）: ふつうの地面に立つ一本の木を、見出し帯と道具帯の下の一画面に描く。下から上へ時代の順。
+    // 主な根の先が天照大神。ほかの根の先に神武天皇・聖徳太子・天智天皇（古いほど深い）。地面の上の幹は菅原道真から明治天皇までを
+    // 下半分に等しく並べ、真ん中が平泉澄先生、上半分に間の人（平泉澄先生と平泉紀房のあいだ）、先が平泉紀房。平泉澄先生の枝葉
+    // （大切な人から）を、幹の上半分の左右に冠として広げる。名前は HTML のボタンで、押すと札が開く。絵は trunk-fx.js の setScene
+    layoutTreeSoon() {
+      if (this.ltRaf) return;
+      this.ltRaf = requestAnimationFrame(() => { this.ltRaf = 0; this.layoutTree(); });
+    },
+    layoutTree() {
+      const stg = this.tree;
+      if (!this.fx || !stg || stg.hidden) return;
+      const rc = stg.getBoundingClientRect(), W = rc.width, H = rc.height;
+      if (W < 240 || H < 300) return;
+      const ox = rc.left + window.scrollX, oy = rc.top + window.scrollY;
+      const phone = W < 560, sel = SG.state.selected, first = !this.treeGeo;
+      const cx = W / 2, gY = H * 0.7, tipY = H * 0.075, midY = (gY + tipY) / 2, bot = H * 0.955, dep = bot - gY;
+      const C = (...p) => p.map((v, i) => v + (i % 2 ? oy : ox)); // 舞台の座標の曲線（8 つの数）→ 文書の座標
+      const L = (a, b) => [a[0], a[1], a[0] + (b[0] - a[0]) / 3, a[1] + (b[1] - a[1]) / 3, a[0] + (2 * (b[0] - a[0])) / 3, a[1] + (2 * (b[1] - a[1])) / 3, b[0], b[1]];
+      const bz = (c, t) => { const u = 1 - t; return [u * u * u * c[0] + 3 * u * u * t * c[2] + 3 * u * t * t * c[4] + t * t * t * c[6], u * u * u * c[1] + 3 * u * u * t * c[3] + 3 * u * t * t * c[5] + t * t * t * c[7]]; };
+      let seed = 7;
+      const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647; // いつも同じ形になる乱数
+      const R = phone ? { t: 6.5, c: 12, tip: 8, root: 6, gap: 4 } : { t: 8, c: 15, tip: 9.5, root: 7, gap: 4.5 };
+      const html = [], pts = [];
+      const btn = (n, x, y, side, cls, sub) => `<button type="button" class="tt-pl ${side}${cls ? " " + cls : ""}${n.id === sel ? " sel" : ""}" data-pid="${n.id}" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--c:${SG.colorOf(n)}">${E(n.n)}${sub ? `<span class="tt-sub">${E(sub)}</span>` : ""}</button>`;
+      const era = (n) => (n.myth ? "神代" : SG.eraAt(n.fl));
+      // 人の点（k は巡る順。下から）
+      const add = (id, x, y, r, side, cls, extra) => {
+        const n = SG.byId.get(id);
+        if (!n) return null;
+        const p = Object.assign({ id, x, y, r, k: pts.length, rays: Math.min(12, leaves(id).length) }, extra || {});
+        pts.push(p);
+        const lx = side === "l" ? x - r - 7 : x + r + 7;
+        html.push(btn(n, lx, y, side, cls, cls === "gap" || cls === "leaf" ? "" : era(n)));
+        return p;
+      };
+      const off = (phone ? 0.24 : 0.3) * W;
+      const roots = [
+        add(TRUNK[0].id, cx + 3, bot - 2, R.root + 1, "r", "root", { root: true, main: true }),
+        add(TRUNK[1].id, cx - off, gY + dep * 0.8, R.root, "l", "root", { root: true, jy: gY + dep * 0.64, dir: -1 }),
+        add(TRUNK[2].id, cx + off, gY + dep * 0.55, R.root, "r", "root", { root: true, jy: gY + dep * 0.4, dir: 1 }),
+        add(TRUNK[3].id, cx - off * 0.85, gY + dep * 0.3, R.root, "l", "root", { root: true, jy: gY + dep * 0.16, dir: -1 })
+      ].filter(Boolean);
+      const lower = TRUNK.slice(4, 12), step = (gY - midY) / (lower.length + 0.8), trunk = [];
+      lower.forEach((t, k) => { const p = add(t.id, cx, gY - (k + 0.9) * step, R.t, k % 2 ? "l" : "r", ""); if (p) trunk.push(p); });
+      const cen = add(TRUNK[12].id, cx, midY, R.c, "r", "center", { center: true });
+      if (cen) trunk.push(cen);
+      const gaps = between(TRUNK[12].id, TRUNK[13].id);
+      gaps.forEach((g, j) => { const p = add(g.id, cx, midY - ((j + 1) * (midY - tipY)) / (gaps.length + 1), R.gap, j % 2 ? "r" : "l", phone ? "gap tiny" : "gap", { gap: true }); if (p) trunk.push(p); });
+      const tip = add(TRUNK[13].id, cx, tipY, R.tip, "r", "tipn");
+      if (tip) trunk.push(tip);
+      // 冠: 平泉澄先生の門人を大切な人から。足りなければ、あとの時代の人（上ほど新しい木なので、師や先の時代の人は入れない）。
+      // 左右に交互に、真ん中ほど外へ広く
+      const skip = new Set(TRUNK_IDS), hz = SG.byId.get(TRUNK[12].id);
+      gaps.forEach((g) => skip.add(g.id));
+      const cand = leaves(TRUNK[12].id).filter((x) => !skip.has(x.n.id) && !x.n.isOrg && hz && x.n.fl >= hz.fl);
+      const pupil = (x) => !!x.e && (x.e.type === "shiji" || x.e.type === "shishuku") && x.e.s === TRUNK[12].id;
+      const crown = cand.filter(pupil).concat(cand.filter((x) => !pupil(x))).slice(0, phone ? 6 : 12);
+      const cTop = tipY + (phone ? 34 : 42), cLow = midY - (phone ? 26 : 32), nS = Math.max(1, Math.ceil(crown.length / 2));
+      const minO = W * (phone ? 0.17 : 0.1), maxO = W * (phone ? 0.22 : 0.27);
+      const boughs = [], lvs = [];
+      crown.forEach((x, k) => {
+        const dir = k % 2 ? -1 : 1, s = k >> 1;
+        const y = nS > 1 ? cLow - (s * (cLow - cTop)) / (nS - 1) : (cLow + cTop) / 2;
+        const o = minO + (maxO - minO) * Math.sin((Math.PI * (s + 0.5)) / nS), lx = cx + dir * o;
+        const c = [cx + dir * 3, y + 26 + o * 0.22, cx + dir * o * 0.3, y + 22 + o * 0.1, lx - dir * o * 0.35, y + 5, lx - dir * 4, y + 2];
+        boughs.push({ c: C(...c), w0: phone ? 3.6 : 4.6, w1: 1.1, seed: rnd() });
+        lvs.push({ x: ox + lx - dir * 4, y: oy + y + 2, rot: dir * (0.55 + 0.3 * (rnd() - 0.5)), size: phone ? 9 : 10.5, seed: rnd(), pid: x.n.id });
+        // 枝の途中にも小さな葉（飾り。名前はない）
+        const m = bz(c, 0.55);
+        lvs.push({ x: ox + m[0], y: oy + m[1], rot: dir * (0.9 + 0.3 * rnd()), size: phone ? 5.5 : 6.5, seed: rnd(), deco: true });
+        html.push(btn(x.n, lx + dir * 9, y - 3, dir > 0 ? "r" : "l", "leaf", ""));
+      });
+      // 根: 主根・人の根（側根）・地面のすぐ下で広がる張り根・ひげ根
+      const rts = [];
+      const tap = [cx, gY - 2, cx - 6, gY + dep * 0.35, cx + 8, gY + dep * 0.7, cx + 3, bot - 2];
+      rts.push({ s: tap, w0: phone ? 13 : 17, w1: 3, d0: 0 });
+      roots.slice(1).forEach((p) => {
+        p.lat = [cx + 1, p.jy, cx + p.dir * W * 0.07, p.jy + 6, p.x - p.dir * W * 0.07, p.y - 10, p.x, p.y];
+        rts.push({ s: p.lat, w0: phone ? 7 : 9, w1: 2.2, d0: ((p.jy - gY) / dep) * 0.8 });
+      });
+      [-1, 1].forEach((dd) => [0.16, 0.3].forEach((len, m) => rts.push({ s: [cx + dd * 6, gY + 3, cx + dd * W * len * 0.4, gY + 6 + m * 4, cx + dd * W * len * 0.8, gY + 12 + m * 10, cx + dd * W * len, gY + 18 + m * 16], w0: phone ? 7 : 9, w1: 1.2, d0: 0.05 })));
+      const big = rts.length;
+      for (let i = 0; i < (phone ? 14 : 24); i++) {
+        const base = rts[Math.floor(rnd() * big)], p = bz(base.s, 0.35 + rnd() * 0.55);
+        const ang = Math.PI / 2 + (rnd() - 0.5) * 2.4, len = 16 + rnd() * 40;
+        const e = [p[0] + Math.cos(ang) * len, Math.min(H - 4, p[1] + Math.abs(Math.sin(ang)) * len)];
+        rts.push({ s: [p[0], p[1], p[0] + (e[0] - p[0]) * 0.3, p[1] + (e[1] - p[1]) * 0.45 + 4, p[0] + (e[0] - p[0]) * 0.7, e[1] - 3, e[0], e[1]], w0: 2.2, w1: 0.4, d0: Math.min(0.9, base.d0 + 0.3) });
+      }
+      // 幹: 地面から人の点を通って先へ（下ほど太く）
+      const wB = phone ? 19 : 26, wAt = (y) => Math.max(2.6, wB * (1 - (0.84 * (gY - y)) / (gY - tipY)));
+      const ys = [gY + 4].concat(trunk.map((p) => p.y), [tipY - 14]);
+      const trs = [];
+      for (let i = 0; i < ys.length - 1; i++) trs.push({ c: C(...L([cx, ys[i]], [cx, ys[i + 1]])), w0: i === 0 ? wB * 1.2 : wAt(ys[i]), w1: i === ys.length - 2 ? 1 : wAt(ys[i + 1]) });
+      // 地面と草（土は画面の幅いっぱい）
+      const dw = document.documentElement.clientWidth, gy = oy + gY;
+      const grass = [];
+      for (let i = 0; i < (phone ? 40 : 90); i++) {
+        const x = i % 2 ? rnd() * dw : ox + cx + (rnd() - 0.5) * W * 0.5;
+        grass.push([x, gy + 1, 5 + rnd() * 10, (rnd() - 0.5) * 8, rnd()]);
+      }
+      this.tlab.innerHTML = html.join("");
+      if (first) { stg.classList.add("first"); setTimeout(() => stg.classList.remove("first"), 2600); }
+      const elOf = (id) => this.tlab.querySelector(`.tt-pl[data-pid="${id}"]`);
+      const doc = (p) => Object.assign({}, p, { x: ox + p.x, y: oy + p.y, el: elOf(p.id) });
+      const nodes = pts.map(doc);
+      this.fx.setScene({
+        anchor: stg, ox, oy,
+        band: [oy + tipY - 20, oy + gY + 4],
+        soil: [0, gy, dw, oy + H],
+        surface: [0, gy + 1, dw * 0.33, gy - 1.5, dw * 0.66, gy + 2, dw, gy],
+        grass,
+        roots: rts.map((r) => ({ c: C(...r.s), w0: r.w0, w1: r.w1, d0: r.d0, seed: rnd() })),
+        trunk: trs,
+        boughs,
+        leaves: lvs.map((l) => Object.assign(l, { el: l.pid ? elOf(l.pid) : null })),
+        nodes
+      });
+      // 巡る道（文書の座標）
+      const byK = new Map(nodes.map((n) => [n.k, n]));
+      this.treeGeo = {
+        band: [oy + tipY - 20, oy + gY + 4],
+        base: [ox + cx, gy],
+        roots: roots.map((p) => Object.assign(byK.get(p.k), p.lat ? { c: C(...p.lat), jx: ox + cx + 1, jy: oy + p.jy } : {})),
+        trunk: trunk.map((p) => byK.get(p.k))
+      };
+    },
+    // 下から巡る道: 天照大神（主根の先）から主根を上り、ほかの根の先へ寄り道し、地面から幹を上って平泉紀房へ（指示78）
+    treeSeq() {
+      const G = this.treeGeo, seq = [];
+      let t = this.fx.now() + 0.2;
+      const L = (a, b) => [a[0], a[1], a[0] + (b[0] - a[0]) / 3, a[1] + (b[1] - a[1]) / 3, a[0] + (2 * (b[0] - a[0])) / 3, a[1] + (2 * (b[1] - a[1])) / 3, b[0], b[1]];
+      const rev = (c) => [c[6], c[7], c[4], c[5], c[2], c[3], c[0], c[1]];
+      const mv = (c) => { const d = Math.max(0.45, Math.min(1.8, Math.hypot(c[6] - c[0], c[7] - c[1]) / 230)); seq.push({ a: t, d, c }); t += d; };
+      const dw = (n, d) => { seq.push({ a: t, d, x: n.x, y: n.y, i: n.k, el: n.el, big: n.center ? 1.9 : n.gap ? 0.6 : 1, rays: n.gap ? 0 : n.rays }); t += d; };
+      const [main, ...lat] = G.roots;
+      if (!main) return seq;
+      seq.push({ a: t, d: 0.7, x: main.x, y: main.y, fade: true });
+      t += 0.7;
+      dw(main, 1.6);
+      let at = [main.x, main.y];
+      lat.forEach((r) => { mv(L(at, [r.jx, r.jy])); mv(r.c); dw(r, 1.4); mv(rev(r.c)); at = [r.jx, r.jy]; });
+      mv(L(at, G.base));
+      at = G.base;
+      G.trunk.forEach((n) => { mv(L(at, [n.x, n.y])); dw(n, n.center ? 3.2 : n.gap ? 0.6 : 1.4); at = [n.x, n.y]; });
+      const last = G.trunk[G.trunk.length - 1] || main;
+      seq.push({ a: t, d: 1.2, x: last.x, y: last.y, end: true });
+      return seq;
+    },
 
     // 幹を巡る（指示65 の案1。指示73 で金の光に）: 神代から平泉紀房まで、金の光が幹を下り、画面がそれを追う。
     // 着いた人では少し止まって（平泉澄先生では長めに）、輪が広がり、札が光る。もう一度押す・触る・回す・キーを押すと止まる。
@@ -7944,13 +8278,37 @@ void main() {
         const nm = el.querySelector(".tk-name"), era = el.querySelector(".tk-era");
         if (this.live && nm) this.live.textContent = `幹を巡っています。${nm.textContent}（${era ? era.textContent : ""}）`;
       };
-      if (this.fx && !SG.reducedMotion()) {
-        const ok = this.fx.tour({
-          onArrive: (k, el) => { this.list.querySelectorAll(".tk-st.touring").forEach((x) => x.classList.remove("touring")); if (el) { el.classList.add("touring"); say(el); } },
+      const treeOn = this.fx && this.treeGeo && !this.tree.hidden;
+      if (treeOn) {
+        // 木の舞台を、見出し帯と道具帯のすぐ下に出してから
+        const st = document.documentElement.style, head = (parseFloat(st.getPropertyValue("--sticky-top")) || 0) + (parseFloat(st.getPropertyValue("--tb-h")) || 0);
+        window.scrollTo({ top: Math.max(0, this.tree.getBoundingClientRect().top + window.scrollY - head - 10), behavior: SG.reducedMotion() ? "auto" : "smooth" });
+      }
+      const sayT = (el) => { if (this.live && el) this.live.textContent = `幹を巡っています。${el.childNodes[0] ? el.childNodes[0].textContent : el.textContent}`; };
+      if (treeOn && !SG.reducedMotion()) {
+        const ok = this.fx.tourScene(this.treeSeq(), {
+          onArrive: (k, el) => { this.tlab.querySelectorAll(".tt-pl.touring").forEach((x) => x.classList.remove("touring")); if (el) { el.classList.add("touring"); sayT(el); } },
           onEnd: () => this.stopTour()
-        });
+        }, this.treeGeo.band);
         if (ok) return;
       }
+      if (treeOn) {
+        // 動きを減らす設定: 木の名前を、下から順に一人ずつ光らせる（画面は動かさない）
+        const els = this.treeGeo.roots.concat(this.treeGeo.trunk).map((n) => n.el).filter(Boolean);
+        let j = 0;
+        const stepT = () => {
+          if (!this.touring) return;
+          els.forEach((x) => x.classList.remove("touring"));
+          if (j >= els.length) { this.stopTour(); return; }
+          const el = els[j++];
+          el.classList.add("touring");
+          sayT(el);
+          this.tourTimer = setTimeout(stepT, el.classList.contains("center") ? 2800 : 1600);
+        };
+        stepT();
+        return;
+      }
+      sts.reverse(); // 下の並びは、下（神代）から上へ（指示78）
       let i = 0;
       const step = () => {
         if (!this.touring) return;
@@ -7971,6 +8329,7 @@ void main() {
       if (this.live) this.live.textContent = "";
       if (this.tourStop) { ["wheel", "touchstart", "keydown", "pointerdown"].forEach((t) => window.removeEventListener(t, this.tourStop)); this.tourStop = null; }
       if (this.list) this.list.querySelectorAll(".tk-st.touring").forEach((x) => x.classList.remove("touring"));
+      if (this.tlab) this.tlab.querySelectorAll(".tt-pl.touring").forEach((x) => x.classList.remove("touring"));
       const btn = this.host && this.host.querySelector('[data-act="tour"]');
       if (btn) { btn.setAttribute("aria-pressed", "false"); btn.textContent = "幹を巡る"; }
     },
@@ -7998,12 +8357,13 @@ void main() {
         return `<li class="tk-leaf${x.plan ? " plan" : ""}" style="--c:${SG.colorOf(x.n)}"><span class="tk-ld" aria-hidden="true"></span>${pl(x.n)}<span class="tk-lr">${E(rel)}</span><span class="tk-ly num">${E(yearOf(x.n))}</span></li>`;
       };
       const html = [];
+      const ss = [], gs = [];
       TRUNK.forEach((t, i) => {
         const n = SG.byId.get(t.id);
         if (!n) return;
         const ls = leaves(t.id), open = this.open.has(t.id), all = this.all.has(t.id);
         const shown = all ? ls : ls.slice(0, SHOW);
-        html.push(`<li class="tk-st ${i % 2 ? "l" : "r"}${t.center ? " center" : ""}" data-id="${t.id}" style="--c:${SG.colorOf(n)}">
+        ss[i] = (`<li class="tk-st ${i % 2 ? "l" : "r"}${t.center ? " center" : ""}" data-id="${t.id}" style="--c:${SG.colorOf(n)}">
           <div class="tk-row">
             <div class="tk-meta"><span class="tk-era">${E(n.myth ? "神代" : SG.eraAt(n.fl))}</span><span class="tk-y num">${E(SG.lifeText(n))}</span></div>
             <span class="tk-dot" aria-hidden="true"></span>
@@ -8021,22 +8381,28 @@ void main() {
         </li>`);
         const next = TRUNK[i + 1];
         if (!next) return;
-        const mid = between(t.id, next.id);
-        if (!mid.length) { html.push('<li class="tk-gap empty" aria-hidden="true"></li>'); return; }
+        const mid = between(t.id, next.id).slice().reverse();
+        if (!mid.length) { gs[i] = '<li class="tk-gap empty" aria-hidden="true"></li>'; return; }
         const gopen = this.gaps.has(t.id);
-        html.push(`<li class="tk-gap">
+        gs[i] = (`<li class="tk-gap">
           <button type="button" class="tk-gap-open" data-gap="${t.id}" aria-expanded="${gopen}" aria-controls="tkg-${t.id}">間の人 <span class="num">${mid.length}</span></button>
           <ol class="tk-mid" id="tkg-${t.id}"${gopen ? "" : " hidden"} aria-label="${E(n.n)}と${E(SG.byId.get(next.id).n)}の間の人">${mid.map((x) => { const m = SG.byId.get(x.id); return `<li style="--c:${SG.colorOf(m)}">${pl(m)}<span class="tk-lr">${E(relText("", x.e))}</span><span class="tk-ly num">${E(yearOf(m))}</span></li>`; }).join("")}</ol>
         </li>`);
       });
+      // 上から: 平泉紀房、平泉澄先生との間、平泉澄先生 …… 天照大神（下ほど古い。指示78）
+      for (let i = TRUNK.length - 1; i >= 0; i--) { if (ss[i]) html.push(ss[i]); if (i > 0 && gs[i - 1]) html.push(gs[i - 1]); }
       this.list.innerHTML = html.join("");
-      if (this.fx) this.fx.measure();
+      if (this.fx) { this.fx.measure(); this.layoutTree(); }
     },
     markSel() {
       if (!this.list) return;
       const id = SG.state.selected;
       this.list.querySelectorAll(".tk-pl.sel").forEach((b) => b.classList.remove("sel"));
       if (id) this.list.querySelectorAll(`.tk-pl[data-pid="${id}"]`).forEach((b) => b.classList.add("sel"));
+      if (this.tlab) {
+        this.tlab.querySelectorAll(".tt-pl.sel").forEach((b) => b.classList.remove("sel"));
+        if (id) this.tlab.querySelectorAll(`.tt-pl[data-pid="${id}"]`).forEach((b) => b.classList.add("sel"));
+      }
     },
     update(reason) {
       if (reason === "select") this.markSel(); // 幹と枝葉は、データ全体から作る（絞り込みは使わない）
