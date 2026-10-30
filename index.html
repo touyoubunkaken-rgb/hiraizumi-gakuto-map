@@ -27,6 +27,8 @@
   --rule: oklch(0.905 0.006 150);
   --rule-2: oklch(0.84 0.008 150);
   --accent: oklch(0.43 0.11 262);
+  --gold: oklch(0.66 0.12 80); /* 幹の金の光（指示73） */
+  --trunk-ink: oklch(0.33 0.035 60); /* 幹の墨（少し茶） */
   --accent-soft: oklch(0.935 0.03 262);
   --on-accent: oklch(0.99 0.004 262);
   --warn: oklch(0.53 0.15 42);
@@ -101,6 +103,8 @@
     --rule: oklch(0.29 0.01 165);
     --rule-2: oklch(0.37 0.012 165);
     --accent: oklch(0.79 0.09 262);
+    --gold: oklch(0.8 0.12 84);
+    --trunk-ink: oklch(0.74 0.025 75);
     --accent-soft: oklch(0.31 0.055 262);
     --on-accent: oklch(0.2 0.03 262);
     --warn: oklch(0.75 0.13 50);
@@ -139,6 +143,8 @@
   --rule: oklch(0.29 0.01 165);
   --rule-2: oklch(0.37 0.012 165);
   --accent: oklch(0.79 0.09 262);
+  --gold: oklch(0.8 0.12 84);
+  --trunk-ink: oklch(0.74 0.025 75);
   --accent-soft: oklch(0.31 0.055 262);
   --on-accent: oklch(0.2 0.03 262);
   --warn: oklch(0.75 0.13 50);
@@ -1362,6 +1368,14 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
 }
 /* ── 指示65 の案1: 幹を巡る（いま送っている幹の人を、札の縁と丸の鼓動で示す） ── */
 .tk-st.touring .tk-card { border-color: var(--c); box-shadow: 0 0 0 3px color-mix(in oklab, var(--c) 35%, transparent), 0 8px 24px color-mix(in oklab, var(--c) 14%, transparent); }
+/* ── 指示73: 幹・枝・葉と金の光を WebGL2 の層（js/trunk-fx.js）で描く ──
+   層は画面に固定して字の後ろに置く。層があるとき（.tk-live）は、CSS の幹の線・枝の線・葉の点を隠す（二重にしない） */
+.tk-fx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.tk-live .stage-main { position: relative; z-index: 1; }
+.tk-live .tk::before, .tk-live .tk-leaf::before { visibility: hidden; }
+.tk-live .tk-ld { visibility: hidden; }
+.tk-live .tk-st.touring .tk-card { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in oklab, var(--gold) 38%, transparent), 0 10px 30px color-mix(in oklab, var(--gold) 22%, transparent); }
+.tk-live .tk-st .tk-card { transition: border-color 600ms var(--ease-out), box-shadow 600ms var(--ease-out); }
 .tk-st.touring .tk-dot { animation: tk-pulse 1.5s var(--ease-out) 1; }
 @keyframes tk-pulse { 0% { scale: 1; } 30% { scale: 1.3; } 100% { scale: 1; } }
 @media (prefers-reduced-motion: reduce) { .tk-st.touring .tk-dot { animation: none; } }
@@ -3018,7 +3032,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=b7edb77862";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=9d9152e2ff";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -4670,7 +4684,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
 
   // ── 案内（読み方） ────────────────────────────────
   const LEAD = {
-    trunk: "神代から平泉澄先生、平泉紀房まで、平泉史学の幹の人を時代の順に、まっすぐ一本の線で結びました（幹の人と枝葉の候補は「平泉史学の幹・選定案」による）。「幹を巡る」を押すと、神代から順に一人ずつ画面の真ん中へ送ります（もう一度押すか、画面に触ると止まります）。幹の人の「枝葉」を押すと、その人から分かれる人が開きます（案の人を先に、そのあとは、データの上で直接つながる人・組織を、平泉澄先生から見た大切さの順に）。幹の間の「間の人」を押すと、二人の時代のあいだにいる人だけを通り、系譜に近い関係（家系・師弟・影響・後援など）でつなぐ、いちばん短い道の人が並びます。名前を押すと札が開きます。",
+    trunk: "神代から平泉澄先生、平泉紀房まで、平泉史学の幹の人を時代の順に、まっすぐ一本の線で結びました（幹の人と枝葉の候補は「平泉史学の幹・選定案」による）。「幹を巡る」を押すと、金の光が神代から幹を下り、画面がそれを追います。光が着いた人では少し止まり、輪が広がって札が光ります（もう一度押すか、画面に触ると止まります）。幹の人の「枝葉」を押すと、幹から枝が伸びて、その人から分かれる人が銀杏の葉とともに開きます（案の人を先に、そのあとは、データの上で直接つながる人・組織を、平泉澄先生から見た大切さの順に）。幹の間の「間の人」を押すと、二人の時代のあいだにいる人だけを通り、系譜に近い関係（家系・師弟・影響・後援など）でつなぐ、いちばん短い道の人が並びます。名前を押すと札が開きます。",
     map: "縦は時代と天皇の御代で、下へ読み進めると時代が下ります（同じ年の人が多くて列に収まらない所だけ、少し上下にずらして並べます）。横は上のタブで選ぶ並べ方（全部で 19 通り）で、切り替えると人と組織が新しい列へ移ります。札を開いていないときは線を描かず、バブルと名前だけを出します。人や組織を押すと札が開き、平泉澄先生までの道すじが一本ずつ順に光って線が残ります（その人のほかの線も出ます）。道すじの人の名前は、線やほかの名前にかからない所に出ます（近くに空きがなければ、少し離して置きます）。図の上にはその札が出ます。札は上の帯をつまんで動かし、右下の角で大きさを変えられます。",
     ancestry: "起点の人から、師や祖を一段ずつたどります。大陸や西洋の学者の、さらに先までさかのぼれます。「全部ひらく」を押すと、傍系（ほかの師・ほかの門下）まで残らず開きます。縦の位置は実際の年代と天皇の御代を表し、下へ読み進めると時代が下ります。短冊を押すと、図の上にその人の札が出ます。",
     relations: "図に描いた関係を、種類・確度・説明つきで一本ずつ並べました。人物・組織の表では、各タブでの分け方を一行にまとめています。行を押すと、表の上にその札が出ます。"
@@ -7125,7 +7139,630 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
 
 </script>
 <script>
-/* 平泉史学の幹（指示62・63）
+/* 平泉史学の幹の絵（指示73）: 幹・枝・銀杏の葉・金の光を WebGL2 で描く層。
+ * 字と札は今までどおり HTML のまま（押せる・読み上げられる・検索できる）。この層は画面の大きさで固定し、その後ろに置く。
+ * HTML の点（幹の人の .tk-dot、枝葉の .tk-ld）の位置を読んで、幹・枝・葉を描く。押せない（pointer-events: none）・読み上げない（aria-hidden）。
+ * - 幹: 墨のかすれた太い線。中を金の筋が、神代から今へ流れる。幹の人の節は、やわらかい金の光をまとう。
+ * - 枝葉: 「枝葉」を開くと、節から枝が下へ伸び、小枝の先に銀杏の葉が開く（銀杏は、平泉澄先生が学び教えた東京帝国大学の印）。
+ *   葉の色は学派の色で、縁は金。案の人の葉は金。ふだんは葉と枝がわずかに風に揺れ、金箔が少し舞う。
+ * - 幹を巡る: 金の光が神代から幹を下り、画面がそれを追う。光が通った幹は金に染まる。着いた人では、輪が広がり、
+ *   金箔が舞い、枝葉の数だけ光の筋が走る（平泉澄先生では大きく、長く）。
+ * WebGL2 が使えない・失われたときは作らない（今までの CSS の線と点のまま）。動きを減らす設定では、動かさずに描くだけ。
+ */
+(function () {
+  "use strict";
+  const SG = window.SG;
+
+  // ── 色: CSS の色（oklch なども）を 1 画素の canvas に塗って、RGB（0〜1）に直す。
+  //    canvas がその書き方を受け付けない（塗る色が目印のまま変わらない）ときは null。呼ぶ側が決まった色を使う ──
+  let c1 = null;
+  const rgbCache = new Map();
+  const SENTINEL = "#010203";
+  function rgb(css) {
+    css = (css || "").trim();
+    if (!css) return null;
+    if (rgbCache.has(css)) return rgbCache.get(css);
+    if (!c1) { const cv = document.createElement("canvas"); cv.width = cv.height = 1; c1 = cv.getContext("2d", { willReadFrequently: true }); }
+    c1.fillStyle = SENTINEL;
+    c1.fillStyle = css;
+    let v = null;
+    if (String(c1.fillStyle).toLowerCase() !== SENTINEL || css.toLowerCase() === SENTINEL) {
+      c1.clearRect(0, 0, 1, 1);
+      c1.fillRect(0, 0, 1, 1);
+      const d = c1.getImageData(0, 0, 1, 1).data;
+      v = [d[0] / 255, d[1] / 255, d[2] / 255];
+    }
+    rgbCache.set(css, v);
+    return v;
+  }
+  // 色を読めなかったときの決まった色（css の --gold・--trunk-ink を、明るい色・暗い色の画面でそれぞれ RGB にしたもの）
+  const FALLBACK = { gold: [[0.72, 0.54, 0.18], [0.89, 0.72, 0.36]], ink: [[0.26, 0.19, 0.14], [0.71, 0.66, 0.6]] };
+  const GRAY = [0.55, 0.55, 0.55];
+  const cssVar = (el, name) => getComputedStyle(el).getPropertyValue(name);
+  const hash01 = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 10007) / 10007; };
+  const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const easeOut = (u) => 1 - Math.pow(1 - u, 3);
+  const easeInOut = (u) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+  const easeBack = (u) => { const c = 1.6; return 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); };
+
+  // ── 曲線（三次ベジェ）を帯にして描く。一本ずつ、根元と先の太さ・伸び・色・種類を持つ ──
+  const RIB_VS = `#version 300 es
+in float a_t;
+in float a_s;
+in vec4 a_p01;
+in vec4 a_p23;
+in vec4 a_w;
+in vec4 a_col;
+in vec4 a_k;
+uniform vec2 u_view;
+uniform vec2 u_scroll;
+uniform float u_time;
+out vec4 v_col;
+out vec2 v_doc;
+out vec3 v_m;
+out vec2 v_k;
+vec2 bz(float t) { float u = 1. - t; return u * u * u * a_p01.xy + 3. * u * u * t * a_p01.zw + 3. * u * t * t * a_p23.xy + t * t * t * a_p23.zw; }
+vec2 dbz(float t) { float u = 1. - t; return 3. * u * u * (a_p01.zw - a_p01.xy) + 6. * u * t * (a_p23.xy - a_p01.zw) + 3. * t * t * (a_p23.zw - a_p23.xy); }
+void main() {
+  float g = clamp(a_w.z, 0., 1.);
+  float t = min(a_t, g);
+  vec2 p = bz(t), d = dbz(t);
+  vec2 tg = dot(d, d) > 1e-8 ? normalize(d) : vec2(0., 1.);
+  vec2 n = vec2(-tg.y, tg.x);
+  if (a_k.x < .5) p.x += sin(p.y * .0105 + a_w.w) * 1.4 + sin(p.y * .033 + a_w.w * 2.) * .5;
+  else p += n * sin(u_time * 1.15 + a_w.w * 6.2832 + t * 1.7) * a_k.z * t * t;
+  float hw = .5 * mix(a_w.x, a_w.y, t);
+  if (g < .999) hw *= .25 + .75 * smoothstep(0., .08, g - t);
+  float ext = hw + 1.2;
+  vec2 q = p + n * a_s * ext - u_scroll;
+  gl_Position = vec4(q.x / u_view.x * 2. - 1., 1. - q.y / u_view.y * 2., 0., 1.);
+  v_col = a_col;
+  v_doc = p;
+  v_m = vec3(t, a_s * ext, hw);
+  v_k = a_k.xy;
+}`;
+  const RIB_FS = `#version 300 es
+precision highp float;
+in vec4 v_col;
+in vec2 v_doc;
+in vec3 v_m;
+in vec2 v_k;
+uniform float u_time;
+uniform vec3 u_gold;
+uniform vec4 u_light;
+uniform float u_gild;
+uniform float u_gtop;
+out vec4 o;
+float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h21(i), h21(i + vec2(1., 0.)), f.x), mix(h21(i + vec2(0., 1.)), h21(i + vec2(1., 1.)), f.x), f.y); }
+float fbm(vec2 p) { float s = 0., a = .5; for (int i = 0; i < 4; i++) { s += a * vn(p); p = p * 2.03 + 7.1; a *= .5; } return s; }
+void main() {
+  float hw = v_m.z, dist = abs(v_m.y);
+  float a = clamp(hw + .6 - dist, 0., 1.);
+  if (a <= 0.) discard;
+  float across = clamp(dist / max(hw, .5), 0., 1.);
+  vec3 col = v_col.rgb;
+  float al = v_col.a;
+  if (v_k.x < .5) {
+    float grain = fbm(vec2(v_m.y * .45, v_doc.y * .02));
+    float streak = vn(vec2(v_m.y * 1.6, v_doc.y * .004));
+    col *= .78 + .34 * grain;
+    col *= .62 + .5 * sqrt(max(0., 1. - across * across));
+    al *= .86 + .14 * streak;
+    float core = 1. - smoothstep(0., .45, across);
+    float flow = .5 + .5 * sin(v_doc.y * .021 - u_time * 1.4);
+    col = mix(col, u_gold, core * (.2 + .28 * flow));
+    float past = u_gild * smoothstep(u_gtop - 2., u_gtop + 2., v_doc.y) * (1. - smoothstep(u_light.y - 60., u_light.y + 4., v_doc.y));
+    col = mix(col, u_gold, past * .6);
+  } else if (v_k.x < 1.5) {
+    al *= .82 + .18 * vn(vec2(v_m.x * 26., across * 2.5));
+  } else {
+    col = u_gold;
+    al *= 1. - .65 * v_m.x;
+  }
+  float dl = distance(v_doc, u_light.xy);
+  col = mix(col, u_gold, clamp(u_light.w * exp(-dl * dl / (u_light.z * u_light.z)), 0., 1.));
+  float A = a * al;
+  o = vec4(col * A, A);
+}`;
+  // ── 四角い板に形を描く: 節の後光・銀杏の葉・金箔・広がる輪・巡る光の玉 ──
+  const SPR_VS = `#version 300 es
+in vec2 a_q;
+in vec4 a_pos;
+in vec4 a_col;
+in vec4 a_m;
+uniform vec2 u_view;
+uniform vec2 u_scroll;
+out vec2 v_q;
+out vec4 v_col;
+out vec2 v_m;
+out float v_px;
+void main() {
+  vec2 lq = a_q;
+  lq.x *= a_m.z > 0. ? a_m.z : 1.;
+  float s = a_pos.z, c = cos(a_pos.w), sn = sin(a_pos.w);
+  vec2 p = a_pos.xy + vec2(c * lq.x - sn * lq.y, sn * lq.x + c * lq.y) * s - (a_m.w > .5 ? vec2(0.) : u_scroll);
+  gl_Position = vec4(p.x / u_view.x * 2. - 1., 1. - p.y / u_view.y * 2., 0., 1.);
+  v_q = a_q;
+  v_col = a_col;
+  v_m = a_m.xy;
+  v_px = 1. / max(s, 1.);
+}`;
+  const SPR_FS = `#version 300 es
+precision highp float;
+in vec2 v_q;
+in vec4 v_col;
+in vec2 v_m;
+in float v_px;
+uniform vec3 u_gold;
+out vec4 o;
+void main() {
+  vec2 q = v_q;
+  float shape = v_m.x, A = 0.;
+  vec3 col = v_col.rgb;
+  if (shape < .5) {
+    float d = length(q);
+    A = exp(-d * d * 3.) * (1. - smoothstep(.8, 1., d));
+  } else if (shape < 1.5) {
+    vec2 v = q - vec2(0., .42);
+    float rho = length(v), th = atan(v.x, -v.y);
+    float R = 1.22 * (1. - .05 * cos(th * 9.)) * (1. - .28 * exp(-th * th * 60.));
+    float dd = max(rho - R, (abs(th) - .98) * rho);
+    float blade = 1. - smoothstep(-v_px * 1.2, v_px * 1.2, dd);
+    float stem = (1. - smoothstep(.035, .035 + v_px * 1.5, abs(q.x))) * step(.42, q.y) * (1. - step(.98, q.y));
+    float vein = .5 + .5 * cos(th * 36.);
+    float rim = clamp(rho / R, 0., 1.);
+    col = mix(col, u_gold, .18 + .42 * rim * rim);
+    col *= 1. - .14 * smoothstep(.55, 1., vein) * rim;
+    if (stem > blade) col = mix(v_col.rgb, u_gold, .3) * .8;
+    A = max(blade, stem * .9);
+  } else if (shape < 2.5) {
+    vec2 a2 = abs(q);
+    float d = max(a2.x, a2.y) + .25 * a2.x * a2.y;
+    A = 1. - smoothstep(.82 - v_px, .82 + v_px, d);
+    col = u_gold * (.9 + .25 * q.y);
+  } else if (shape < 3.5) {
+    float d = abs(length(q) - .84);
+    A = 1. - smoothstep(0., .13 + v_px, d);
+    col = u_gold;
+  } else {
+    float d = length(q);
+    A = (exp(-d * d * 7.) + .4 * exp(-d * d * 1.6)) * (1. - smoothstep(.85, 1., d));
+    col = mix(vec3(1.), u_gold, smoothstep(0., .5, d));
+  }
+  A *= v_col.a;
+  if (A <= .002) discard;
+  o = vec4(col * A, A);
+}`;
+  const SEG = 40; // 曲線一本の刻み
+  const RIB = 20, SPR = 12; // 一本・一枚ぶんの数
+
+  function compile(gl, type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || "shader");
+    return s;
+  }
+  function program(gl, vs, fs) {
+    const p = gl.createProgram();
+    gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
+    gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || "link");
+    return p;
+  }
+  // 書き足していく数の箱（足りなくなったら大きくする）
+  class Pack {
+    constructor(stride) { this.stride = stride; this.a = new Float32Array(stride * 256); this.n = 0; }
+    push(...v) {
+      if ((this.n + 1) * this.stride > this.a.length) { const b = new Float32Array(this.a.length * 2); b.set(this.a); this.a = b; }
+      this.a.set(v, this.n * this.stride);
+      this.n++;
+    }
+  }
+
+  class TrunkFX {
+    constructor(host, list) {
+      const cv = document.createElement("canvas");
+      cv.className = "tk-fx";
+      cv.setAttribute("aria-hidden", "true");
+      const gl = cv.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: true, depth: false, stencil: false, powerPreference: "low-power" });
+      if (!gl) throw new Error("webgl2");
+      this.gl = gl;
+      this.cv = cv;
+      this.host = host;
+      this.list = list;
+      this.st = [];
+      this.born = new Map(); // 枝葉を開いた時刻（幹の人ごと）。ないものは、もう伸びきっている
+      this.bursts = []; // 着いた人から舞う金箔（文書の座標）
+      this.rings = []; // 広がる輪
+      this.rays = []; // 光の筋
+      this.light = [0, -1e6, 46, 0];
+      this.gild = 0;
+      this.animUntil = 0;
+      this.lastDraw = 0;
+      this.initGL();
+      host.prepend(cv);
+      host.classList.add("tk-live");
+      this.reduced = SG.reducedMotion();
+      this.flakes = this.makeFlakes();
+      this.onScroll = () => this.kick();
+      this.onResize = () => { this.resize(); this.measureSoon(); };
+      this.onVis = () => { if (!document.hidden) this.kick(); };
+      this.onTheme = () => { this.theme(); this.measureSoon(); };
+      window.addEventListener("scroll", this.onScroll, { passive: true });
+      window.addEventListener("resize", this.onResize);
+      document.addEventListener("visibilitychange", this.onVis);
+      this.mqDark = window.matchMedia("(prefers-color-scheme: dark)");
+      this.mqMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      this.onMotion = () => { this.reduced = SG.reducedMotion(); this.kick(); };
+      this.mqDark.addEventListener("change", this.onTheme);
+      this.mqMotion.addEventListener("change", this.onMotion);
+      this.mo = new MutationObserver(this.onTheme);
+      this.mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-ink"] });
+      this.ro = new ResizeObserver((es) => { if (es.some((e) => e.target === cv)) this.resize(); this.measureSoon(); });
+      this.ro.observe(list);
+      this.ro.observe(cv);
+      cv.addEventListener("webglcontextlost", (e) => { e.preventDefault(); this.destroy(); });
+      this.theme();
+      this.resize();
+      this.measure();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.measureSoon());
+    }
+
+    initGL() {
+      const gl = this.gl;
+      // 帯（曲線）
+      const rp = (this.rProg = program(gl, RIB_VS, RIB_FS));
+      this.rVao = gl.createVertexArray();
+      gl.bindVertexArray(this.rVao);
+      const strip = new Float32Array((SEG + 1) * 4);
+      for (let i = 0; i <= SEG; i++) strip.set([i / SEG, -1, i / SEG, 1], i * 4);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, strip, gl.STATIC_DRAW);
+      const attr = (prog, name, size, stride, off, div) => {
+        const l = gl.getAttribLocation(prog, name);
+        if (l < 0) return;
+        gl.enableVertexAttribArray(l);
+        gl.vertexAttribPointer(l, size, gl.FLOAT, false, stride, off);
+        gl.vertexAttribDivisor(l, div);
+      };
+      attr(rp, "a_t", 1, 8, 0, 0);
+      attr(rp, "a_s", 1, 8, 4, 0);
+      this.rBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.rBuf);
+      ["a_p01", "a_p23", "a_w", "a_col", "a_k"].forEach((n, i) => attr(rp, n, 4, RIB * 4, i * 16, 1));
+      // 板（形）
+      const sp = (this.sProg = program(gl, SPR_VS, SPR_FS));
+      this.sVao = gl.createVertexArray();
+      gl.bindVertexArray(this.sVao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      attr(sp, "a_q", 2, 8, 0, 0);
+      this.sBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.sBuf);
+      ["a_pos", "a_col", "a_m"].forEach((n, i) => attr(sp, n, 4, SPR * 4, i * 16, 1));
+      gl.bindVertexArray(null);
+      const U = (p, names) => Object.fromEntries(names.map((n) => [n, gl.getUniformLocation(p, n)]));
+      this.rU = U(rp, ["u_view", "u_scroll", "u_time", "u_gold", "u_light", "u_gild", "u_gtop"]);
+      this.sU = U(sp, ["u_view", "u_scroll", "u_gold"]);
+      this.rib = new Pack(RIB);
+      this.sprA = new Pack(SPR); // ふつうに重ねる形（葉・金箔）
+      this.sprB = new Pack(SPR); // 光る形（後光・輪・光の玉）。暗い色の画面では足し合わせて光らせる
+      gl.enable(gl.BLEND);
+    }
+
+    // 色は CSS の決まり（明るい色・暗い色）から読む
+    theme() {
+      const root = document.documentElement, th = root.getAttribute("data-theme");
+      this.dark = th ? th === "dark" : this.mqDark.matches;
+      const k = this.dark ? 1 : 0;
+      this.cInk = rgb(cssVar(root, "--trunk-ink")) || FALLBACK.ink[k];
+      this.cGold = rgb(cssVar(root, "--gold")) || FALLBACK.gold[k];
+      this.kick();
+    }
+    resize() {
+      const w = this.cv.clientWidth || window.innerWidth, h = this.cv.clientHeight || window.innerHeight;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      this.W = w;
+      this.H = h;
+      const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+      if (this.cv.width !== pw || this.cv.height !== ph) { this.cv.width = pw; this.cv.height = ph; }
+      this.gl.viewport(0, 0, pw, ph);
+      this.phone = w < 720;
+      this.kick();
+    }
+    makeFlakes() {
+      const n = (this.cv.clientWidth || window.innerWidth) < 720 ? 9 : 16;
+      return Array.from({ length: n }, (_, i) => ({ x: Math.random(), y: Math.random(), vy: 9 + Math.random() * 14, ph: Math.random() * 6.28, s: 2.2 + Math.random() * 1.6, a: 0.32 + Math.random() * 0.3, spin: 1.2 + Math.random() * 1.6, i }));
+    }
+
+    // HTML の点の位置（文書の座標）を読む。描き直しのたび・開け閉めのたび・大きさが変わったときに
+    measureSoon() {
+      if (this.mPending) return;
+      this.mPending = requestAnimationFrame(() => { this.mPending = 0; this.measure(); });
+    }
+    measure() {
+      if (this.dead) return;
+      const sx = window.scrollX, sy = window.scrollY;
+      const cen = (el) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2 + sx, r.top + r.height / 2 + sy, r.width / 2]; };
+      const st = [];
+      this.list.querySelectorAll(".tk-st").forEach((li, i) => {
+        const dot = li.querySelector(".tk-dot");
+        if (!dot) return;
+        const [x, y, r] = cen(dot);
+        const box = li.querySelector(".tk-br");
+        const open = !!box && !box.hidden;
+        const leaves = [];
+        if (open) box.querySelectorAll(".tk-leaf").forEach((lf) => {
+          const d = lf.querySelector(".tk-ld"), pl = lf.querySelector(".tk-pl");
+          if (!d) return;
+          const [lx, ly] = cen(d);
+          const key = li.dataset.id + ":" + (pl ? pl.dataset.pid : lx + "," + ly);
+          leaves.push({ x: lx, y: ly, col: rgb(cssVar(lf, "--c")) || GRAY, plan: lf.classList.contains("plan"), seed: hash01(key) });
+        });
+        const num = li.querySelector(".tk-open .num");
+        st.push({ id: li.dataset.id, el: li, x, y, r, col: rgb(cssVar(li, "--c")) || GRAY, center: li.classList.contains("center"), open, leaves, branches: num ? parseInt(num.textContent, 10) || 0 : 0, i, seed: hash01(li.dataset.id || String(i)) });
+      });
+      this.st = st;
+      this.trunkX = st.length ? st[0].x : 0;
+      this.kick();
+    }
+    // 枝葉を開いた・閉じた（ids は幹の人。いくつも開いたときは、上から順に少しずつ遅らせて伸ばす）
+    grow(ids, on) {
+      const now = this.now();
+      ids.forEach((id, k) => { if (on) this.born.set(id, now + k * 0.14); else this.born.delete(id); });
+      if (on) this.animUntil = Math.max(this.animUntil, now + ids.length * 0.14 + 3.2);
+      this.kick();
+    }
+    now() { return performance.now() / 1000; }
+
+    // ── 幹を巡る: 金の光が神代から幹を下り、画面がそれを追う ──
+    tour(cb) {
+      this.stopTour();
+      if (this.dead || !this.st.length) return false;
+      const vh = window.innerHeight;
+      let t = this.now();
+      const seq = [];
+      const start = window.scrollY + vh * 0.42, first = this.st[0];
+      const d0 = Math.min(1.4, 0.5 + Math.abs(first.y - start) / 3000);
+      seq.push({ a: t, d: d0, y0: start, y1: first.y, fade: true });
+      t += d0;
+      this.st.forEach((s, i) => {
+        const dwell = s.center ? 3.4 : 1.7;
+        seq.push({ a: t, d: dwell, y0: s.y, y1: s.y, i });
+        t += dwell;
+        const nx = this.st[i + 1];
+        if (nx) { const d = Math.max(0.8, Math.min(2.4, (nx.y - s.y) / 520)); seq.push({ a: t, d, y0: s.y, y1: nx.y }); t += d; }
+      });
+      const last = this.st[this.st.length - 1];
+      seq.push({ a: t, d: 1.2, y0: last.y, y1: last.y, end: true });
+      this.tourS = { seq, k: 0, cb: cb || {}, end: t + 1.2, arrived: -1 };
+      this.kick();
+      return true;
+    }
+    stopTour() {
+      if (!this.tourS) return;
+      this.tourS = null;
+      this.fadeFrom = this.now(); // 光と金の幹を、ゆっくり消す
+      this.kick();
+    }
+    arrive(i, now) {
+      const s = this.st[i];
+      if (!s) return;
+      const big = s.center ? 1.9 : 1;
+      this.rings.push({ x: s.x, y: s.y, born: now, life: 0.9 * big, size: 46 * big, flash: true });
+      this.rings.push({ x: s.x, y: s.y, born: now, life: 1.5 * big, size: 70 * big });
+      this.rings.push({ x: s.x, y: s.y, born: now + 0.22, life: 1.3 * big, size: 44 * big });
+      const n = s.center ? 30 : 14;
+      for (let k = 0; k < n; k++) {
+        const ang = Math.random() * Math.PI * 2, sp = (40 + Math.random() * 90) * (s.center ? 1.4 : 1);
+        this.bursts.push({ x: s.x, y: s.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 30, born: now, life: 1.6 + Math.random() * 0.9, s: 2.6 + Math.random() * 2.4, ph: Math.random() * 6.28, spin: 2 + Math.random() * 3 });
+      }
+      // 枝葉の数だけ（多くて 12 本）、節から左右へ光の筋を走らせる。スマホは札が右にあって見えないので出さない
+      if (!this.phone) {
+        const m = Math.min(12, s.branches);
+        for (let k = 0; k < m; k++) {
+          const dir = k % 2 ? -1 : 1, j = Math.floor(k / 2), cnt = Math.ceil(m / 2), spread = cnt > 1 ? j / (cnt - 1) - 0.5 : 0;
+          const ang = spread * 1.1 + (dir > 0 ? 0 : Math.PI), len = (90 + Math.random() * 80) * (s.center ? 1.3 : 1);
+          const ex = s.x + Math.cos(ang) * len, ey = s.y + Math.sin(ang) * len * 0.8;
+          this.rays.push({ p: [s.x, s.y, s.x + dir * len * 0.35, s.y + (ey - s.y) * 0.1, ex - dir * len * 0.2, ey - (ey - s.y) * 0.2, ex, ey], born: now + k * 0.04, seed: Math.random() });
+        }
+      }
+    }
+
+    kick() { this.wake = performance.now(); if (!this.raf && !this.dead) this.raf = requestAnimationFrame((ms) => this.frame(ms)); }
+    frame(ms) {
+      this.raf = 0;
+      if (this.dead || document.hidden) return;
+      const now = ms / 1000;
+      const busy = !!this.tourS || now < this.animUntil || this.bursts.length > 0 || this.rings.length > 0 || this.rays.length > 0 || this.fadeFrom != null;
+      // 動きの少ないとき（葉の揺れと金箔だけ）は、1 秒に 30 回まで描く（電池を減らさない）
+      if (busy) this.wake = ms;
+      if (busy || this.reduced || ms - this.lastDraw > 30) { this.lastDraw = ms; this.draw(now); }
+      // 動きの少ない間は 9 秒で止める（電池と処理を使い続けない。最後の一こまは残る）
+      if (busy || (!this.reduced && ms - this.wake < 9000)) this.raf = requestAnimationFrame((m) => this.frame(m));
+    }
+
+    draw(now) {
+      const gl = this.gl;
+      const W = this.W, H = this.H, sx = window.scrollX, sy = window.scrollY;
+      const still = this.reduced;
+      const T = still ? 0 : now; // 動きを減らす設定では、揺れも流れも止める
+      const ink = this.cInk, gold = this.cGold;
+      const rib = this.rib, sa = this.sprA, sb = this.sprB;
+      rib.n = sa.n = sb.n = 0;
+      const vis = (y0, y1) => y1 > sy - 120 && y0 < sy + H + 120;
+
+      // 巡る光
+      let lit = this.light;
+      if (this.tourS) {
+        const S = this.tourS;
+        while (S.k < S.seq.length - 1 && now >= S.seq[S.k].a + S.seq[S.k].d) S.k++;
+        const ph = S.seq[S.k], u = clamp01((now - ph.a) / ph.d), e = easeInOut(u);
+        const ly = ph.y0 + (ph.y1 - ph.y0) * e;
+        if (ph.i != null && S.arrived !== ph.i && now >= ph.a) { S.arrived = ph.i; this.arrive(ph.i, now); if (S.cb.onArrive) S.cb.onArrive(ph.i, this.st[ph.i].el); }
+        const k = ph.fade ? u : ph.end ? 1 - u : 1;
+        lit = this.light = [this.trunkX, ly, this.phone ? 34 : 46, 0.85 * k];
+        this.gild = ph.fade ? 0 : 1;
+        window.scrollTo({ top: Math.max(0, ly - window.innerHeight * 0.42), behavior: "auto" });
+        if (now >= S.end) { const cb = S.cb; this.tourS = null; this.fadeFrom = now; if (cb.onEnd) cb.onEnd(); }
+      } else if (this.fadeFrom != null) {
+        const u = clamp01((now - this.fadeFrom) / 1.6);
+        this.light[3] *= 0.9;
+        this.gild = 1 - easeOut(u);
+        if (u >= 1) { this.fadeFrom = null; this.gild = 0; this.light = [0, -1e6, 46, 0]; }
+        lit = this.light;
+      }
+
+      const st = this.st;
+      if (st.length) {
+        const x = this.trunkX, wT = this.phone ? 10 : 14;
+        // 幹: 神代の上から始まり、最後の人の下で細くなる。幹の人の間ごとに一本
+        const ys = [st[0].y - 90].concat(st.map((s) => s.y), [st[st.length - 1].y + 110]);
+        for (let i = 0; i < ys.length - 1; i++) {
+          const a = ys[i], b = ys[i + 1];
+          if (!vis(a, b)) continue;
+          const w0 = i === 0 ? 2.5 : wT, w1 = i === ys.length - 2 ? 3.5 : wT;
+          rib.push(x, a, x, a + (b - a) / 3, x, b - (b - a) / 3, x, b, w0, w1, 1, 0.37, ink[0], ink[1], ink[2], this.dark ? 0.85 : 0.92, 0, 0, 0, 0);
+        }
+        // 節の後光（息をするように明るさが変わる。巡る光が着いている人は明るく）
+        st.forEach((s, i) => {
+          if (!vis(s.y - 80, s.y + 80)) return;
+          const on = this.tourS && this.tourS.arrived === i ? 1 : 0;
+          const base = (s.center ? 0.36 : 0.22) + (still ? 0 : 0.07 * Math.sin(T * 1.2 + i * 1.7));
+          sb.push(s.x, s.y, s.r * (s.center ? 3.8 : 3.1) * (1 + on * 0.5), 0, gold[0], gold[1], gold[2], Math.min(0.9, base + on * 0.4), 0, 0, 0, 0);
+        });
+        // 枝葉: 葉ごとに、幹の少し下から枝が斜め上へ伸び、先に銀杏の葉が開く。上の葉から順に、少しずつ遅れて
+        st.forEach((s) => {
+          if (!s.open || !s.leaves.length) return;
+          const b0 = this.born.get(s.id);
+          const age = b0 == null || still ? 1e9 : now - b0;
+          const lv = s.leaves.slice().sort((p, q) => p.y - q.y);
+          if (!vis(lv[0].y - 40, lv[lv.length - 1].y + 40)) return;
+          lv.forEach((l, j) => {
+            const dir = l.x >= x ? 1 : -1;
+            {
+              const t0 = j * 0.07, tg = clamp01((age - t0) / 0.42), tl = clamp01((age - t0 - 0.3) / 0.6);
+              if (tg <= 0) return;
+              const ex = l.x - dir * 3, ey = l.y + 1, y0 = ey + 16 + 6 * l.seed;
+              rib.push(x + dir * 2, y0, x + dir * (10 + 4 * l.seed), y0 - 3, ex - dir * 14, ey + 5, ex, ey, this.phone ? 2.6 : 3.2, 1, easeOut(tg), l.seed, ink[0], ink[1], ink[2], 0.9, 1, 0, 1.2, 0);
+              if (tl <= 0) return;
+              const sz = (this.phone ? 9 : 10.5) * (l.plan ? 1.12 : 1) * (tl < 1 ? easeBack(tl) : 1);
+              const rot = dir * (0.5 + 0.3 * (l.seed - 0.5)) + (1 - easeOut(tl)) * -dir * 0.9 + (still ? 0 : Math.sin(T * 1.3 + l.seed * 6.28) * 0.06);
+              const c = l.plan ? gold : l.col;
+              // 葉のかなめ（扇の根元）を小枝の先に合わせる
+              const kx = ex + Math.sin(rot) * 0.42 * sz, ky = ey - Math.cos(rot) * 0.42 * sz;
+              sa.push(kx, ky, sz, rot, c[0], c[1], c[2], 0.96, 1, 0, 0, 0);
+            }
+          });
+        });
+      }
+
+      // 着いた人の輪・金箔・光の筋
+      this.rings = this.rings.filter((r) => now < r.born + r.life);
+      this.rings.forEach((r) => {
+        const u = clamp01((now - r.born) / r.life);
+        if (u <= 0) return;
+        if (r.flash) sb.push(r.x, r.y, r.size * (0.6 + 0.4 * easeOut(u)), 0, gold[0], gold[1], gold[2], 0.9 * Math.pow(1 - u, 2), 4, 0, 0, 0);
+        else sb.push(r.x, r.y, r.size * (0.2 + 0.8 * easeOut(u)), 0, gold[0], gold[1], gold[2], 0.95 * Math.pow(1 - u, 1.6), 3, 0, 0, 0);
+      });
+      const dtB = this.lastNow ? Math.min(0.05, now - this.lastNow) : 0.016;
+      this.lastNow = now;
+      this.bursts = this.bursts.filter((p) => now < p.born + p.life);
+      this.bursts.forEach((p) => {
+        p.vy += 70 * dtB; p.vx *= 0.985; p.vy *= 0.985;
+        p.x += p.vx * dtB; p.y += p.vy * dtB;
+        const u = clamp01((now - p.born) / p.life);
+        sa.push(p.x, p.y, p.s, now * p.spin + p.ph, gold[0], gold[1], gold[2], 0.9 * (1 - u * u), 2, 0, 0.25 + 0.75 * Math.abs(Math.cos(now * p.spin * 1.3 + p.ph)), 0);
+      });
+      this.rays = this.rays.filter((r) => now < r.born + 1.9);
+      this.rays.forEach((r) => {
+        const age = now - r.born;
+        if (age <= 0) return;
+        const g = easeOut(clamp01(age / 0.55)), fade = 1 - clamp01((age - 0.7) / 1.2);
+        rib.push(...r.p, 2.8, 0.6, g, r.seed, gold[0], gold[1], gold[2], fade, 2, 0, 1.5, 0);
+      });
+      // 巡る光の玉
+      if (lit[3] > 0.01) sb.push(lit[0], lit[1], this.phone ? 14 : 18, 0, gold[0], gold[1], gold[2], lit[3], 4, 0, 0, 0);
+      // 舞う金箔（画面の座標）
+      if (!still) this.flakes.forEach((f) => {
+        const y = ((f.y * H + T * f.vy) % (H + 40)) - 20, xx = f.x * W + Math.sin(T * 0.5 + f.ph) * 18;
+        sa.push(xx, y, f.s, T * f.spin + f.ph, gold[0], gold[1], gold[2], f.a, 2, 0, 0.2 + 0.8 * Math.abs(Math.cos(T * f.spin + f.ph)), 1);
+      });
+
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      if (rib.n) {
+        gl.useProgram(this.rProg);
+        gl.uniform2f(this.rU.u_view, W, H);
+        gl.uniform2f(this.rU.u_scroll, sx, sy);
+        gl.uniform1f(this.rU.u_time, T);
+        gl.uniform3f(this.rU.u_gold, gold[0], gold[1], gold[2]);
+        gl.uniform4f(this.rU.u_light, lit[0], lit[1], lit[2], lit[3]);
+        gl.uniform1f(this.rU.u_gild, this.gild);
+        gl.uniform1f(this.rU.u_gtop, st.length ? st[0].y - 90 : 0);
+        gl.bindVertexArray(this.rVao);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.rBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, rib.a.subarray(0, rib.n * RIB), gl.DYNAMIC_DRAW);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, (SEG + 1) * 2, rib.n);
+      }
+      const sprites = (pack, glow) => {
+        if (!pack.n) return;
+        gl.useProgram(this.sProg);
+        gl.uniform2f(this.sU.u_view, W, H);
+        gl.uniform2f(this.sU.u_scroll, sx, sy);
+        gl.uniform3f(this.sU.u_gold, gold[0], gold[1], gold[2]);
+        // 暗い色の画面では、光る形を足し合わせて光らせる。明るい色の画面では、ふつうに重ねる（足すと紙の白に消える）
+        if (glow && this.dark) gl.blendFunc(gl.ONE, gl.ONE); else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        gl.bindVertexArray(this.sVao);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.sBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, pack.a.subarray(0, pack.n * SPR), gl.DYNAMIC_DRAW);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, pack.n);
+      };
+      sprites(sb, true);
+      sprites(sa, false);
+      gl.bindVertexArray(null);
+      this.stats = { rib: rib.n, sprites: sa.n + sb.n };
+    }
+
+    destroy() {
+      if (this.dead) return;
+      this.dead = true;
+      if (this.raf) cancelAnimationFrame(this.raf);
+      if (this.mPending) cancelAnimationFrame(this.mPending);
+      window.removeEventListener("scroll", this.onScroll);
+      window.removeEventListener("resize", this.onResize);
+      document.removeEventListener("visibilitychange", this.onVis);
+      this.mqDark.removeEventListener("change", this.onTheme);
+      this.mqMotion.removeEventListener("change", this.onMotion);
+      this.mo.disconnect();
+      this.ro.disconnect();
+      const lose = this.gl.getExtension("WEBGL_lose_context");
+      if (lose && !this.gl.isContextLost()) lose.loseContext();
+      this.cv.remove();
+      this.host.classList.remove("tk-live");
+    }
+  }
+
+  // 作れなければ null（WebGL2 がない・描き方の準備に失敗した）。そのときは今までの CSS の線と点のまま
+  SG.TrunkFX = {
+    create(host, list) {
+      try { return new TrunkFX(host, list); } catch (e) {
+        host.classList.remove("tk-live");
+        const c = host.querySelector(":scope > canvas.tk-fx");
+        if (c) c.remove();
+        return null;
+      }
+    }
+  };
+})();
+
+</script>
+<script>
+/* 平泉史学の幹（指示62・63。絵と動きは指示73 で js/trunk-fx.js の WebGL2 の層に）
  * 神代から平泉澄先生、平泉紀房まで、幹の人を時代の順に、まっすぐ一本の線（幹）で結ぶ。幹の人からは、関わりのある人が枝葉として分かれる。
  * 幹は開ける: 幹の人の「枝葉」を押すとその人から分かれる人が開き、幹の間の「間の人」を押すと、データの上で二人をつなぐ人が幹の上に並ぶ。
  * 名前を押すと札が開く。幹の人と枝葉の候補は、ユーザーの案「平泉史学の幹・選定案」による（docs/指示と要件.md の 63）。
@@ -7256,19 +7893,25 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         <p class="tb-rule">神代から平泉澄先生へ、平泉史学の幹をまっすぐ一本に結びました。幹の人の「枝葉」で関わりのある人が開き、幹の間の「間の人」で、データの上で二人をつなぐ人が並びます。名前を押すと札が開きます。</p>
       </div></div>
       <div class="stage wrap">
-        <div class="stage-main"><ol class="tk" id="tk" aria-label="平泉史学の幹（神代から平泉紀房まで）"></ol></div>
+        <div class="stage-main"><ol class="tk" id="tk" aria-label="平泉史学の幹（神代から平泉紀房まで）"></ol><p class="vh" id="tkLive" aria-live="polite"></p></div>
         <div class="stage-side" data-side></div>
       </div>`;
       this.host = host;
       this.list = host.querySelector("#tk");
+      this.live = host.querySelector("#tkLive");
+      // 幹・枝・葉と金の光は WebGL2 の層が描く（指示73）。作れないときは null で、今までの CSS の線と点のまま
+      this.fx = SG.TrunkFX ? SG.TrunkFX.create(host, this.list) : null;
       host.querySelector(".tk-tools").addEventListener("click", (ev) => {
         const b = ev.target.closest("[data-act]");
         if (!b) return;
         if (b.dataset.act === "tour") { this.tour(); return; }
+        const was = new Set(this.open);
         if (b.dataset.act === "open-all") TRUNK.forEach((t) => this.open.add(t.id));
         if (b.dataset.act === "gaps-all") TRUNK.forEach((t) => this.gaps.add(t.id));
         if (b.dataset.act === "close-all") { this.open.clear(); this.gaps.clear(); this.all.clear(); }
         this.render();
+        // すべて開いたときは、上の人から順に枝を伸ばす
+        if (this.fx) this.fx.grow(TRUNK.map((t) => t.id).filter((id) => this.open.has(id) && !was.has(id)), true);
       });
       this.list.addEventListener("click", (ev) => {
         const p = ev.target.closest(".tk-pl");
@@ -7282,10 +7925,11 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       });
       this.render();
     },
-    unmount() { this.stopTour(); },
+    unmount() { this.stopTour(); if (this.fx) { this.fx.destroy(); this.fx = null; } },
 
-    // 幹を巡る（指示65 の案1）: 神代から平泉紀房まで、幹の人を一人ずつ画面の真ん中へ送り、少し止まって次へ（平泉澄先生では長めに）。
-    // もう一度押す・触る・回す・キーを押すと止まる。動きを減らす設定では、送るだけで動きは付けない
+    // 幹を巡る（指示65 の案1。指示73 で金の光に）: 神代から平泉紀房まで、金の光が幹を下り、画面がそれを追う。
+    // 着いた人では少し止まって（平泉澄先生では長めに）、輪が広がり、札が光る。もう一度押す・触る・回す・キーを押すと止まる。
+    // WebGL2 の層がないときと、動きを減らす設定では、前のとおり幹の人を一人ずつ画面の真ん中へ送るだけ
     tour() {
       if (this.touring) { this.stopTour(); return; }
       const sts = [...this.list.querySelectorAll(".tk-st")];
@@ -7294,6 +7938,19 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       const btn = this.host.querySelector('[data-act="tour"]');
       btn.setAttribute("aria-pressed", "true");
       btn.textContent = "止める";
+      this.tourStop = (ev) => { if (ev && ev.target && ev.target.closest && ev.target.closest('[data-act="tour"]')) return; this.stopTour(); };
+      setTimeout(() => { if (this.touring) ["wheel", "touchstart", "keydown", "pointerdown"].forEach((t) => window.addEventListener(t, this.tourStop, { passive: true })); }, 0);
+      const say = (el) => {
+        const nm = el.querySelector(".tk-name"), era = el.querySelector(".tk-era");
+        if (this.live && nm) this.live.textContent = `幹を巡っています。${nm.textContent}（${era ? era.textContent : ""}）`;
+      };
+      if (this.fx && !SG.reducedMotion()) {
+        const ok = this.fx.tour({
+          onArrive: (k, el) => { this.list.querySelectorAll(".tk-st.touring").forEach((x) => x.classList.remove("touring")); if (el) { el.classList.add("touring"); say(el); } },
+          onEnd: () => this.stopTour()
+        });
+        if (ok) return;
+      }
       let i = 0;
       const step = () => {
         if (!this.touring) return;
@@ -7301,16 +7958,17 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         if (i >= sts.length) { this.stopTour(); return; }
         const el = sts[i++];
         el.classList.add("touring");
+        say(el);
         el.scrollIntoView({ block: "center", behavior: SG.reducedMotion() ? "auto" : "smooth" });
         this.tourTimer = setTimeout(step, el.classList.contains("center") ? 2800 : 1800);
       };
-      this.tourStop = (ev) => { if (ev && ev.target && ev.target.closest && ev.target.closest('[data-act="tour"]')) return; this.stopTour(); };
-      setTimeout(() => { if (this.touring) ["wheel", "touchstart", "keydown", "pointerdown"].forEach((t) => window.addEventListener(t, this.tourStop, { passive: true })); }, 0);
       step();
     },
     stopTour() {
       this.touring = false;
       clearTimeout(this.tourTimer);
+      if (this.fx) this.fx.stopTour();
+      if (this.live) this.live.textContent = "";
       if (this.tourStop) { ["wheel", "touchstart", "keydown", "pointerdown"].forEach((t) => window.removeEventListener(t, this.tourStop)); this.tourStop = null; }
       if (this.list) this.list.querySelectorAll(".tk-st.touring").forEach((x) => x.classList.remove("touring"));
       const btn = this.host && this.host.querySelector('[data-act="tour"]');
@@ -7324,7 +7982,12 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       btn.setAttribute("aria-expanded", String(on));
       const box = document.getElementById(btn.getAttribute("aria-controls"));
       if (box) box.hidden = !on;
-      if (on && box && !SG.reducedMotion()) box.animate([{ opacity: 0, translate: "0 -6px" }, { opacity: 1, translate: "0 0" }], { duration: 260, easing: "cubic-bezier(.2,.8,.2,1)" });
+      // WebGL2 の層があるときは、枝が伸びて葉が開くのに合わせて、名前を少し遅れて浮かべる（位置は動かさない。層が点の位置を読むため）
+      if (on && box && !SG.reducedMotion()) {
+        if (this.fx) box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 520, delay: 160, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" });
+        else box.animate([{ opacity: 0, translate: "0 -6px" }, { opacity: 1, translate: "0 0" }], { duration: 260, easing: "cubic-bezier(.2,.8,.2,1)" });
+      }
+      if (this.fx) { if (set === this.open) this.fx.grow([id], on); this.fx.measure(); }
     },
 
     render() {
@@ -7367,6 +8030,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         </li>`);
       });
       this.list.innerHTML = html.join("");
+      if (this.fx) this.fx.measure();
     },
     markSel() {
       if (!this.list) return;
