@@ -54,6 +54,7 @@
   --c7: #6551cf;
   --c8: #d6404a;
   --pair: oklch(0.55 0.12 195); /* 重ねて見る二人目の色（指示65） */
+  --pin-to: oklch(0.55 0.17 28); /* 道を調べるときの到着の針（指示83。出発は墨） */
   --c0: #8b8f96;
   --shadow-float: 0 22px 48px -22px oklch(0.2 0.03 165 / 0.38), 0 2px 8px oklch(0.2 0.03 165 / 0.08);
   --shadow-soft: 0 1px 0 oklch(0.2 0.03 165 / 0.04), 0 8px 22px -16px oklch(0.2 0.03 165 / 0.3);
@@ -134,6 +135,7 @@
     --c7: #8a7de6;
     --c8: #e5646a;
     --pair: oklch(0.76 0.11 195);
+    --pin-to: oklch(0.72 0.14 30);
     --c0: #7e828a;
     --shadow-float: 0 22px 48px -18px oklch(0 0 0 / 0.6), 0 2px 8px oklch(0 0 0 / 0.35);
     --shadow-soft: 0 1px 0 oklch(0 0 0 / 0.2), 0 8px 22px -14px oklch(0 0 0 / 0.55);
@@ -178,6 +180,7 @@
   --c7: #8a7de6;
   --c8: #e5646a;
   --pair: oklch(0.76 0.11 195);
+  --pin-to: oklch(0.72 0.14 30);
   --c0: #7e828a;
   --shadow-float: 0 22px 48px -18px oklch(0 0 0 / 0.6), 0 2px 8px oklch(0 0 0 / 0.35);
   --shadow-soft: 0 1px 0 oklch(0 0 0 / 0.2), 0 8px 22px -14px oklch(0 0 0 / 0.55);
@@ -1484,6 +1487,131 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
 .ch-reset { margin-left: 3px; padding: 0 3px; border: 0; border-radius: 4px; background: none; color: var(--accent); cursor: pointer; font-size: 12px; line-height: 1.4; }
 .ch-reset:hover { background: var(--accent-soft); }
 
+/* ── 指示83: 道を調べる（乗換案内・地図アプリの道案内のように） ─────────────
+ * パソコンは地図の右下（札は左下）に、出発と到着の欄を縦に並べ、道は縦の路線図で。
+ * スマホは画面の下に、出発 ⇄ 到着を一行で、道は横の駅の並びで。文字を打つ間は、キーボードに隠れないよう画面の上へ移す */
+.route-box {
+  position: fixed; z-index: 38;
+  right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  width: min(360px, calc(100vw - 32px)); max-height: calc(100dvh - var(--sticky-top) - 32px);
+  display: flex; flex-direction: column;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--r-3); box-shadow: var(--shadow-float);
+  font-size: var(--fs-sm); line-height: 1.5;
+}
+.site { padding-bottom: var(--rb-h, 0px); } /* スマホで道の欄を出している間、頁の下に欄の高さの余白（図の終わりを欄の上まで送れるように） */
+/* パソコン: 地図の右に寄せ、縦いっぱいに（地図はその分だけ狭めて並べ直す。札は左下に浮かぶので重ならない） */
+html.rb-dock .stage.wrap { padding-right: calc(376px + max(var(--gutter), env(safe-area-inset-right, 0px))); }
+.route-box:not(.narrow) { top: calc(var(--sticky-top) + var(--tb-h) + 12px); max-height: none; }
+.rb-head { display: flex; align-items: center; gap: 8px; padding: 6px 6px 0 16px; }
+.rb-title { flex: 1; margin: 0; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.14em; color: var(--ink-3); }
+.rb-ends { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 8px; padding: 4px 12px 6px; }
+.rb-end { grid-column: 1; display: flex; align-items: center; gap: 8px; min-width: 0; height: 40px; padding: 0 4px 0 7px; border: 1px solid var(--rule-2); border-radius: var(--r-2); background: var(--paper); transition: border-color var(--dur-1), box-shadow var(--dur-1), background var(--dur-1); }
+.rb-end.active { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft); }
+.rb-pin { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: var(--paper); font-size: 11px; font-weight: 700; line-height: 1; }
+.rb-end[data-end="to"] .rb-pin { background: var(--pin-to); }
+.rb-in { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--fs-ui); font-weight: 700; outline: none; -webkit-appearance: none; appearance: none; }
+.rb-in::placeholder { font-weight: 400; color: var(--ink-3); }
+.rb-in::-webkit-search-cancel-button { display: none; }
+.rb-map { flex: none; height: 28px; padding: 0 9px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-3); font: inherit; font-size: var(--fs-2xs); white-space: nowrap; cursor: pointer; }
+.rb-map:hover { color: var(--ink); background: var(--paper-2); }
+.rb-map[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.rb-swap { grid-column: 2; grid-row: 1 / span 2; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--rule-2); border-radius: 50%; background: var(--surface); color: var(--ink-2); cursor: pointer; transition: rotate var(--dur-soft) var(--spring-soft), border-color var(--dur-1); }
+.rb-swap:hover { border-color: var(--ink-3); color: var(--ink); }
+.rb-swap:active { rotate: 180deg; }
+.rb-list { margin: 0 12px 10px; padding: 6px; list-style: none; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); max-height: min(46dvh, 360px); overflow-y: auto; overscroll-behavior: contain; }
+.rb-list li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 2px 10px; padding: 7px 10px; border-radius: 8px; cursor: pointer; }
+.rb-list li[aria-selected="true"] { background: var(--accent-soft); }
+.rb-list svg { grid-row: 1 / span 2; }
+.rb-list .sg-n { font-weight: 700; font-size: var(--fs-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rb-list .sg-s { grid-column: 2; font-size: 11.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
+.rb-list .sg-y { grid-row: 1 / span 2; grid-column: 3; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.rb-list .empty { display: block; padding: 10px; color: var(--ink-3); font-size: var(--fs-sm); cursor: default; }
+.rb-hint { margin: 0; padding: 0 16px 8px; font-size: var(--fs-xs); color: var(--ink-3); }
+.route-box.listing .rb-hint, .route-box.listing .rb-res { display: none; }
+.rb-res { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 12px; border-top: 1px solid var(--rule); }
+.rb-res:empty { display: none; }
+.rb-none { margin: 10px 4px 0; color: var(--ink-2); }
+.rb-alts { display: flex; gap: 6px; padding-top: 10px; }
+.rb-alts button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; padding: 5px 10px; border: 1px solid var(--rule-2); border-radius: var(--r-2); background: var(--surface); color: var(--ink-2); font: inherit; text-align: left; cursor: pointer; }
+.rb-alts button:hover { border-color: var(--ink-3); }
+.rb-alts button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.rb-alts b { font-size: var(--fs-ui); }
+.rb-alts span { font-size: var(--fs-2xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.rb-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin: 10px 4px 4px; }
+.rb-sum b { font-size: 1.2rem; }
+.rb-sum span { color: var(--ink-2); }
+.rb-sum .rb-tag { font-size: var(--fs-2xs); padding: 0 8px; border-radius: 999px; background: var(--paper-2); }
+/* 駅の並び（パソコン）: 縦の路線図。線は関係の種類の色、要確認は点線。点は人の色（発・着は針と同じ色） */
+.rb-line { list-style: none; margin: 2px 0 0; padding: 0; }
+.rb-line .st { position: relative; }
+.rb-line .st-via { position: relative; display: flex; align-items: center; min-height: 28px; padding: 2px 0 2px 36px; font-size: var(--fs-xs); color: var(--ink-2); }
+.rb-line .vl { position: absolute; left: 12px; top: -22px; bottom: -22px; width: 5px; border-radius: 3px; background: var(--lc); }
+.rb-line .unsure .vl { background: repeating-linear-gradient(to bottom, var(--lc) 0 6px, transparent 6px 10px); }
+.rb-line .vt { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+.rb-line .vt-s { display: none; }
+.rb-line .conf { color: var(--warn); line-height: 16px; font-size: 10.5px; }
+.rb-line .st-b { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 8px; width: 100%; min-height: 40px; padding: 5px 8px 5px 36px; border: 0; border-radius: var(--r-2); background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.rb-line .st-b:hover { background: var(--paper); }
+.rb-line .st-dot { position: absolute; z-index: 2; left: 6px; top: 50%; translate: 0 -50%; width: 17px; height: 17px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; border: 2.5px solid var(--sc); background: var(--surface); color: var(--ink); font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; line-height: 1; }
+.rb-line .from .st-dot, .rb-line .to .st-dot { left: 3px; width: 23px; height: 23px; border: 0; background: var(--ink); color: var(--paper); font-family: var(--font-body); font-size: 11px; }
+.rb-line .to .st-dot { background: var(--pin-to); }
+.rb-line .st-n { font-weight: 700; font-size: var(--fs-ui); overflow-wrap: anywhere; }
+.rb-line .st-r { grid-column: 1; grid-row: 2; font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.4; }
+.rb-line .st-y { grid-column: 2; grid-row: 1; font-size: 11px; color: var(--ink-3); }
+
+/* スマホ: 画面の下に、出発 ⇄ 到着を一行で。道は横に送れる駅の並び（電車の扉の上の案内のように） */
+.route-box.narrow {
+  left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px));
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 52dvh; border-radius: 18px;
+}
+.route-box.narrow .rb-head { position: absolute; top: 6px; right: 4px; z-index: 3; padding: 0; }
+.route-box.narrow .rb-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.route-box.narrow .rb-ends { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; padding: 8px 44px 4px 8px; }
+.route-box.narrow .rb-end { height: 38px; padding: 0 6px 0 5px; gap: 6px; }
+.route-box.narrow .rb-end[data-end="from"] { grid-column: 1; grid-row: 1; }
+.route-box.narrow .rb-end[data-end="to"] { grid-column: 3; grid-row: 1; }
+.route-box.narrow .rb-swap { grid-column: 2; grid-row: 1; width: 30px; height: 30px; rotate: 90deg; }
+.route-box.narrow .rb-swap:active { rotate: 270deg; }
+.route-box.narrow .rb-map { display: none; }
+.route-box.narrow .rb-in { font-size: 16px; } /* 16px より小さいと、iPhone は欄を押したときに画面を拡大する */
+.route-box.narrow .rb-hint { padding: 0 12px 6px; }
+.route-box.narrow.typing { top: calc(env(safe-area-inset-top, 0px) + 8px); bottom: auto; max-height: calc(100dvh - 16px); }
+.route-box.narrow.typing .rb-ends { grid-template-columns: minmax(0, 1fr); }
+.route-box.narrow.typing .rb-end:not(.active), .route-box.narrow.typing .rb-swap { display: none; }
+.route-box.narrow.typing .rb-end.active { grid-column: 1; }
+.route-box.narrow.typing .rb-map { display: inline-flex; align-items: center; }
+.route-box.narrow.typing .rb-res { display: none; }
+.route-box.narrow .rb-res { padding: 0 8px 8px; }
+.route-box.narrow .rb-alts { padding-top: 8px; overflow-x: auto; }
+.route-box.narrow .rb-alts button { flex: 1 0 auto; flex-direction: row; align-items: baseline; gap: 6px; padding: 4px 10px; }
+.route-box.narrow .rb-sum { margin: 6px 4px 2px; font-size: var(--fs-xs); }
+.route-box.narrow .rb-sum b { font-size: var(--fs-ui); }
+.route-box.narrow .rb-line { display: flex; align-items: flex-start; overflow-x: auto; overscroll-behavior-x: contain; padding: 4px 2px 2px; }
+.route-box.narrow .rb-line .st { flex: none; display: flex; align-items: flex-start; }
+.route-box.narrow .rb-line .st-via { flex-direction: column; justify-content: flex-start; width: 54px; min-height: 0; padding: 22px 0 0; text-align: center; }
+.route-box.narrow .rb-line .vl { left: -12px; right: -12px; top: 10px; bottom: auto; width: auto; height: 4px; }
+.route-box.narrow .rb-line .unsure .vl { background: repeating-linear-gradient(to right, var(--lc) 0 6px, transparent 6px 10px); }
+.route-box.narrow .rb-line .vt { justify-content: center; font-size: 10px; line-height: 1.3; }
+.route-box.narrow .rb-line .vt-l { display: none; }
+.route-box.narrow .rb-line .vt-s { display: inline; }
+.route-box.narrow .rb-line .conf { font-size: 9.5px; padding: 0 4px; }
+.route-box.narrow .rb-line .st-b { display: flex; flex-direction: column; align-items: center; width: 72px; min-height: 0; padding: 0 2px 4px; text-align: center; }
+.route-box.narrow .rb-line .st-dot { position: relative; left: auto; top: auto; translate: none; flex: none; margin: 3.5px 0 4px; }
+.route-box.narrow .rb-line .from .st-dot, .route-box.narrow .rb-line .to .st-dot { margin: 0.5px 0 1px; }
+.route-box.narrow .rb-line .st-n { font-size: var(--fs-xs); line-height: 1.3; }
+.route-box.narrow .rb-line .st-r { font-size: 10px; line-height: 1.3; }
+.route-box.narrow .rb-line .st-y { display: none; }
+
+/* 地図の上: 出発・到着の針と、途中の人の駅の番号。道は、関係の種類の色の線に紙の色の縁（電車の路線図のように） */
+.route-pins { pointer-events: none; }
+.rpin path { fill: var(--ink); stroke: var(--paper); stroke-width: 1.5; }
+.rpin.to path { fill: var(--pin-to); }
+.rpin text { fill: var(--paper); font-family: var(--font-body); font-size: 10.5px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+.rpin.mid circle { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; }
+.rpin.mid text { fill: var(--ink); font-family: var(--font-mono); font-size: 9.5px; }
+.ts-flow .flow.rt-case { stroke: var(--paper); stroke-width: calc(var(--flow-w, 3.2px) + 4px); }
+.ts-flow .flow.rt { stroke-width: calc(var(--flow-w, 3.2px) + 1px); }
+
 </style>
 
 <div class="boot" id="boot" role="status" aria-live="polite">
@@ -1555,6 +1683,29 @@ html.bars-away .toolbar, html.bars-away .colhead { translate: 0 calc(-1 * (var(-
 
 <div class="pop" id="filterPop" role="dialog" aria-labelledby="popTitle"></div>
 <div class="pill" id="pill" aria-live="polite"></div>
+<!-- 道を調べる（指示83）: 乗換案内のように、出発と到着をその場で検索して選び、道を駅の並びで見せる。地図の画面だけ。中身は app.js が書く -->
+<section class="route-box" id="routeBox" aria-labelledby="rbTitle" hidden>
+  <div class="rb-head">
+    <h2 class="rb-title" id="rbTitle">道を調べる</h2>
+    <button type="button" class="icon-btn rb-close" data-rb="close" aria-label="道を調べるのをやめる" title="やめる（平泉澄先生への道に戻る）"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+  </div>
+  <div class="rb-ends">
+    <div class="rb-end" data-end="from">
+      <span class="rb-pin" aria-hidden="true">発</span>
+      <input class="rb-in" id="rbFrom" data-end="from" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rbList" aria-label="出発の人・組織（名前か、よみで探す）" placeholder="出発の人を探す" autocomplete="off" spellcheck="false" enterkeyhint="search">
+      <button type="button" class="rb-map" data-rb="map" data-end="from" aria-pressed="false" title="次に地図で押した人を、出発にする">地図で選ぶ</button>
+    </div>
+    <div class="rb-end" data-end="to">
+      <span class="rb-pin" aria-hidden="true">着</span>
+      <input class="rb-in" id="rbTo" data-end="to" type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rbList" aria-label="到着の人・組織（名前か、よみで探す）" placeholder="到着の人を探す" autocomplete="off" spellcheck="false" enterkeyhint="search">
+      <button type="button" class="rb-map" data-rb="map" data-end="to" aria-pressed="false" title="次に地図で押した人を、到着にする">地図で選ぶ</button>
+    </div>
+    <button type="button" class="rb-swap" data-rb="swap" aria-label="出発と到着を入れ替える" title="出発と到着を入れ替える"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M6 14.5V3.5M3 6.5l3-3 3 3M12 3.5v11M9 11.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+  <ul class="rb-list" id="rbList" role="listbox" aria-label="出発・到着の候補" hidden></ul>
+  <p class="rb-hint" id="rbHint" aria-live="polite"></p>
+  <div class="rb-res" id="rbRes"></div>
+</section>
 
 <!-- D3 7.8.5 は自前で持つ（js/vendor/d3.min.js。cdnjs の同じ版と同じ中身で、照合値 sha384-su5kReKy… が一致。指示65）。build.mjs が埋め込む -->
 <script src="d3.min.js?v=7.8.5"></script>
@@ -3091,7 +3242,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=9b5df4fc56";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=fa1cbe8af7";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -3136,6 +3287,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     selected: FOCUS,
     // 選んだ人の、図に描く道の見せ方（指示71）: 平泉澄先生への道 focus・ほかの人への道 to・知り合いの広がり reach
     route: "focus", routeTo: null, reachN: 2, pickRoute: false,
+    // 道を調べる（指示83）: 選んだ道の候補（0 から）と、図で押した人を入れる欄（出発 from・到着 to）
+    routeAlt: 0, routeEnd: "to",
     hover: null,
     sizeBy: "imp",
     scaleMode: "density",
@@ -3444,19 +3597,79 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     if (!looseH) looseH = bfsLoose(FOCUS);
     return looseH.has(id) ? { kind: "loose", steps: looseH.get(id).d } : { kind: "none", steps: null };
   }
-  // ほかの人への道（指示71）: 関係と組織をたどった、いちばん短い道。同じ段数で届く道は、すべて道に入れる
+  // ほかの人への道（指示71）を、乗換案内のように調べる（指示83）。関係と組織をたどり、候補を 3 つまで出す。
+  // 1. いちばん短い道（同じ段数の道のうち、師弟・家系などの系譜の線と、確かな線を多く通るもの）
+  // 2. 同じ段数の別の道（通る人が違うもの）
+  // 3. 系譜の線（師弟・家系・伝承・思想）だけでたどる道（段数が増えることがある）
+  // 図にも札にも、選んだ候補の一本だけを描く（前は同じ段数の道をすべて重ねて描き、札の並びと合わなかった）
   const routeCache = new Map();
-  function pathBetween(a, b) {
+  const RT_COST = { shitei: 1, kakei: 1, densho: 1.4, eikyo: 1.4, other: 2.2, org: 2.6 };
+  const RT_CONF = { "確実": 0, "有力": 0.15, "伝承": 0.3, "要確認": 0.9 };
+  const rtCost = (e) => (RT_COST[EDGE_TYPES[e.type].cat] || 3) + (RT_CONF[e.conf] || 0);
+  const incSorted = new Map();
+  const incOf = (u) => { let l = incSorted.get(u); if (!l) { l = incident.get(u).slice().sort(edgeOrder); incSorted.set(u, l); } return l; };
+  // 決めた線（ok）だけをたどる、段数の表
+  function bfsBy(start, ok) {
+    const seen = new Map([[start, 0]]), q = [start];
+    while (q.length) {
+      const u = q.shift();
+      for (const e of incOf(u)) {
+        if (!ok(e)) continue;
+        const v = e.s === u ? e.t : e.s;
+        if (!seen.has(v)) { seen.set(v, seen.get(u) + 1); q.push(v); }
+      }
+    }
+    return seen;
+  }
+  // a から b への、いちばん短い道を、系譜の線を先にたどって cap 本まで（道が多すぎるときは、調べる手数で打ち切る）
+  function shortestChains(a, b, ok, cap) {
+    const fa = bfsBy(a, ok);
+    if (!fa.has(b)) return [];
+    const fb = bfsBy(b, ok), D = fa.get(b), out = [], path = [{ id: a, via: null }];
+    let budget = 20000;
+    const walk = (u, d) => {
+      if (u === b) { out.push(path.slice()); return; }
+      for (const e of incOf(u)) {
+        if (out.length >= cap || budget-- <= 0) return;
+        if (!ok(e)) continue;
+        const v = e.s === u ? e.t : e.s;
+        if (fa.get(v) !== d + 1 || fb.get(v) !== D - d - 1) continue;
+        path.push({ id: v, via: e });
+        walk(v, d + 1);
+        path.pop();
+      }
+    };
+    walk(a, 0);
+    return out;
+  }
+  function routeOf(chain, b, tag) {
+    return {
+      kind: "to", to: b, tag, chain, steps: chain.length - 1,
+      nodes: new Set(chain.map((c) => c.id)), edges: new Set(chain.filter((c) => c.via).map((c) => c.via.id)),
+      layer: new Map(chain.map((c, i) => [c.id, i])), // 光の向きをそろえるのに使う（出発からの段）
+      cost: chain.reduce((s, c) => s + (c.via ? rtCost(c.via) : 0), 0),
+      lineage: chain.every((c) => !c.via || EDGE_TYPES[c.via.type].lineage)
+    };
+  }
+  const anyEdge = () => true, lineageEdge = (e) => EDGE_TYPES[e.type].lineage;
+  function routeOptions(a, b) {
     const key = a + ">" + b;
     if (routeCache.has(key)) return routeCache.get(key);
-    const fa = bfsLoose(a);
-    let res;
-    if (!fa.has(b)) res = { kind: "to", to: b, nodes: new Set([a, b]), edges: new Set(), chain: [], steps: null };
-    else {
-      const fb = bfsLoose(b), D = fa.get(b).d;
-      const on = new Set([...fa.keys()].filter((x) => fb.has(x) && fa.get(x).d + fb.get(x).d === D));
-      const es = new Set(edges.filter((e) => on.has(e.s) && on.has(e.t) && Math.abs(fa.get(e.s).d - fa.get(e.t).d) === 1).map((e) => e.id));
-      res = { kind: "to", to: b, nodes: on, edges: es, chain: chainFrom(fa, b), steps: D, layer: new Map([...on].map((x) => [x, fa.get(x).d])) };
+    const res = [];
+    if (a && b && a !== b && byId.has(a) && byId.has(b)) {
+      const all = shortestChains(a, b, anyEdge, 40).map((c) => routeOf(c, b, "short")).sort((p, q) => p.cost - q.cost);
+      if (all.length) {
+        const sig = (r) => r.chain.map((c) => c.id).join(">");
+        const best = all[0], seen = new Set([sig(best)]);
+        const bm = new Set(best.chain.slice(1, -1).map((c) => c.id));
+        res.push(best);
+        const alt = all.find((r) => !seen.has(sig(r)) && r.chain.slice(1, -1).some((c) => !bm.has(c.id)));
+        if (alt) { alt.tag = "alt"; res.push(alt); seen.add(sig(alt)); }
+        if (!best.lineage) {
+          const lin = shortestChains(a, b, lineageEdge, 12).map((c) => routeOf(c, b, "lineage")).sort((p, q) => p.cost - q.cost)[0];
+          if (lin && !seen.has(sig(lin))) res.push(lin);
+        }
+      }
     }
     routeCache.set(key, res);
     return res;
@@ -3480,9 +3693,24 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     routeCache.set(key, res);
     return res;
   }
-  // 図に描く道（強調・光の流れ・札で使う）。相手をまだ選んでいないときは、平泉澄先生への道
+  // 道の駅の並び（指示83）: 関係の短い名（スマホの狭い並び）と、着いた人の役（前の人から見て。どちらが師か、どちらが子かを言葉で）。
+  // 役は [元の側（s）の役, 先の側（t）の役]。系譜の線は s が師・祖・源、組織の線は s が組織。向きのない関係（批判・対立、交流・共著）は役なし
+  const RT_SHORT = { shiji: "師事", kakei: "家系", yoshi: "養子", keisho: "跡継ぎ", shishuku: "私淑", densho: "伝承", eikyo: "思想", koen: "後援・主従", hihan: "批判・対立", koryu: "交流・共著", shinko: "進講", org_found: "創設・主宰", org_member: "所属・教職", org_setup: "設置" };
+  const RT_ROLE = { shiji: ["師", "門人"], kakei: ["親・祖先", "子・子孫"], yoshi: ["養親", "養子"], keisho: ["先代", "跡継ぎ"], shishuku: ["私淑された先人", "私淑した人"], densho: ["伝えた人", "伝えを受けた人"], eikyo: ["思想の源", "思想を継いだ人"], koen: ["後援者・主君", "後援を受けた人・家臣"], org_found: ["創設・主宰した組織", "創設・主宰した人"], org_member: ["所属した組織", "所属した人"] };
+  function routeRole(e, id) {
+    const n = byId.get(id);
+    if (e.type === "shinko") return n.emperor || n.royal ? "講義を受けた天皇・皇族" : "進講した人";
+    if (e.type === "org_setup") return n.isOrg ? (e.s === id ? "設置した組織" : "設置された組織") : "";
+    const r = RT_ROLE[e.type];
+    return r ? r[e.s === id ? 0 : 1] : "";
+  }
+  // 図に描く道（強調・光の流れ・札で使う）。ほかの人への道は、選んだ候補の一本。到着をまだ選んでいないときは、出発の人だけ
   function routeInfo(id) {
-    if (state.route === "to" && state.routeTo && state.routeTo !== id) return pathBetween(id, state.routeTo);
+    if (state.route === "to") {
+      const to = state.routeTo && state.routeTo !== id ? state.routeTo : null;
+      const ops = to ? routeOptions(id, to) : [];
+      return ops[Math.min(state.routeAlt || 0, ops.length - 1)] || { kind: "to", to, nodes: new Set(to ? [id, to] : [id]), edges: new Set(), chain: [], steps: null };
+    }
     if (state.route === "reach") return reachInfo(id, state.reachN || 2);
     return pathInfo(id);
   }
@@ -3893,19 +4121,22 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   // o.ignoreHover: 指している人を見ない強調（地図のバブルと名前は、マウスを重ねるたびに書き換えないため。指示52）
   function emphasis(o) {
     const sel = state.selected ? routeInfo(state.selected) : null;
+    // 道を調べている間（指示83）は、道の人と線だけを濃くする（出発の人のほかの線は描かない）
+    const routeOnly = !!sel && sel.kind === "to";
     const hov = o && o.ignoreHover ? null : state.hover;
     const hovN = hov ? new Set([hov, ...nbrAll.get(hov)]) : null;
-    const selInc = state.selected ? new Set(incident.get(state.selected).map((e) => e.id)) : new Set();
-    const selNbr = state.selected ? new Set([state.selected, ...nbrAll.get(state.selected)]) : new Set();
+    const selInc = state.selected && !routeOnly ? new Set(incident.get(state.selected).map((e) => e.id)) : new Set();
+    const selNbr = !state.selected ? new Set() : routeOnly ? new Set(sel.nodes) : new Set([state.selected, ...nbrAll.get(state.selected)]);
     // 重ねて見る二人目（指示65）: その人の道すじと、直接の関係
     const sec = state.selected && state.second ? pathInfo(state.second) : null;
     const secNbr = sec ? new Set([state.second, ...nbrAll.get(state.second)]) : null;
     const secInc = sec ? new Set(incident.get(state.second).map((e) => e.id)) : null;
     return {
+      routeOnly,
       node(n) {
         if (!matches(n)) return 0.1;
         if (hovN) return hovN.has(n.id) ? 1 : 0.2;
-        if (!sel) return 1;
+        if (!sel || (routeOnly && !sel.to)) return 1; // 到着を選ぶ前は、どの人も薄くしない（押して選びやすいように）
         if (sel.nodes.has(n.id) || selNbr.has(n.id)) return 1;
         if (sec && (sec.nodes.has(n.id) || secNbr.has(n.id))) return 1;
         return n.isOrg ? 0.4 : 0.3;
@@ -3934,7 +4165,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   const allEdges = edges.concat(thinEdges); // 細いつながりは描くときだけ混ぜる（大きさ・経路には数えない）
   window.SG = {
     D, FOCUS, honor, state, famous, on, emit, people, orgs, nodes, byId, edges: allEdges, realEdges: edges, lineageEdges, EDGE_TYPES, CATS, CAT_STYLE, CONF, CONF_RANK,
-    inL, outL, incident, nbrAll, ancH, descH, pathInfo, routeInfo, pathBetween, reachInfo, distTo, radius, SIZE_RULES, FAMILIES, familyOf, colorOf, schoolOf,
+    inL, outL, incident, nbrAll, ancH, descH, pathInfo, routeInfo, routeOptions, routeRole, RT_SHORT, reachInfo, distTo, radius, SIZE_RULES, FAMILIES, familyOf, colorOf, schoolOf,
     AXES, AXIS, AXIS_GROUPS, groupOf, axisValue, axisValues, condMatch, regionOf, matches, visible, edgeShown, emphasis, esc, edgeOrder,
     evidenceOf, loadEvidenceSrc, pairKey, thinEdges, thinOf, kinOf, KIN_VALUES, facetOf, FX, EV,
     toggleCond, clearConds, hasCond, PRESETS, applyPreset, GRADES, GRADE,
@@ -4725,7 +4956,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     return `<ol class="chain">${info.chain.map((c, i) => {
       const n = byId.get(c.id);
       const next = info.chain[i + 1];
-      const via = next && next.via ? `<span class="via">${loose ? "↕" : "↓"} ${E(EDGE_TYPES[next.via.type].label.replace(/（.*）/, ""))}</span>` : "";
+      const role = info.kind === "to" && next && next.via ? SG.routeRole(next.via, next.id) : ""; // 次の人の役（指示83: どちらが師かを言葉で）
+      const via = next && next.via ? `<span class="via">${loose ? "↕" : "↓"} ${E(EDGE_TYPES[next.via.type].label.replace(/（.*）/, ""))}${role ? `（次は${E(role)}）` : ""}</span>` : "";
       const color = n.isOrg ? "var(--edge-org)" : SG.colorOf(n);
       return `<li class="${i === info.chain.length - 1 ? "end" : ""}" style="--cc:${color}">${personLink(c.id)} <span class="rt num">${E(n.myth ? "神代" : SG.fmtYear(n.fl))}</span>${via}</li>`;
     }).join("")}</ol>`;
@@ -4881,13 +5113,17 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     if (mode === "to") {
       title = "ほかの人へのつながり";
       const t = state.routeTo && state.routeTo !== p.id ? byId.get(state.routeTo) : null;
-      if (state.pickRoute) body = '<p class="c-hint">相手の人・組織を、図で押すか、検索で選んでください。</p><button type="button" class="btn sm" data-act="route-cancel">やめる</button>';
+      // 地図では、道は「道を調べる」の欄に駅の並びで出す（指示83）。札には短い知らせだけ（名前を押すと出発が替わるので、名前は文字だけ）
+      if (SG.routeBoxOn && SG.routeBoxOn() && p.id === state.selected) {
+        const r = t && SG.routeInfo(p.id);
+        body = `<p class="c-hint">${!t ? "到着の人を、「道を調べる」の欄で選んでください（地図で押しても選べます）。" : r.steps == null ? `収めた資料の範囲では、${E(t.n)} へのつながりは見つかりません。` : `${E(t.n)} まで <b>${r.steps}段</b>。道の駅は「道を調べる」の欄に並べています。`}</p>`;
+      } else if (state.pickRoute) body = '<p class="c-hint">相手の人・組織を、図で押すか、検索で選んでください。</p><button type="button" class="btn sm" data-act="route-cancel">やめる</button>';
       else if (!t) body = '<p class="c-hint">相手をまだ選んでいません。</p><button type="button" class="btn sm" data-act="route-pick">相手を選ぶ</button>';
       else {
-        const r = SG.pathBetween(p.id, t.id);
+        const r = SG.routeInfo(p.id);
         body = (r.steps == null
           ? `<p>収めた資料の範囲では、${personLink(t.id)} へのつながりは見つかりません。</p>`
-          : `<p>${personLink(t.id)} まで <b>${r.steps}段</b> です（関係と組織をたどった、いちばん短い道）。図では、同じ段数で届く道をすべて濃く描いています。</p>${chainHtml(r)}`) +
+          : `<p>${personLink(t.id)} まで <b>${r.steps}段</b> です（関係と組織をたどった、いちばん短い道）。</p>${chainHtml(r)}`) +
           '<button type="button" class="btn sm" data-act="route-pick">相手を変える</button>';
       }
     } else if (mode === "reach") {
@@ -5064,6 +5300,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   const TINY_AXES = new Set(["school", "era", "field", "region", "house", "affil", "dist"]);
   const ICON_COND = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3.5h11l-4.2 5v4.2l-2.6 1.3V8.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
   const ICON_FIT = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 4.6L4.4 10.9M8 4.6l3.6 6.3M5.2 12.4h5.6" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="3.4" r="1.8" fill="currentColor"/><circle cx="3.6" cy="12.4" r="1.8" fill="currentColor"/><circle cx="12.4" cy="12.4" r="1.8" fill="currentColor"/></svg>';
+  // 道を調べる（指示83）: 出発の丸から、点線の道を通って、到着の針へ
+  const ICON_ROUTE = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.6" cy="12.4" r="2.1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.6 11.6c3.4-1.2 1.2-4.6 4-5.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="1.5 1.9" stroke-linecap="round"/><path d="M12.3 9.6c-1.7-2-2.7-3.2-2.7-4.6a2.7 2.7 0 1 1 5.4 0c0 1.4-1 2.6-2.7 4.6z" fill="currentColor"/></svg>';
   const ICON_FILTER = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h6.5M12.5 4.5H14M2 11.5h1.5M7.5 11.5H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10.5" cy="4.5" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="5.5" cy="11.5" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
 
   const view = {
@@ -5085,6 +5323,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
           <div class="zoom" role="group" aria-label="縦の倍率"><button type="button" data-act="kout" aria-label="縦を狭く">−</button><span id="kLabel">${K_STEPS[this.kIndex].label}</span><button type="button" data-act="kin" aria-label="縦を広く">＋</button></div>
           <button type="button" class="btn" data-act="fit" aria-label="全体" aria-pressed="false" title="神代から令和までの全部を、一画面に収めて見る">${ICON_FIT}<span class="l">全体</span></button>
           ${SG.fullBtn()}${SG.guideBtn()}
+          <button type="button" class="btn rt-btn" data-act="route" aria-label="道を調べる" aria-pressed="false" title="二人のあいだの道を、乗換案内のように調べる">${ICON_ROUTE}<span class="l">道を調べる</span></button>
           <button type="button" class="btn" data-act="focus" aria-label="平泉澄先生へ"><span class="lf">平泉澄先生へ</span><span class="sf">先生へ</span></button>
         </div>
         <p class="tb-now" id="nowAt" aria-live="off"></p>
@@ -5145,7 +5384,9 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         if (act === "fit") this.toggleFit();
         if (act === "full") SG.setFull(!SG.state.full);
         if (act === "focus") { SG.select(SG.FOCUS); this.focus(SG.FOCUS); }
+        if (act === "route") SG.setRoute(SG.state.route === "to" ? "focus" : "to");
       });
+      this.syncRouteBtn();
       // 狭い画面では分け方の説明を一行に縮め、押すと全文を出す
       host.querySelector("#axisRule").addEventListener("click", (ev) => ev.currentTarget.classList.toggle("open"));
       this.ts = new SG.TimeScroll(host.querySelector("#mapBody"), {
@@ -5180,6 +5421,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       this.labSvg.setAttribute("aria-hidden", "true");
       this.ts.contentEl.appendChild(this.labSvg);
       this.gLab = d3.select(this.labSvg).append("g");
+      this.gPin = d3.select(this.labSvg).append("g").attr("class", "route-pins"); // 道を調べるときの、出発・到着の針と駅の番号（指示83。名前より上）
       this.pos = this.pos || new Map();
       this.nowHtml = null; // 「いま見ている所」は作り直した欄に書き直す
       this.bindPan();
@@ -5312,7 +5554,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       const st = document.documentElement.style;
       const top = (parseFloat(st.getPropertyValue("--head-h")) || 0) + (parseFloat(st.getPropertyValue("--tb-h")) || 0);
       const o = this.ts ? this.ts.opts : { padTop: 26, padBottom: 48 };
-      const avail = window.innerHeight - top - 42 - 24 - o.padTop - o.padBottom; // 42＝列の見出し
+      const rb = parseFloat(st.getPropertyValue("--rb-h")) || 0; // スマホの道を調べる欄の高さ（指示83。欄の上に収める）
+      const avail = window.innerHeight - top - rb - 42 - 24 - o.padTop - o.padBottom; // 42＝列の見出し
       return Math.round(Math.max(0.03, Math.min(0.45, avail / SG.TS.h)) * 1000) / 1000;
     },
     // 縮めたときはバブルも小さくする（「全体」で重なりすぎないように）
@@ -5673,6 +5916,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         }
       });
       this.gLab.selectAll("text.node-label").each(function (s) { const n = byId.get(s.d.p.id); if (n && near(n)) { this.setAttribute("x", s.x + (n.sx - s.d.sx)); this.setAttribute("y", s.y + (n.sy - s.d.sy)); } });
+      if (this.gPin) this.gPin.selectAll("g.rpin").attr("transform", (d) => `translate(${this.pinXY(d)})`);
       this.gLab.selectAll("line.label-lead").each(function (s) {
         const n = byId.get(s.d.p.id);
         if (!n || !near(n)) return;
@@ -5801,7 +6045,9 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       // 選んでいても、マウスを重ねても線を描かず、バブルと名前だけにする（指示56）
       // 重ねて見る二人目がいれば、その人の道すじと関係の線も別の色で重ねる（指示65）
       const sel = SG.state.selected, hov = SG.state.hover, em = SG.emphasis(), on = this.linesOn(), sec = SG.state.second;
-      const keepAll = on ? list.filter((e) => em.onPath(e) || e.s === sel || e.t === sel || (hov && (e.s === hov || e.t === hov)) || (sec && em.onSecond(e))) : [];
+      // 道を調べている間は、道の線だけ（出発の人のほかの線は描かない。指示83）
+      const own = (e) => !em.routeOnly && (e.s === sel || e.t === sel);
+      const keepAll = on ? list.filter((e) => em.onPath(e) || own(e) || (hov && (e.s === hov || e.t === hov)) || (sec && em.onSecond(e))) : [];
       this.linesShown = on;
       // 光が流れている間は、道すじの線を描かない（光の線が届いてから見せる。指示41）。名前は、流れ終わった形の線をよけて置く
       const keep = this.flowDone === false ? keepAll.filter((e) => !em.onPath(e)) : keepAll;
@@ -5823,11 +6069,51 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         const life = this.gLife.select("line").node();
         if (life) lines.push({ pts: ["x1", "y1", "x2", "y2"].map((k) => +life.getAttribute(k)), w: 3 });
       }
+      const pins = this.pinData();
+      if (pins.length) {
+        lines = lines || [];
+        pins.forEach((d) => { const [x, y] = this.pinXY(d); lines.push(d.k === "mid" ? { pts: [x - 2, y, x + 2, y], w: 16 } : { pts: [x, y - 3, x, y - 25], w: 20 }); });
+      }
       SG.drawLabels(this.gLab, dots, { width: W, height: H, lines, top: 16, bottom: H - 6, pending: this.pending, em: emStill });
       const labelEl = new Map();
       this.gLab.selectAll("text.node-label").each(function (s) { labelEl.set(s.d.p.id, this); });
       this.labelEl = labelEl;
+      this.drawPins(pins);
     },
+    // 道を調べている間（指示83）: 出発と到着に地図アプリのような針、途中の人に駅の番号（道の欄の番号と同じ）
+    pinData() {
+      const st = SG.state, out = [];
+      if (!this.byId || !SG.routeBoxOn || !SG.routeBoxOn()) return out;
+      const add = (id, k, t) => { const n = id && this.byId.get(id); if (n) out.push({ id, k, t, n }); };
+      if (st.selected) SG.routeInfo(st.selected).chain.slice(1, -1).forEach((c, i) => add(c.id, "mid", String(i + 1)));
+      add(st.selected, "from", "発");
+      if (st.routeTo !== st.selected) add(st.routeTo, "to", "着");
+      return out;
+    },
+    // 針の先はバブルの上の端。駅の番号はバブルの右上
+    pinXY(d) {
+      const n = d.n;
+      return d.k === "mid" ? [n.sx + n.r * 0.72 + 5, n.sy - n.r * 0.72 - 5] : [n.sx, n.sy - n.r - 1];
+    },
+    drawPins(data) {
+      if (!this.gPin) return;
+      const j = this.gPin.selectAll("g.rpin").data(data || this.pinData(), (d) => d.k + ":" + d.id);
+      j.exit().remove();
+      const e = j.enter().append("g").attr("class", (d) => "rpin " + d.k);
+      e.filter((d) => d.k !== "mid").append("path").attr("d", "M0 0C-2.6-4.6-9-8.4-9-14.2a9 9 0 1 1 18 0c0 5.8-6.4 9.6-9 14.2z");
+      e.filter((d) => d.k === "mid").append("circle").attr("r", 7.5);
+      e.append("text").attr("y", (d) => (d.k === "mid" ? 0.5 : -14));
+      const m = e.merge(j).attr("transform", (d) => `translate(${this.pinXY(d)})`);
+      m.select("text").text((d) => d.t);
+    },
+    // 道の欄で駅を押したとき: その人の所に輪を一度広げる
+    flash(id) {
+      const n = this.byId && this.byId.get(id);
+      if (!n || !this.gFlow || SG.reducedMotion()) return;
+      const ring = this.gFlow.append("circle").attr("class", "flow-ring").attr("cx", n.sx).attr("cy", n.sy).attr("r", n.r + 4).node();
+      ring.animate([{ opacity: 0, transform: "scale(0.7)" }, { opacity: 0.9, transform: "scale(1)", offset: 0.25 }, { opacity: 0, transform: "scale(2.4)" }], { duration: 1200, delay: 250, easing: "ease-out", fill: "both" }).onfinish = () => ring.remove();
+    },
+    syncRouteBtn() { const b = this.host && this.host.querySelector('[data-act="route"]'); if (b) b.setAttribute("aria-pressed", String(SG.state.route === "to")); },
     // 線を描くのは、札を開いている間（と「平泉澄先生へ届く道を見る」の間）だけ（指示56）
     linesOn() { return !!SG.state.selected && (!SG.showLines || SG.showLines() || !!this.tourLines); },
     // 光の線を消し、あとから出す予定も取り消す（札を閉じたとき。指示56）
@@ -5878,7 +6164,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (!this.ts || !this.cols || !list || this.edgesHidden || this.timer || this.ts.kTimer) { this.render(); return; }
       const sel = SG.state.selected, hov = SG.state.hover, em = SG.emphasis(), sec = SG.state.second;
       if (!this.linesOn()) return;
-      const keepAll = list.filter((e) => em.onPath(e) || e.s === sel || e.t === sel || (hov && (e.s === hov || e.t === hov)) || (sec && em.onSecond(e)));
+      const keepAll = list.filter((e) => em.onPath(e) || (!em.routeOnly && (e.s === sel || e.t === sel)) || (hov && (e.s === hov || e.t === hov)) || (sec && em.onSecond(e)));
       const keep = this.flowDone === false ? keepAll.filter((e) => !em.onPath(e)) : keepAll;
       const mid = (e) => { const a = this.byId.get(e.s), b = this.byId.get(e.t); return [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2]; };
       SG.drawEdges(this.gKeep, keep, (e) => this.edgePath(e), { mid });
@@ -6019,13 +6305,17 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         setTimeout(() => { if (this.flowToken === token && this.flowDone === false) this.endReveal(); }, farT + 80);
       }
       // 一本の線で描く（前は光のにじみと二本だった）。伸びきったら、動きを外して普通の線にする（届いたあとも残す。指示35）
+      const rt = info.kind === "to";
       lit.forEach((g) => {
         const t = this.trimPath(g.e);
         if (!t) return;
         const from = g.from === g.e.s ? t.len : -t.len; // 向きが逆の線は、終わりの側から描く
-        const el = this.gFlow.append("path").attr("class", "flow").attr("d", t.d).attr("stroke-dasharray", `${t.len} ${t.len}`).attr("stroke-dashoffset", from).node();
-        const an = el.animate([{ strokeDashoffset: from }, { strokeDashoffset: 0 }], { duration: Math.max(16, tOf(g.len)), delay: leave(g.from), easing: "linear", fill: "forwards" });
-        an.onfinish = () => { el.removeAttribute("stroke-dasharray"); el.removeAttribute("stroke-dashoffset"); an.cancel(); };
+        this.flowEls(g.e, t.d, rt).forEach((el) => {
+          el.setAttribute("stroke-dasharray", `${t.len} ${t.len}`);
+          el.setAttribute("stroke-dashoffset", from);
+          const an = el.animate([{ strokeDashoffset: from }, { strokeDashoffset: 0 }], { duration: Math.max(16, tOf(g.len)), delay: leave(g.from), easing: "linear", fill: "forwards" });
+          an.onfinish = () => { el.removeAttribute("stroke-dasharray"); el.removeAttribute("stroke-dashoffset"); this.flowDash(el, g.e); an.cancel(); };
+        });
       });
       // 平泉澄先生に届いたら、輪を一度だけ静かに広げる
       const T = endId ? when.get(endId) : null, endN = endId && T != null ? this.byId.get(endId) : null;
@@ -6099,8 +6389,17 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       this.flowDone = true;
       this.flowWidth();
       this.gFlow.selectAll("*").remove();
-      (this.litArcs || []).forEach((g) => { const t = this.trimPath(g.e); if (t) this.gFlow.append("path").attr("class", "flow").attr("d", t.d); });
+      const rt = !!SG.state.selected && SG.routeInfo(SG.state.selected).kind === "to";
+      (this.litArcs || []).forEach((g) => { const t = this.trimPath(g.e); if (t) this.flowEls(g.e, t.d, rt).forEach((el) => this.flowDash(el, g.e)); });
     },
+    // 光の線。道を調べるとき（rt）は、紙の色の縁（下にまとめて敷く）と、関係の種類の色の線の二本（指示83）
+    flowEls(e, d, rt) {
+      if (!rt) return [this.gFlow.append("path").attr("class", "flow").attr("d", d).node()];
+      return [this.gFlow.insert("path", ":first-child").attr("class", "flow rt-case").attr("d", d).node(),
+        this.gFlow.append("path").attr("class", "flow rt").attr("d", d).style("stroke", SG.CAT_STYLE[SG.EDGE_TYPES[e.type].cat].color).node()];
+    },
+    // 確かめきれていない線（要確認）は、伸びきったあと点線にする（道の欄の駅の並びと同じ）
+    flowDash(el, e) { if (el.classList.contains("rt") && e.conf === "要確認") el.setAttribute("stroke-dasharray", "7 5"); },
     // 光の線の太さは、縦の倍率に合わせる（「全体」の小さな図では細く）
     flowWidth() { if (this.flowSvg && this.ts) this.flowSvg.style.setProperty("--flow-w", (this.ts.k < 0.45 ? 1.8 : 3.2) + "px"); },
     // 光の先が画面の外へ出そうになったら、画面をゆっくり送って追う（触る・回す・キーを押すと、すぐやめる）。
@@ -6194,6 +6493,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
 
     update(reason) {
       if (!this.ts) return;
+      this.syncRouteBtn();
       if (reason === "axis") { this.showRule(); this.layout(true); return; }
       if (reason === "filter") { this.build(); this.layout(true); return; }
       // 尺度が変わったとき（御代の帯の高さを引いて変えたときも）。「全体」では、画面の高さに収め直す（収め直すと onK が並べ直す）
@@ -8745,6 +9045,13 @@ void main() {
       SG.emit("second");
       return;
     }
+    // 道を調べている間（地図。指示83）: 図で押した人・組織や、上の検索で選んだ人を、いま選んでいる欄（出発か到着）に入れる。
+    // 駅の行き先の地図のように、到着を入れたあとも、押すたびに到着が替わる（出発を替えるときは、出発の欄を押してから）
+    if (id && routeBoxOn() && !opts.quiet && !opts.fromCard) {
+      setRouteEnd(!state.selected && !state.routeTo ? "from" : state.routeEnd, id);
+      if (opts.focus && current && current.focus) current.focus(id);
+      return;
+    }
     // 「ほかの人への道」の相手を選んでいるところなら、選んだ人はそのままで、相手までの道を描く（指示71）
     if (id && state.pickRoute && !opts.quiet) {
       state.pickRoute = false;
@@ -8771,7 +9078,7 @@ void main() {
   // 人物・組織の札が開いているか。図の線は、この間だけ描く（指示56）
   SG.cardOpen = () => !!state.card && !!state.sheet;
   // 図の線を描くか: 札を開いている間（指示56）。スマホでは、押して選んだ人なら、札を開く前から描く（指示65: 押すと下に開くボタンだけが出る）
-  SG.showLines = () => SG.cardOpen() || (narrow() && !!state.picked);
+  SG.showLines = () => SG.cardOpen() || (narrow() && !!state.picked) || (state.route === "to" && !!state.routeTo); // 道を調べている間も（指示83）
   // 指が通り過ぎるだけのときは強調しない（ちらつきを防ぐ）
   SG.setHover = function (id) {
     clearTimeout(hoverTimer);
@@ -9054,7 +9361,7 @@ void main() {
     if (state.card && !SG.byId.get(state.card)) state.card = null;
     const mode = state.card ? "card" : "guide";
     const conds = [...state.conds].map(([a, s]) => a + ":" + [...s].join(",")).join(";");
-    const key = [mode, state.card, state.view, state.selected, state.sizeBy, [...state.filters.family].join(","), conds, [...state.cats].join(","), [...state.grades].join(","), state.route, state.routeTo, state.reachN, state.pickRoute].join("|"); // 道の見せ方を替えたら札も描き直す（指示71）
+    const key = [mode, state.card, state.view, state.selected, state.sizeBy, [...state.filters.family].join(","), conds, [...state.cats].join(","), [...state.grades].join(","), state.route, state.routeTo, state.routeAlt, state.reachN, state.pickRoute].join("|"); // 道の見せ方を替えたら札も描き直す（指示71）
     if (force || insp._key !== key) {
       const body = $("inspBody");
       const swapped = insp._card !== state.card || insp._mode !== mode;
@@ -9101,12 +9408,14 @@ void main() {
     }
   }
   function renderPill() {
+    renderRouteBox();
+    const rb = routeBoxOn(); // 道を調べている間は、帯の代わりに道の欄を出す（指示83）
     const n = state.selected && SG.byId.get(state.selected);
     const b = state.second && SG.byId.get(state.second);
     const cardShown = !!(state.card && state.sheet);
     // 選んでいる人の帯: 札を開いていないときの「札を開く」と、重ねて見ているとき・重ねる人を選んでいるとき（どの幅でも。指示65）。
     // パソコンでは見出しの行の空いている所に、スマホでは画面の下に出す（指示67）
-    const show = !!(n && current && current.hasSide && ((!wide() && !cardShown) || b || state.pickSecond || state.pickRoute));
+    const show = !rb && !!(n && current && current.hasSide && ((!wide() && !cardShown) || b || state.pickSecond || state.pickRoute));
     // 「人への道」の相手と「広がり」を、名前の横に出す
     const to = state.route === "to" && state.routeTo && state.routeTo !== state.selected ? SG.byId.get(state.routeTo) : null;
     const via = to ? `<i class="pill-plus">→</i><b class="pill-b">${E(to.n)}</b>` : state.route === "reach" ? '<span class="ps-l">の広がり</span>' : "";
@@ -9118,7 +9427,7 @@ void main() {
     const top = !narrow();
     // パソコンの地図では、画面の下の真ん中に、名前と道の見せ方の 3 つのボタンだけの帯を出す（札を開いていても。見出しの行と、
     // はじめの小さな札では見えなかったため。指示82）。相手や重ねる人を選んでいる間は、見出しの行の案内だけ
-    const pc = !!(top && n && current && current.id === "map" && !state.pickRoute && !state.pickSecond);
+    const pc = !rb && !!(top && n && current && current.id === "map" && !state.pickRoute && !state.pickSecond);
     const pcHtml = pc ? `<span class="ps-who"><b>${E(n.n)}</b>${b ? `<i class="pill-plus">＋</i><b class="pill-b">${E(b.n)}</b>` : via}</span>${routeSeg()}` : "";
     for (const [el, on, inner] of [[$("pill"), (show && !top) || pc, top ? pcHtml : html], [$("headSel"), show && top, `<div class="hs-in">${html}</div>`]]) {
       if (on) el.innerHTML = inner;
@@ -9140,11 +9449,25 @@ void main() {
   SG.setRoute = function (mode) {
     state.route = mode;
     state.pickRoute = false;
-    if (mode === "to" && (!state.routeTo || state.routeTo === state.selected)) { startRoutePick(); return; }
+    if (mode === "to") {
+      state.routeAlt = 0;
+      if (state.routeTo === state.selected) state.routeTo = null;
+      // 地図では「道を調べる」の欄を開く（指示83）。出発がなければ出発から、あれば到着から選ぶ。
+      // スマホで札を開いていれば、地図が見えるように閉じる。パソコンでは、空いている欄に文字を打てるようにする
+      if (current && current.id === "map") {
+        state.routeEnd = state.selected ? "to" : "from";
+        if (narrow() && state.sheet) closeCard();
+        SG.emit("select");
+        if (!narrow() && !(state.selected && state.routeTo)) $(state.routeEnd === "from" ? "rbFrom" : "rbTo").focus();
+        return;
+      }
+      if (!state.routeTo) { startRoutePick(); return; }
+    }
     SG.emit("select");
   };
   // 相手を選ぶ: 次に図か検索で選んだ人・組織を、道の相手にする。スマホで札を開いていれば、図が見えるように閉じる
   function startRoutePick() {
+    if (current && current.id === "map") { state.routeTo = null; SG.setRoute("to"); return; } // 地図では道の欄の到着から（指示83）
     if (!state.selected) return;
     state.route = "to"; state.pickRoute = true; state.pickSecond = false;
     if (narrow() && state.sheet) closeCard();
@@ -9154,6 +9477,191 @@ void main() {
   // 道の見せ方の切り替え（指示71・82）。選び欄では気づきにくかったので、いつも見える 3 つのボタンにした。狭い所では短い名に
   const ROUTE_SHORT = { focus: "先生への道", to: "人への道", reach: "広がり" }, ROUTE_LONG = { focus: "平泉澄先生への道", to: "ほかの人への道", reach: "知り合いの広がり" };
   const routeSeg = () => `<span class="ps-seg" role="group" aria-label="図に描く道">${ROUTE_OPTS.map(([v]) => `<button type="button" data-act="route" data-route="${v}" aria-pressed="${(state.route || "focus") === v}"><span class="rs-l">${ROUTE_LONG[v]}</span><span class="rs-s">${ROUTE_SHORT[v]}</span></button>`).join("")}</span>`;
+  // ── 道を調べる（指示83） ─────────────────────────
+  // 乗換案内や地図アプリの道案内のように、出発と到着を欄で選ぶ（その場で名前を検索。地図で押しても入る）。
+  // 道は候補（いちばん短い・別の道・系譜だけ）から選び、駅の並びのように、人と人のあいだの関係と、着いた人の役を言葉で示す。
+  // 地図の画面にいる間だけ出す（ほかの画面では、前のとおり札と下の帯で）
+  function routeBoxOn() { return state.route === "to" && !!current && current.id === "map"; }
+  SG.routeBoxOn = routeBoxOn;
+  const RB = { list: [], active: -1, end: null };
+  const RT_SHORT = SG.RT_SHORT, roleOf = SG.routeRole; // 関係の短い名と、着いた人の役（core.js）
+  const segColor = (e) => SG.CAT_STYLE[SG.EDGE_TYPES[e.type].cat].color;
+  // 出発・到着を入れる。出発は「選んでいる人」と同じ（札を開いていれば、札も出発の人に替わる）。
+  // 出発に到着の人を入れたとき（とその逆）は、入れ替える。出発と同じ人は到着にしない
+  function setRouteEnd(end, id) {
+    const a = state.selected, b = state.routeTo;
+    state.pickRoute = false;
+    state.routeAlt = 0;
+    if (end === "from") {
+      if (id === b) state.routeTo = a || null;
+      state.routeEnd = "to";
+      SG.select(id, { quiet: true });
+      return;
+    }
+    if (id === a) {
+      if (!b) return;
+      state.routeTo = a;
+      SG.select(b, { quiet: true });
+      return;
+    }
+    state.routeTo = id;
+    state.routeEnd = a ? "to" : "from";
+    SG.emit("select");
+  }
+  function swapRoute() {
+    const a = state.selected, b = state.routeTo;
+    if (!a && !b) return;
+    state.routeTo = a || null;
+    state.routeAlt = 0;
+    if (b) SG.select(b, { quiet: true }); else { state.routeEnd = "from"; SG.select(null); }
+  }
+  function renderRouteBox() {
+    const box = $("routeBox");
+    // スマホで札を全画面に開いている間は、道の欄を隠す
+    const on = routeBoxOn() && !(narrow() && SG.cardOpen());
+    if (box.hidden === on) box.hidden = !on;
+    box.classList.toggle("narrow", narrow());
+    // パソコンでは、地図の右に欄の場所を空ける（css の html.rb-dock。地図は狭まった幅で並べ直す）
+    document.documentElement.classList.toggle("rb-dock", on && !narrow());
+    // スマホでは、欄の高さを --rb-h に書く。「全体」の図はその上に収め直し、頁の下にも同じだけ余白を足す（欄が図の下の方を隠さないように）。
+    // 文字を打つ間（欄が画面の上にある間）は変えない
+    if (!box.classList.contains("typing")) {
+      const h = on && narrow() ? Math.round(box.offsetHeight) + 10 : 0;
+      if (h !== RB.h) {
+        RB.h = h;
+        document.documentElement.style.setProperty("--rb-h", h + "px");
+        requestAnimationFrame(() => { if (current && current.refit) current.refit(); });
+      }
+    }
+    if (!on) { closeRbList(); box.classList.remove("typing"); return; }
+    const from = state.selected ? SG.byId.get(state.selected) : null;
+    const to = state.routeTo && state.routeTo !== state.selected ? SG.byId.get(state.routeTo) : null;
+    const end = !from ? "from" : state.routeEnd === "from" ? "from" : "to";
+    for (const [k, n] of [["from", from], ["to", to]]) {
+      const inp = $(k === "from" ? "rbFrom" : "rbTo");
+      if (document.activeElement !== inp) inp.value = n ? n.n : ""; // 文字を打っている欄は書き換えない
+      const row = inp.closest(".rb-end");
+      row.classList.toggle("active", end === k);
+      row.classList.toggle("empty", !n);
+      row.querySelector(".rb-map").setAttribute("aria-pressed", String(end === k));
+    }
+    $("rbHint").textContent = !from ? "出発の人を、地図で押すか、名前で探してください。"
+      : !to ? "到着の人を、地図で押すか、名前で探してください。"
+      : end === "from" ? "次に地図で押した人が、出発になります。" : "地図でほかの人を押すと、到着が替わります。";
+    const res = $("rbRes"), key = [state.selected, state.routeTo, state.routeAlt].join("|");
+    if (res._key === key) return;
+    res._key = key;
+    res.innerHTML = from && to ? routeResHtml(from, to) : "";
+    if (narrow() && !box.classList.contains("typing")) { const h = Math.round(box.offsetHeight) + 10; if (h !== RB.h) { RB.h = h; document.documentElement.style.setProperty("--rb-h", h + "px"); requestAnimationFrame(() => { if (current && current.refit) current.refit(); }); } }
+  }
+  function routeResHtml(from, to) {
+    const ops = SG.routeOptions(from.id, to.id);
+    if (!ops.length) return `<p class="rb-none">収めた資料の範囲では、${E(from.n)} から ${E(to.n)} へのつながりは見つかりません。</p>`;
+    const k = Math.min(state.routeAlt || 0, ops.length - 1), r = ops[k];
+    const TAG = { short: "いちばん短い", alt: "別の道", lineage: "系譜の線だけ" };
+    const alts = ops.length > 1 ? `<div class="rb-alts" role="group" aria-label="道の候補">${ops.map((o, i) => `<button type="button" data-rbalt="${i}" aria-pressed="${i === k}"><b class="num">${o.steps}段</b><span>${TAG[o.tag]}</span></button>`).join("")}</div>` : "";
+    const sum = `<p class="rb-sum"><b class="num">${r.steps}段</b><span>${r.steps > 1 ? `${r.steps - 1}人を経由` : "直接の関係"}</span>${r.lineage ? '<span class="rb-tag">系譜の線だけ</span>' : ""}</p>`;
+    const stops = r.chain.map((c, i) => {
+      const n = SG.byId.get(c.id), last = i === r.chain.length - 1;
+      const mark = i === 0 ? "発" : last ? "着" : String(i);
+      const col = n.isOrg ? "var(--edge-org)" : SG.colorOf(n);
+      const T = c.via && SG.EDGE_TYPES[c.via.type];
+      const via = c.via ? `<span class="st-via${c.via.conf === "要確認" ? " unsure" : ""}" style="--lc:${segColor(c.via)}"><i class="vl" aria-hidden="true"></i><span class="vt"><span class="vt-l">${E(T.label.replace(/（.*）/, ""))}</span><span class="vt-s">${E(RT_SHORT[c.via.type] || T.label)}</span>${c.via.conf === "要確認" ? '<span class="conf">要確認</span>' : ""}</span></span>` : "";
+      const role = c.via ? roleOf(c.via, c.id) : "";
+      return `<li class="st${i === 0 ? " from" : last ? " to" : ""}" style="--sc:${col}">${via}<button type="button" class="st-b" data-rbgo="${c.id}" title="地図で${E(n.n)}を見る"><span class="st-dot" aria-hidden="true">${mark}</span><span class="st-n">${E(n.n)}</span>${role ? `<span class="st-r">${E(role)}</span>` : ""}<span class="st-y num">${E(n.myth ? "神代" : SG.fmtYear(n.fl))}</span></button></li>`;
+    }).join("");
+    return alts + sum + `<ol class="rb-line" aria-label="道の駅（${E(from.n)}から${E(to.n)}まで）">${stops}</ol>`;
+  }
+  // 欄の候補（上の検索と同じ探し方。印の id は「rbo-」で、上の検索の「opt-」と分ける）
+  function renderRbList(inp) {
+    const list = $("rbList");
+    if (!inp.value.trim()) { closeRbList(); return; }
+    list.innerHTML = RB.list.length
+      ? RB.list.map((n, i) => {
+        const c = n.isOrg ? "var(--edge-org)" : SG.colorOf(n);
+        return `<li role="option" id="rbo-${i}" data-pid="${n.id}" aria-selected="${i === RB.active}">${SG.shapeSvg(n, 5.5, `fill="color-mix(in oklab, ${c} 22%, var(--surface))" stroke="${c}" stroke-width="2"`)}<span class="sg-n">${E(n.n)}</span><span class="sg-s">${n.isOrg ? "組織・" + E(n.kind) : E(n.k || "")}</span><span class="sg-y">${E(n.myth ? "神代" : SG.fmtYear(n.fl))}</span></li>`;
+      }).join("")
+      : `<li class="empty" role="option" aria-disabled="true">見つかりません。名前か、よみ（ひらがな）で探せます。</li>`;
+    list.hidden = false;
+    $("routeBox").classList.add("listing");
+    inp.setAttribute("aria-expanded", "true");
+    if (RB.active >= 0) inp.setAttribute("aria-activedescendant", "rbo-" + RB.active); else inp.removeAttribute("aria-activedescendant");
+  }
+  function closeRbList() {
+    const list = $("rbList");
+    list.hidden = true;
+    $("routeBox").classList.remove("listing");
+    RB.list = []; RB.active = -1;
+    for (const inp of document.querySelectorAll(".rb-in")) { inp.setAttribute("aria-expanded", "false"); inp.removeAttribute("aria-activedescendant"); }
+  }
+  function pickRb(n) {
+    const end = RB.end || state.routeEnd;
+    closeRbList();
+    $("routeBox").classList.remove("typing");
+    document.activeElement.blur();
+    setRouteEnd(end, n.id);
+    if (current && current.focus) current.focus(n.id); // 欄で選んだ人は、地図の見える所へ
+    // パソコンでは、出発を選んで到着がまだなら、到着の欄へ進む（地図アプリのように）
+    if (end === "from" && !state.routeTo && !narrow()) $("rbTo").focus();
+  }
+  function bindRouteBox() {
+    const box = $("routeBox"), list = $("rbList");
+    box.addEventListener("click", (ev) => {
+      const t = ev.target;
+      const b = t.closest("[data-rb]");
+      if (b) {
+        const act = b.dataset.rb;
+        if (act === "close") { SG.setRoute("focus"); return; }
+        if (act === "swap") { swapRoute(); return; }
+        // 「地図で選ぶ」: 次に地図で押した人を、その欄に入れる
+        if (act === "map") { state.routeEnd = b.dataset.end; closeRbList(); box.classList.remove("typing"); if (box.contains(document.activeElement)) document.activeElement.blur(); renderRouteBox(); return; }
+      }
+      const alt = t.closest("[data-rbalt]");
+      if (alt) { state.routeAlt = +alt.dataset.rbalt; SG.emit("select"); return; }
+      // 駅を押すと、地図をその人の所へ送り、輪で示す（選んでいる人は替えない）
+      const go = t.closest("[data-rbgo]");
+      if (go) { if (current && current.focus) current.focus(go.dataset.rbgo); if (current && current.flash) current.flash(go.dataset.rbgo); return; }
+      const li = t.closest("li[data-pid]");
+      if (li) pickRb(SG.byId.get(li.dataset.pid));
+    });
+    list.addEventListener("pointerdown", (ev) => ev.preventDefault()); // 押した瞬間に欄から離れないように
+    for (const inp of box.querySelectorAll(".rb-in")) {
+      inp.addEventListener("focus", () => {
+        RB.end = inp.dataset.end;
+        state.routeEnd = inp.dataset.end;
+        box.classList.toggle("typing", narrow()); // スマホでは、キーボードに隠れないように欄を画面の上へ
+        inp.select();
+        renderRouteBox();
+      });
+      inp.addEventListener("input", () => { RB.list = search(inp.value); RB.active = RB.list.length ? 0 : -1; renderRbList(inp); });
+      inp.addEventListener("keydown", (ev) => {
+        if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+          if (!RB.list.length) return;
+          ev.preventDefault();
+          RB.active = (RB.active + (ev.key === "ArrowDown" ? 1 : -1) + RB.list.length) % RB.list.length;
+          renderRbList(inp);
+          const el = $("rbo-" + RB.active);
+          if (el) el.scrollIntoView({ block: "nearest" });
+        } else if (ev.key === "Enter") {
+          ev.preventDefault();
+          const n = RB.list[Math.max(0, RB.active)];
+          if (n) pickRb(n);
+        } else if (ev.key === "Escape") {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (inp.value && RB.list.length) { closeRbList(); inp.value = ""; } else inp.blur();
+        }
+      });
+      // 選ばずに欄を離れたら、名前を元に戻す
+      inp.addEventListener("blur", () => setTimeout(() => {
+        const a = document.activeElement;
+        if (a && a.classList && a.classList.contains("rb-in")) return;
+        closeRbList();
+        box.classList.remove("typing");
+        renderRouteBox();
+      }, 150));
+    }
+  }
   function startPair() {
     if (!state.selected) return;
     if (state.second) { state.second = null; SG.emit("second"); return; }
@@ -9685,6 +10193,7 @@ void main() {
         if (state.pickRoute) { state.pickRoute = false; SG.emit("select"); return; }
         if (TP.classList.contains("open")) { closeTerm(true); return; }
         if ($("filterPop").classList.contains("open")) { closePop(true); return; }
+        if (routeBoxOn()) { SG.setRoute("focus"); return; } // 道を調べるのをやめる（指示83）
         if (!wide() && state.card && state.sheet) { closeCard(); return; }
         if (!state.card && state.guide) { state.guide = false; renderInspector(); return; }
         if (state.full) { SG.setFull(false); return; }
@@ -9726,6 +10235,7 @@ void main() {
     if (performance.mark) performance.mark("sg-start"); // 読み込みの内訳の目印（sg-core → sg-start → sg-ready）
     bindNav();
     bindSearch();
+    bindRouteBox();
     bindInspector();
     bindPop();
     bindCondBar();
