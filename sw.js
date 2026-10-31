@@ -1,5 +1,5 @@
-// 手元の写し（4a038a8edf）。ページは、つながっていれば新しいものを取り、つながらなければ写しを出す。字の形と図の部品は写しを使う
-const CACHE = "gakuto-4a038a8edf";
+// 手元の写し（b7b5e07452）。ページは、つながっていれば新しいものを取り、つながらなければ写しを出す。字の形と図の部品は写しを使う
+const CACHE = "gakuto-b7b5e07452";
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(["./"])).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", (e) => {
