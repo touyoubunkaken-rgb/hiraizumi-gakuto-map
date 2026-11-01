@@ -3245,7 +3245,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=7d2090e590";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=e69a95b003";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -4610,7 +4610,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     const data = SG.D.EVENTS.map(([y, label]) => ({ y, label, py: ts.Y(y) }));
     // 年が近くて名前が重なるときは、あとの出来事は線だけにする（縮めた図で名前が重ならないように。指示90）
     let last = -Infinity;
-    data.forEach((d) => { d.hide = d.py - last < 13; if (!d.hide) last = d.py; });
+    data.forEach((d) => { d.hide = d.py - last < 17; if (!d.hide) last = d.py; });
     const j = g.selectAll("g.ev").data(data, (d) => d.label);
     j.exit().remove();
     const e = j.enter().append("g").attr("class", "ev");
