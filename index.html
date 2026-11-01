@@ -3247,7 +3247,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=caac234c27";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=bf0484012f";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -4931,7 +4931,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   // 文の中の用語に、用語集への入口を付ける（view-terms.js の linkTerms。札ごとに一度だけ）
   let termsUsed = new Set();
   // 説明の中の URL（確かめに使った CiNii・ジャパンサーチ・大学や市の頁など）は、押せる短いリンク（場所の名）にする（指示90 の＋アルファ）
-  const linkUrls = (html) => html.replace(/https?:\/\/[^\s<>"'）)、。，]+/g, (u) => {
+  const linkUrls = (html) => html.replace(/https?:\/\/[A-Za-z0-9\-._~:/?#@!$&*+,;=%]+/g, (u) => {
     let host = "";
     try { host = new URL(u.replace(/&amp;/g, "&")).hostname.replace(/^www\./, ""); } catch (e) { return u; }
     return `<a class="src-link" href="${u}" target="_blank" rel="noopener">${host}</a>`;
