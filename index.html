@@ -3268,7 +3268,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=78b7699c1f";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=6823efff94";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -3510,33 +3510,27 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     n.reach = n.isOrg ? 0 : bfs(n.id, "down").size - 1;
   });
   const maxOf = (k) => Math.max(1, ...nodes.map((n) => n[k]));
-  // 著名な人物・組織（指示50・51・97）: 世間での知名度（ウィキペディア日本語版の直近 60 日の閲覧数。js/fame.js）の多い人を、
-  // 学者・文人（分野が学問か文学の人）24 人、武将・政治家・皇族・神など 20 人、天皇 8 人に分けて選ぶ（閲覧数だけで選ぶと天皇と武将ばかりになり、
-  // 学統の地図なのに学者がほとんど出ないため）。どれも時代が偏らないように百年ごとの数を限る。家・学統の外の人と平泉澄先生は除く。組織は閲覧数の多い 6。
-  // 指示97 から、はじめの地図はこの人たち（stars）と平泉澄先生だけを描き、名前もいつも出す（何も選んでいないときと、平泉澄先生を選んだとき）
+  // 著名な人物・組織（指示50・51・97・98）: はじめの地図（stars）に、平泉澄先生と一緒に名前つきで描く人。
+  // 第81版では、世間での知名度（ウィキペディア日本語版の直近 60 日の閲覧数。js/fame.js）の多い人を、学者・文人 24 人、武将・政治家・皇族・神など 20 人、
+  // 天皇 8 人に分け（閲覧数だけで選ぶと天皇と武将ばかりになり、学統の地図なのに学者がほとんど出ないため）、組織 6 を足して選んだ。
+  // 指示98 で、その顔ぶれに山崎闇斎を足して固定した（閲覧数を取り直しても変わらないように。楠木正成は、はじめから入っている）
   const FAME = window.SHINTO_FAME || {};
-  const famous = new Set();
-  {
-    const NOT_SCHOLAR = new Set(["kozoku", "buke", "seiji", "shukyosha", "notscholar", "geijutsu"]);
-    const pick = (test, total, perCentury) => {
-      const perCent = new Map();
-      let np = 0;
-      nodes.filter((n) => !n.isOrg && !n.house && !n.outer && n.id !== FOCUS && n.fl != null && FAME[n.id] > 0 && !famous.has(n.id) && test(n))
-        .sort((a, b) => FAME[b.id] - FAME[a.id] || (a.id < b.id ? -1 : 1))
-        .forEach((n) => {
-          if (np >= total) return;
-          const c = Math.floor(n.fl / 100), k = perCent.get(c) || 0;
-          if (k >= perCentury) return;
-          perCent.set(c, k + 1);
-          famous.add(n.id);
-          np++;
-        });
-    };
-    pick((n) => !n.emperor && !n.myth && n.fd && !NOT_SCHOLAR.has(n.fd), 24, 5);
-    pick((n) => !n.emperor, 20, 4);
-    pick((n) => n.emperor, 8, 3);
-    nodes.filter((n) => n.isOrg && FAME[n.id] > 0).sort((a, b) => FAME[b.id] - FAME[a.id] || (a.id < b.id ? -1 : 1)).slice(0, 6).forEach((n) => famous.add(n.id));
-  }
+  const STAR_IDS = [
+    // 学者・文人
+    "mishimayukio", "seishuu", "shoin", "manjirou", "sugawaranomichizane", "inotadataka", "fukuzawayukichi", "moriougai", "mitsukuni", "yasuokamasahiro",
+    "raichou", "bashou", "abenoseimei", "yanagita", "hosokawayusai", "matsudairanagayoshi", "norinaga", "koshi", "hiragagennai", "shibasen",
+    "aokikonyo", "hokiichi", "chikafusa", "tadamichi", "ansai",
+    // 武将・政治家・皇族・神など
+    "toyotomihideyoshi", "tokugawaieyasu", "tadamasa", "odanobunaga", "tokugawahidetada", "yukihideyasu", "sanadanobushige", "sakamotoryoma", "maedatoshiie", "kurodayoshitaka",
+    "inukaitsuyoshi", "toujouhideki", "saigotakamori", "yoshinobu", "masashige", "aishinkakurafugi", "nogimaresuke", "shotokutaishi", "amaterasu", "yamatotakeru",
+    // 天皇（昭和天皇・上皇・今上天皇・神武天皇・明治天皇・大正天皇・持統天皇・天智天皇）
+    "tenno124", "tenno125", "tenno126", "tenno1", "tenno122", "tenno123", "tenno41", "tenno38",
+    // 組織
+    "shinsengumi", "teidai", "bakufu", "ise", "aizu", "kokugakuin"
+  ];
+  const famous = new Set(STAR_IDS.filter((id) => byId.has(id)));
+  // 名を挙げて足した人は、スマホの「全体」で名前が重なるときも、名前を省かない（指示98）
+  const pinnedNames = new Set(["ansai", "masashige"].filter((id) => byId.has(id)));
   const stars = new Set([FOCUS, ...famous]);
   // 社会的影響力（指示97）: 世間での知られ方（同じ閲覧数）の順で段に分ける（0＝平泉澄先生、1＝上位 12、2＝次の 36、3＝次の 102、4＝次の 350、5＝ほかと閲覧数のない人）
   {
@@ -4324,7 +4318,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     D, FOCUS, honor, state, famous, on, emit, people, orgs, nodes, byId, edges: allEdges, realEdges: edges, lineageEdges, EDGE_TYPES, CATS, CAT_STYLE, CONF, CONF_RANK,
     inL, outL, incident, nbrAll, ancH, descH, pathInfo, routeInfo, routeOptions, routeRole, RT_SHORT, reachInfo, distTo, radius, SIZE_RULES, FAMILIES, familyOf, colorOf, schoolOf,
     AXES, AXIS, AXIS_GROUPS, groupOf, axisValue, axisValues, condMatch, regionOf, matches, visible, edgeShown, emphasis, esc, edgeOrder,
-    stars, shown, shownSet, unlock, resetFound, setDiscover, foundCount, starCount, isFound: (id) => found.has(id),
+    stars, pinnedNames, shown, shownSet, unlock, resetFound, setDiscover, foundCount, starCount, isFound: (id) => found.has(id),
     evidenceOf, loadEvidenceSrc, pairKey, thinEdges, thinOf, kinOf, KIN_VALUES, facetOf, FX, EV,
     toggleCond, clearConds, hasCond, PRESETS, applyPreset, GRADES, GRADE,
     get TS() { return TS; }, setScaleMode, setRowFactors, rowsChanged, saveRows, resetRows, bandAt, reignText, eraAt, fmtYear, lifeText, emperorLabel,
@@ -5042,7 +5036,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (!must && (!best || covers)) continue;
       // 有名な人というだけで出す名前（指示50・97）は、どこに置いてもほかの名前と重なるときは省く（重なった名前はどちらも読めないので、
       // 先に置いた大きい人の名前を残す。スマホの「全体」では、古い時代に有名な人が詰まるため）。道すじの人・選んだ人の名前は、これまでどおり必ず出す
-      if (best && bestNm > 0 && isFam(d) && pri(d) === 2 && !em.nodeOnPath(d.p) && !(em.nodeOnSecond && em.nodeOnSecond(d.p))) continue;
+      if (best && bestNm > 0 && isFam(d) && pri(d) === 2 && !em.nodeOnPath(d.p) && !(em.nodeOnSecond && em.nodeOnSecond(d.p)) && !(SG.pinnedNames && SG.pinnedNames.has(d.p.id))) continue;
       if (!best) best = spots[0][0];
       const lead = best.lead ? leadOf(best.box) : null;
       // あとの名前は、この引き出し線もよける
@@ -10165,7 +10159,7 @@ void main() {
         <label class="toggle" for="fLinked">平泉澄先生に系譜でつながる人だけ<input type="checkbox" class="sw" id="fLinked" ${state.onlyLinked ? "checked" : ""}></label>
         <label class="toggle" for="fUnver">「要確認」の関係も描く<input type="checkbox" class="sw" id="fUnver" ${state.showUnverified ? "checked" : ""}></label>
         <label class="toggle" for="fFamous">著名な人物・組織の名前を出す<input type="checkbox" class="sw" id="fFamous" ${state.famousLabels ? "checked" : ""}></label>
-        <p class="f-note">著名な人物・組織は、ウィキペディア日本語版の直近 60 日の閲覧数が多い人物 52 人（学者・文人 24 人、武将・政治家・皇族・神など 20 人、天皇 8 人。時代が偏らないように百年ごとの数を限る）と組織 6 つです。はじめの地図は、この人たちと平泉澄先生を描きます。</p>
+        <p class="f-note">著名な人物・組織は、ウィキペディア日本語版の閲覧数の多い人をもとに選んで固定した人物 53 人（学者・文人 25 人、武将・政治家・皇族・神など 20 人、天皇 8 人）と組織 6 つです。はじめの地図は、この人たちと平泉澄先生を描きます。</p>
       </section>
       <section class="f-sec"><div class="f-lab">点の大きさ</div><div class="seg">${sizes}</div></section>
       <section class="f-sec"><div class="f-lab">縦の目盛り</div><div class="seg">${scales}</div></section>
