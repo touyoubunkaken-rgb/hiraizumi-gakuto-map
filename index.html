@@ -1616,6 +1616,17 @@ html.rb-dock .stage.wrap { padding-right: calc(376px + max(var(--gutter), env(sa
 /* 札の説明の中の、確かめに使った資料へのリンク（指示90 の＋アルファ） */
 .src-link { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
 
+/* 地図に人が加わったときの短い知らせ（指示97: 使うほど地図の人が増えていくのが分かるように）。押せない・読み上げは控えめに */
+.found-toast {
+  position: fixed; z-index: 44; left: 50%; top: calc(var(--sticky-top, 0px) + 112px);
+  margin: 0; padding: 6px 14px; border-radius: 999px; max-width: calc(100vw - 32px);
+  background: var(--ink); color: var(--paper); font-size: var(--fs-sm); line-height: 1.5;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+  opacity: 0; translate: -50% -6px; transition: opacity .25s ease, translate .25s ease;
+}
+.found-toast.on { opacity: .93; translate: -50% 0; }
+@media (prefers-reduced-motion: reduce) { .found-toast { transition: none; } }
+
 </style>
 
 <div class="boot" id="boot" role="status" aria-live="polite">
@@ -3198,9 +3209,12 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
   D.ADD_ERRORS = D.ADD_ERRORS || [];
   const pendingEvents = [];
   const pendingPatches = [];
+  // 人を id で引く索引（前は直しのたびに千八百人を頭から探していて、画面の読み込みが重かった。指示97）。同じ id は、はじめの人を引く（find と同じ）
+  const byPid = new Map();
+  D.PEOPLE.forEach((p) => { if (!byPid.has(p.id)) byPid.set(p.id, p); });
   for (const day of days) {
     const at = day.date;
-    (day.people || []).forEach((p) => D.PEOPLE.push(Object.assign({ added: at }, p)));
+    (day.people || []).forEach((p) => { const q = Object.assign({ added: at }, p); D.PEOPLE.push(q); if (!byPid.has(q.id)) byPid.set(q.id, q); });
     (day.orgs || []).forEach((o) => D.ORGS.push(Object.assign({ added: at }, o)));
     // 組織の欄の直し（{ id: { note, y, … } }）と、組織の関係の直し（[[組織, 相手, 役割, { conf, note }]]）
     Object.entries(day.patch_orgs || {}).forEach(([id, patch]) => { const o = D.ORGS.find((x) => x.id === id); if (o) Object.assign(o, patch, { revised: at }); else D.ADD_ERRORS.push(`${at} の patch_orgs が指す組織がない: ${id}`); });
@@ -3216,7 +3230,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
     if (day.timeline) D.EVENTS.sort((x, y) => x[0] - y[0]);
     (day.edges || []).forEach((e) => D.EDGES.push([e[0], e[1], e[2], e[3], e[4] || "", Object.assign({}, e[5] || {}, { added: at })]));
     (day.org_edges || []).forEach((e) => D.ORG_EDGES.push(e.slice(0, 5)));
-    Object.entries(day.patch_people || {}).forEach(([id, patch]) => { const p = D.PEOPLE.find((x) => x.id === id); if (p) Object.assign(p, patch, { revised: at }); else pendingPatches.push([at, id, patch]); });
+    Object.entries(day.patch_people || {}).forEach(([id, patch]) => { const p = byPid.get(id); if (p) Object.assign(p, patch, { revised: at }); else pendingPatches.push([at, id, patch]); });
     // 出来事（指示18）: [人, 出来事の id, 説明（出典名）, { src }]。全部の日を重ねたあとで人の ev に足す
     // （ほかのファイルで加わった人を指してもよいように。ほかの日の分と重ねても消えない）
     (day.events || []).forEach((x) => pendingEvents.push([at, x]));
@@ -3236,14 +3250,14 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
   // あとの日に足された人を指す直し（日付の早いファイルを、あとで作り直したもの。深掘り・生没年の確かめなど）は、
   // 全部の日を重ねたあとで、まだ値のない欄だけに当てる（あとの日に手で直した値を上書きしないように）
   pendingPatches.forEach(([at, id, patch]) => {
-    const p = D.PEOPLE.find((x) => x.id === id);
+    const p = byPid.get(id);
     if (!p) { D.ADD_ERRORS.push(`${at} の patch_people が指す人がいない: ${id}`); return; }
     Object.entries(patch).forEach(([k, v]) => { if (p[k] == null || p[k] === "" || p[k] === "unknown") p[k] = v; });
     if (!p.revised) p.revised = at;
   });
   D.EVENT_NOTES = D.EVENT_NOTES || {};
   pendingEvents.forEach(([at, [id, ev, note, opt]]) => {
-    const p = D.PEOPLE.find((x) => x.id === id);
+    const p = byPid.get(id);
     if (!p) { D.ADD_ERRORS.push(`${at} の events が指す人がいない: ${id}`); return; }
     p.ev = [...new Set((p.ev || []).concat([ev]))];
     (D.EVENT_NOTES[id] = D.EVENT_NOTES[id] || {})[ev] = { note: note || "", src: (opt && opt.src) || [] };
@@ -3254,7 +3268,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=5bae23ad90";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=d5e9c23d0e";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -3279,7 +3293,7 @@ window.SHINTO_GLOSSARY = {"cats":[["school","学派・流派"],["era","時代と
 </script>
 <script>
 /* 世間での知名度の目安（research/fame.mjs が作る。ウィキペディア日本語版の直近 60 日の閲覧数。2026-10-28 に取得。指示51） */
-window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo":1214,"hakusan":3691,"kamatari":31966,"are":9138,"yasumaro":6055,"toneri":6528,"hironari":495,"taicho":1923,"hiramaro":249,"kanekata":547,"yukitada":495,"ieyuki":1280,"chikafusa":11640,"masashige":93070,"kanetomo":2288,"nobukata":888,"kanemigi":795,"kanemi":2242,"kanetsugu":386,"koretari":434,"shuki":3532,"seika":3282,"razan":5649,"jichu":292,"nobuyoshi":388,"masayuki":28404,"ansai":2601,"keisai":639,"naokata":234,"shosai":200,"kimmichi":493,"harumi":5331,"jinzan":498,"masahide":122,"kyosai":153,"shikibu":806,"senpo":155,"kanran":205,"sokou":5082,"shunsui":2384,"mitsukuni":38450,"tanpaku":1546,"suiken":494,"yukoku":1019,"seishisai":3061,"toko":6002,"shoin":61746,"maki":3899,"toukou":68,"sanai":8731,"unpin":2912,"keichu":2457,"azumamaro":2243,"mabuchi":4460,"keizan":145,"norinaga":19117,"ohira":598,"atsutane":12869,"kanetane":610,"nobutomo":740,"takamasa":769,"bisei":753,"kume":1701,"ranke":1368,"riess":209,"mikami":714,"kuroita":903,"tsuji":1647,"kato":327,"tanaka_y":74,"miyaji":262,"kono":1368,"yanagita":23923,"origuchi":15770,"hhouse":2779,"hiraizumi":3811,"wataru":1074,"murao":260,"nagoshi":117,"kubota":107,"tanaka_t":1154,"tokoro":1188,"kaneharu":552,"sekigo":343,"minamimura":327,"junan":875,"gonsai":6280,"harukado":41,"kassho":253,"kyoan":249,"gaho":1006,"dokkosai":165,"bokusai":75,"nobunao":202,"yasutomi":1305,"sekian":177,"usai":58,"tenko":183,"kuniakira":115,"hisaoyu":132,"chikage":504,"harumi_m":359,"nahiko":353,"hokiichi":12441,"hijimaro":75,"umaki":132,"michimaro":104,"nakatsune":119,"mikamaro":166,"haruniwa":764,"masaki":106,"chiaki":54,"arinobu":44,"nagaaki":112,"ohide":244,"yorozu":604,"nobutane":340,"shigetane":348,"maruyama":54,"misao":551,"nishida":166,"yoshika":161,"naosuke":257,"moribe":578,"yoshiakira":107,"kotosuga":683,"yukikazu":143,"hironori":184,"hiroshi":299,"chiso":155,"nobuyuki":228,"nobumitsu":105,"takesato":277,"yasutsugu":1128,"uchito":292,"oen":532,"akemi":1248,"kiyonori":293,"toyokai":485,"hagino":165,"inoe":1665,"hori":319,"sakamoto":1251,"nakamura":226,"aida":147,"hisashi":206,"shiratori":1531,"mitsuya":193,"yamada":1635,"imaizumi":390,"haga":907,"asoyamasahiko":172,"ishiikenji":200,"inobeshigeo":111,"ihafuyuu":2029,"imaizumitadayoshi":159,"iwahashikoyata":209,"uedakenji":147,"usudajingorou":102,"oikawashouhei":122,"oobaiwao":226,"ooharayasuo":544,"okadashouji":285,"okanohirohiko":3473,"ogawanaoyuki":232,"ochiainaobumi":791,"orikuchiharumi":1587,"kakeikatsuhiko":1124,"katayamafumihiko":109,"kamatajunichi":191,"kamatatouji":2006,"kawanosatoshi":56,"kuraishitadahiko":140,"kurabayashishouji":109,"kurokawamayori":560,"saitoutomoo":41,"saekiariyoshi":72,"sakamotokoremaru":253,"sasakiyukitada":848,"sasoumamoru":187,"satoukenzou":128,"shintanitakanori":901,"suzukimasataka":329,"takasakimasahide":139,"takeokakatsuya":51,"takedayuukichi":690,"tsuboihirofumi":125,"nishitsunoimasayoshi":328,"numabeharutomo":81,"hattoriunokichi":442,"hanabehideo":62,"hisamatsusenichi":633,"hiranotakakuni":17,"hirotaritsuko":48,"fujimotoyorio":188,"fujimorikaoru":144,"matsuokouichi":77,"matsumotohisashi":94,"mitsuhashitakeshi":216,"miyakekazuo":54,"miyakehitoshi":424,"motegisadasumi":167,"yashirokuniji":189,"yamamotonobuki":52,"wadahidematsu":181,"ijirimasayasu":37,"okadashigekiyo":49,"kamomasanori":31,"kannokakumyou":296,"kuranokenji":144,"shirayamayoshitarou":100,"takaharayoshitada":33,"tanakakouji":130,"taniseigo":80,"tsugitauruu":83,"tsuchidaseiichi":273,"nishiuchitadashi":74,"nittahitoshi":658,"haradatoshiaki":142,"hiraizumitakafusa":547,"hiratakanichi":67,"matsuuramitsunobu":479,"matsunoisao":88,"motozawamasafumi":63,"yasuekazunori":52,"ogasawarashouzou":70,"toriiryuuzou":2400,"nomurajunichi":178,"hyoukisatoru":89,"tenno1":87065,"tenno2":15891,"tenno3":9128,"tenno4":7756,"tenno5":8606,"tenno6":7359,"tenno7":11091,"tenno8":10446,"tenno9":12787,"tenno10":32925,"tenno11":18814,"tenno12":22919,"tenno13":10168,"tenno14":20455,"tenno15":39245,"tenno16":27750,"tenno17":8289,"tenno18":7473,"tenno19":10652,"tenno20":8138,"tenno21":27538,"tenno22":6895,"tenno23":7617,"tenno24":8418,"tenno25":18519,"tenno26":59523,"tenno27":9385,"tenno28":8560,"tenno29":20489,"tenno30":16200,"tenno31":13964,"tenno32":20075,"tenno33":39148,"tenno34":23132,"tenno35":42345,"tenno36":15645,"tenno38":63789,"tenno39":17729,"tenno40":50435,"tenno41":68310,"tenno42":22367,"tenno43":22885,"tenno44":14135,"tenno45":45946,"tenno46":30242,"tenno47":13602,"tenno49":19432,"tenno50":51229,"tenno51":11382,"tenno52":18974,"tenno53":8362,"tenno54":11916,"tenno55":8461,"tenno56":16873,"tenno57":10429,"tenno58":8849,"tenno59":15951,"tenno60":15745,"tenno61":6587,"tenno62":10593,"tenno63":11334,"tenno64":7675,"tenno65":15248,"tenno66":19156,"tenno67":9475,"tenno68":7929,"tenno69":8006,"tenno70":6340,"tenno71":12032,"tenno72":14751,"tenno73":7345,"tenno74":12899,"tenno75":45889,"tenno76":6556,"tenno77":34267,"tenno78":7974,"tenno79":6168,"tenno80":13716,"tenno81":39567,"tenno82":33702,"tenno83":9148,"tenno84":8924,"tenno85":9162,"tenno86":5082,"tenno87":12235,"tenno88":10259,"tenno89":7707,"tenno90":11225,"tenno91":5244,"tenno92":4984,"tenno93":4780,"tenno94":3288,"tenno95":5372,"tenno96":46074,"tenno97":8184,"tenno98":5137,"tenno99":5784,"tenno100":12889,"tenno101":5302,"tenno102":10007,"tenno103":6258,"tenno104":5142,"tenno105":6958,"tenno106":16607,"tenno107":17795,"tenno108":22868,"tenno109":18837,"tenno110":7059,"tenno111":6930,"tenno112":12209,"tenno113":8784,"tenno114":6806,"tenno115":5697,"tenno116":5579,"tenno117":13021,"tenno118":7908,"tenno119":19832,"tenno120":18799,"tenno121":46315,"tenno122":77339,"tenno123":76872,"tenno124":124676,"tenno125":119220,"tenno126":117973,"hokucho1":13004,"hokucho2":6212,"hokucho3":8562,"hokucho4":6463,"hokucho5":4447,"chichibu":31869,"takamatsu":25853,"asahiko":17127,"takahito":4581,"matsunagateitoku":1403,"hoshinamasamitsu":4885,"tokugawahidetada":167051,"sakumashouzan":21166,"ogatakouan":18485,"hayashijussai":1435,"satouissai":3673,"sasakitakayuki":4443,"tsuboishindou":623,"nakaichikuzan":428,"udagawagenshin":734,"tokugawanariaki":21830,"iinaosuke":45136,"naganoshuzen":4333,"kusakagenzui":31001,"takasugishinsaku":51328,"motodanagazane":1606,"inouekowashi":6409,"sugiurajugo":3057,"uchimurakanzo":11933,"kameikoremi":1314,"nakayamatadayasu":4614,"itojinsai":2238,"itotogai":646,"tanakayoritsune":147,"wataraitsuneyoshi":47,"jihen":184,"watarainobutsune":96,"kawabekiyonaga":101,"bonshun":696,"tenkai":23410,"ishinsuden":31178,"yoshidakaneyuki":172,"tomomatsuujioki":71,"tsugarunobumasa":2035,"tokugawayorinobu":17270,"kamosuketada":51,"nishiyoriseisai":70,"yamamotofukusai":237,"tanimashio":52,"tokudaijikinmura":280,"ogimachisanjokintsumu":257,"karasumarumitsutane":278,"bojotoshihaya":84,"ichijomichika":1036,"yamagatadaini":1656,"fujiiumon":291,"karasakikotochika":51,"nakaetoju":4306,"kumazawabanzan":3049,"kaibaraekiken":6050,"araihakuseki":12058,"nonakakenzan":2491,"ogurasansei":51,"hayashihoko":1074,"ogyusorai":8348,"dazaishundai":1938,"ichikawakakumei":112,"ikedamitsumasa":13147,"yoshidakenko":9497,"kiyoharaedakata":452,"kiyoharakunikata":181,"reizeitamezumi":1367,"reizeitamekage":351,"hayashiryuko":154,"hayashihokoku":168,"hayashihotan":152,"hayashikinpo":175,"matsudairanorimori":470,"hayashiteiu":234,"hayashifukusai":1844,"toriiyozo":10716,"tanitateki":10177,"abenoseimei":26425,"tsuchimikadoyasukuni":194,"hiratamoritane":326,"kadanoarimaro":190,"motoorinagayo":2923,"sengetoshizane":224,"sengetakatomi":2415,"nashinokisuketame":74,"fujitakoshiro":3361,"aoyamanobuhisa":256,"yamakawakikue":3137,"kuritatsutomu":144,"kitabatakeakiie":30146,"kusunokimasatsura":12377,"kurokawaharumura":144,"ochiainaoaki":273,"matsuokamisao":539,"yanagitanaohira":754,"inouemichiyasu":503,"katoedanao":213,"kumekeiichiro":520,"tachiharakyosho":329,"sugiyurinosuke":986,"tamakibunnoshin":2639,"yasuisantetsu":1841,"ogimachisanetoyo":344,"ogimachimachiko":421,"ikebeyoshikata":197,"akaokashigeki":26,"ashizusenzou":27,"adachikenichi":264,"adachishyoukei":234,"arimarika":1072,"andoumasatsugu":214,"ishinokouji":68,"imaikeiichi":44,"uesugichisato":108,"ootaakira":642,"oonotoshiyasu":797,"okadanoboru":79,"okamotokenji":134,"ogushikazuo":208,"kamijyoukaoru":16,"kitamijyunkichi":34,"keikouinshyun":336,"kojimashyousaku":48,"kobayashikeiichirou":210,"kohorikunio":1849,"sakuraikatsunoshin":99,"sakuraiharuo":151,"sakokazukiyo":99,"sakotoshimasa":106,"shinodayasuo":126,"shibahirokazu":686,"shimizukiyoshi":182,"senshyuusueyori":893,"takagihiroo":60,"takeuchihoukichi":23,"demuraryuunichi":132,"tomiokashigenaga":1840,"niinonaoyoshi":605,"nishikawakusuo":22,"hasetoyoo":124,"hanataniyukihiko":69,"hamadakouichirou":745,"banisoshirou":152,"handayoshinaga":117,"honmyoutakashi":163,"mayumitsunetada":135,"yamanomototatsunori":170,"watanabekan":200,"watanabetsuyoshi":95,"saitoutaira":147,"hashimotomasayuki":301,"matsumototakashi":92,"ooshimanobuo":69,"kamikokurahitoshi":38,"endoukeita":279,"okanotomohiko":297,"taniguchihironobu":74,"ibarakiyoshiyuki":132,"kobayashikaoru":77,"tsuboikumezou":206,"ryoususumu":125,"watanabeyosuke":664,"watanabekouzou":1417,"nishiokatoranosuke":60,"takeuchirizou":574,"takayanagimitsutoshi":853,"morisueyoshiaki":48,"kuritamototsugu":62,"tsudasoukichi":9672,"ienagasaburou":2616,"inouemitsusada":1733,"nakamurakichiji":290,"nagaharakeiji":853,"torisumichiaki":34,"tokinoyashigeru":96,"yamaguchikousuke":48,"inagawaseiichi":65,"yoshiokaisao":62,"uchidaginzou":240,"miurahiroyuki":425,"kitasadakichi":1265,"nishidanaojirou":272,"nakamuranaokatsu":297,"higokazuo":188,"shibataminoru":99,"akamatsutoshihide":330,"shimizumitsuo":209,"hayashiyatatsusaburou":1034,"uozumisougorou":68,"kitashinroku":123,"hiraizumiakira":287,"tokutomisoho":16835,"arimashinshichi":4360,"arakawakusuo":51,"hiratatoshiharu":76,"hatanakakenji":11172,"takeshitamasahiko":4644,"idamasataka":6067,"anamikorechika":41337,"konoefumimaro":57628,"hiranumakiichirou":12929,"aishinkakurafugi":74164,"kishinobusuke":45185,"yamadaakiyoshi":13144,"iwakuratomomi":42484,"maruyamasakura":247,"kajimamorinosuke":3203,"watanabeshouichi":5373,"fukudatsuneari":8496,"mochimaruhiroshi":1571,"komurakazutoshi":243,"koborikeiichirou":1681,"ashizuuzuhiko":1329,"ichijosanetsune":1151,"ichijokaneyoshi":2902,"sogi":2268,"sanjonishisanetaka":2016,"sanjonishikineda":1084,"sanjonishisaneki":1839,"hosokawayusai":20531,"toshihitoshinno":5380,"ouchiyoshitaka":13800,"shirakawamasatakao":109,"obatakagenori":1964,"hojoujinaga":1857,"shukotan":3785,"soshi":940,"shishi":590,"rito":6,"rikukyuen":324,"niebuhr":151,"sugitagenpaku":12400,"maenoryotaku":3156,"otsukigentaku":1806,"takashimashuhan":3095,"egawahidetatsu":5197,"tokugawaieyasu":441345,"tokugawayorifusa":16256,"ishidabaigan":2669,"saitozenmon":35,"jionni":49,"tejimatoan":298,"fuseshoo":37,"nakazawadoni":165,"uekawakisui":42,"shibatakyuo":162,"oshimaurin":67,"kamataryuo":46,"matsudairasadanobu":26689,"hondatadayoshi":623,"tsuchimikadoharuchika":211,"koshi":18049,"moshi":7995,"shutoni":519,"teiko":422,"teii":419,"oyomei":2747,"ritakugo":676,"ritaikei":776,"kyoko":2184,"kutsugen":3942,"shokatsuryo":31461,"toenmei":4061,"ganshinkei":3818,"buntensho":2575,"shahotoku":167,"ryuin":101,"hokoju":1114,"shibasen":13959,"hakui":2030,"miwashissai":90,"oshioheihachiro":12528,"akamatsuhiromichi":3683,"shotokutaishi":69340,"sogaumako":25928,"eji":623,"onoimoko":16559,"yamashiroooe":11982,"hatanokawakatsu":7457,"sogaemishi":14402,"sogairuka":27770,"jien":5575,"odanobunaga":221123,"toyotomihideyoshi":477546,"takedashingen":80541,"uesugikenshin":62890,"imagawayoshimoto":59115,"taigensessai":8721,"kaisenjouki":4088,"akechimitsuhide":73442,"hosokawatadaoki":43889,"maedatoshiie":131136,"katoukiyomasa":75150,"ishidamitsunari":94539,"naoekanetsugu":31155,"kurodayoshitaka":115185,"datemasamune":73902,"tokugawayoshinao":17916,"karasumarumitsuhiro":4902,"takedakatsuyori":42086,"sanadanobushige":141165,"sakamotoryoma":140185,"katsukaishu":59524,"takechizuizan":51976,"nakaokashintaro":20429,"gotoshojiro":30629,"saigotakamori":94289,"okubotoshimichi":69850,"kidotakayoshi":62532,"yokoishonan":10754,"miyabeteizo":4322,"sanjosanetomi":19911,"kondoisami":40270,"hijikatatoshizo":52663,"okitasoji":36778,"serizawakamo":45657,"yamanamikeisuke":20945,"itokashitaro":17772,"kiyokawahachiro":11296,"matsudairakatamori":40010,"takedakounsai":5841,"yoshidatoshimaro":6360,"takanochoei":7810,"watanabekazan":6979,"siebold":15227,"nakagawajunan":775,"katsuragawahoshu":1653,"hiragagennai":18035,"udagawayoan":2424,"mitsukurigenpo":2180,"aokikonyo":13043,"norogenjo":396,"omuramasujiro":23077,"fukuzawayukichi":42606,"asadagoryu":507,"takahashiyoshitoki":3183,"nakairiken":224,"inotadataka":47503,"hayashishihei":4061,"takayamahikokuro":4313,"gamokunpei":1950,"tokugawayoshimune":47310,"tsujitatsuya":248,"ogawatsunehito":25,"kondokeigo":111,"uchidashuhei":106,"imairintaro":68,"nemotomichiaki":174,"edmundburke":4540,"morishitatatsuo":40,"abekan":6738,"kishisakae":618,"hasegawasaiji":418,"fujiwarahirotatsu":2018,"kikuchitaketoki":1691,"kikuchitakeshige":955,"kikuchitakemitsu":2888,"nawanagatoshi":6272,"mishimayukio":146247,"moritamasakatsu":10995,"suzukikunio":9769,"itohirobumi":65168,"yamagataaritomo":34683,"nogimaresuke":71388,"togoheihachiro":45283,"sugawaranomichizane":54868,"kurokihiroshi":2782,"nishinasekio":1451,"matsudairanagayoshi":19241,"tomiokasadatoshi":2009,"inouesigeyoshi":16012,"ooiatsushi":2236,"shiizakijirou":4801,"kogahidemasa":3458,"ueharajuutarou":2415,"kitaikki":16101,"nishidamitsugi":4235,"ookawashuumei":45546,"mitsukawakametarou":392,"inouenisshou":6780,"gondouseikyou":1341,"tachibanakouzaburou":1635,"yasuokamasahiro":36639,"minodamuneki":2327,"mitsuikoushi":643,"kanokogikazunobu":618,"touyamamitsuru":12945,"kageyamamasaharu":1074,"miuragiichi":1688,"fujiihitoshi":1608,"mikamitaku":11555,"kogakiyoshi":2795,"oogishiyoriyoshi":313,"suematsutahei":363,"isobeasaichi":7850,"muranakatakaji":2565,"andouteruzou":8498,"kuriharayasuhide":6113,"koudakiyosada":2709,"nonakashirou":5263,"aizawasaburou":4672,"shibukawazensuke":1067,"mazakijinzaburou":8712,"arakisadao":14043,"nagatatetsuzan":12633,"katouhiroharu":2834,"suetsugunobumasa":2355,"toujouhideki":110786,"inukaitsuyoshi":105765,"suzukikantarou":42000,"okadakeisuke":12399,"jingikan":3188,"ise":36705,"toyomiyazaki":130,"yoshidasha":3138,"heisenji":2779,"bakufu":38665,"hayashi":5743,"aizu":19696,"mitohan":9395,"shokokan":812,"kodokan":2422,"bonanken":153,"suzunoya":481,"ibukinoya":324,"shoka":13802,"teidai":49551,"kokugakuin":17856,"kogakkan":10866,"monbusho":2808,"seiseijuku":3811,"nihongaku":103,"shushikan":1552,"wagaku":462,"kishuhan":7952,"jinjahoncho":12670,"shintoshukyo":61,"shintoshigakkai":50,"minzokugakkai":246,"senkyoshi":130,"daigakko":1273,"kogakusho":138,"kyobusho":546,"daikyoin":644,"shintojimukyoku":295,"jinjakyoku":488,"jingiin":703,"hosaikai":570,"shinshokukai":161,"kotenkoshuka":2644,"gakushuin":4725,"shiko":5716,"yorokan":370,"meidokan":193,"meirinkan":3227,"jishukan":178,"kaitokudo":1098,"agatai":4460,"kogido":256,"kenenjuku":283,"okuraseishin":517,"rikushi":12988,"kaihei":11374,"hoshukai":4715,"kyodai":16946,"shigakukai":264,"kokuminseishin":419,"kokushihenshuin":39,"nihonrekishigakkai":294,"nihonshiken":251,"rekiken":793,"shukokai":157,"kokuminkaigi":860,"nipponkaigi":14323,"shinseiren":5107,"ninsokuyoseba":1161,"senshindo":224,"tojushoin":188,"shinsengumi":79324,"roshigumi":2075,"tosakinnoto":11077,"tekijuku":4940,"narutakijuku":1034,"tatenokai":11092,"issuikai":705,"yuuzonsha":671,"kouchisha":159,"genrinihonsha":514,"kinkeigakuin":1191,"aikyoujuku":464,"ketsumeidan":10200,"kokuikai":362};
+window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo":1214,"hakusan":3691,"kamatari":31966,"are":9138,"yasumaro":6055,"toneri":6528,"hironari":495,"taicho":1923,"hiramaro":249,"kanekata":547,"yukitada":495,"ieyuki":1280,"chikafusa":11640,"masashige":93070,"kanetomo":2288,"nobukata":888,"kanemigi":795,"kanemi":2242,"kanetsugu":386,"koretari":434,"shuki":3532,"seika":3282,"razan":5649,"jichu":292,"nobuyoshi":388,"masayuki":28404,"ansai":2601,"keisai":639,"naokata":234,"shosai":200,"kimmichi":493,"harumi":5331,"jinzan":498,"masahide":122,"kyosai":153,"shikibu":806,"senpo":155,"kanran":205,"sokou":5082,"shunsui":2384,"mitsukuni":38450,"tanpaku":1546,"suiken":494,"yukoku":1019,"seishisai":3061,"toko":6002,"shoin":61746,"maki":3899,"toukou":68,"sanai":8731,"unpin":2912,"keichu":2457,"azumamaro":2243,"mabuchi":4460,"keizan":145,"norinaga":19117,"ohira":598,"atsutane":12869,"kanetane":610,"nobutomo":740,"takamasa":769,"bisei":753,"kume":1701,"ranke":1368,"riess":209,"mikami":714,"kuroita":903,"tsuji":1647,"kato":327,"tanaka_y":74,"miyaji":262,"kono":1368,"yanagita":23923,"origuchi":15770,"hhouse":2779,"hiraizumi":3811,"wataru":1074,"murao":260,"nagoshi":117,"kubota":107,"tanaka_t":1154,"tokoro":1188,"kaneharu":552,"sekigo":343,"minamimura":327,"junan":875,"gonsai":6280,"harukado":41,"kassho":253,"kyoan":249,"gaho":1006,"dokkosai":165,"bokusai":75,"nobunao":202,"yasutomi":1305,"sekian":177,"usai":58,"tenko":183,"kuniakira":115,"hisaoyu":132,"chikage":504,"harumi_m":359,"nahiko":353,"hokiichi":12441,"hijimaro":75,"umaki":132,"michimaro":104,"nakatsune":119,"mikamaro":166,"haruniwa":764,"masaki":106,"chiaki":54,"arinobu":44,"nagaaki":112,"ohide":244,"yorozu":604,"nobutane":340,"shigetane":348,"maruyama":54,"misao":551,"nishida":166,"yoshika":161,"naosuke":257,"moribe":578,"yoshiakira":107,"kotosuga":683,"yukikazu":143,"hironori":184,"hiroshi":299,"chiso":155,"nobuyuki":228,"nobumitsu":105,"takesato":277,"yasutsugu":1128,"uchito":292,"oen":532,"akemi":1248,"kiyonori":293,"toyokai":485,"hagino":165,"inoe":1665,"hori":319,"sakamoto":1251,"nakamura":226,"aida":147,"hisashi":206,"shiratori":1531,"mitsuya":193,"yamada":1635,"imaizumi":390,"haga":907,"asoyamasahiko":172,"ishiikenji":200,"inobeshigeo":111,"ihafuyuu":2029,"imaizumitadayoshi":159,"iwahashikoyata":209,"uedakenji":147,"usudajingorou":102,"oikawashouhei":122,"oobaiwao":226,"ooharayasuo":544,"okadashouji":285,"okanohirohiko":3473,"ogawanaoyuki":232,"ochiainaobumi":791,"orikuchiharumi":1587,"kakeikatsuhiko":1124,"katayamafumihiko":109,"kamatajunichi":191,"kamatatouji":2006,"kawanosatoshi":56,"kuraishitadahiko":140,"kurabayashishouji":109,"kurokawamayori":560,"saitoutomoo":41,"saekiariyoshi":72,"sakamotokoremaru":253,"sasakiyukitada":848,"sasoumamoru":187,"satoukenzou":128,"shintanitakanori":901,"suzukimasataka":329,"takasakimasahide":139,"takeokakatsuya":51,"takedayuukichi":690,"tsuboihirofumi":125,"nishitsunoimasayoshi":328,"numabeharutomo":81,"hattoriunokichi":442,"hanabehideo":62,"hisamatsusenichi":633,"hiranotakakuni":17,"hirotaritsuko":48,"fujimotoyorio":188,"fujimorikaoru":144,"matsuokouichi":77,"matsumotohisashi":94,"mitsuhashitakeshi":216,"miyakekazuo":54,"miyakehitoshi":424,"motegisadasumi":167,"yashirokuniji":189,"yamamotonobuki":52,"wadahidematsu":181,"ijirimasayasu":37,"okadashigekiyo":49,"kamomasanori":31,"kannokakumyou":296,"kuranokenji":144,"shirayamayoshitarou":100,"takaharayoshitada":33,"tanakakouji":130,"taniseigo":80,"tsugitauruu":83,"tsuchidaseiichi":273,"nishiuchitadashi":74,"nittahitoshi":658,"haradatoshiaki":142,"hiraizumitakafusa":547,"hiratakanichi":67,"matsuuramitsunobu":479,"matsunoisao":88,"motozawamasafumi":63,"yasuekazunori":52,"ogasawarashouzou":70,"toriiryuuzou":2400,"nomurajunichi":178,"hyoukisatoru":89,"tenno1":87065,"tenno2":15891,"tenno3":9128,"tenno4":7756,"tenno5":8606,"tenno6":7359,"tenno7":11091,"tenno8":10446,"tenno9":12787,"tenno10":32925,"tenno11":18814,"tenno12":22919,"tenno13":10168,"tenno14":20455,"tenno15":39245,"tenno16":27750,"tenno17":8289,"tenno18":7473,"tenno19":10652,"tenno20":8138,"tenno21":27538,"tenno22":6895,"tenno23":7617,"tenno24":8418,"tenno25":18519,"tenno26":59523,"tenno27":9385,"tenno28":8560,"tenno29":20489,"tenno30":16200,"tenno31":13964,"tenno32":20075,"tenno33":39148,"tenno34":23132,"tenno35":42345,"tenno36":15645,"tenno38":63789,"tenno39":17729,"tenno40":50435,"tenno41":68310,"tenno42":22367,"tenno43":22885,"tenno44":14135,"tenno45":45946,"tenno46":30242,"tenno47":13602,"tenno49":19432,"tenno50":51229,"tenno51":11382,"tenno52":18974,"tenno53":8362,"tenno54":11916,"tenno55":8461,"tenno56":16873,"tenno57":10429,"tenno58":8849,"tenno59":15951,"tenno60":15745,"tenno61":6587,"tenno62":10593,"tenno63":11334,"tenno64":7675,"tenno65":15248,"tenno66":19156,"tenno67":9475,"tenno68":7929,"tenno69":8006,"tenno70":6340,"tenno71":12032,"tenno72":14751,"tenno73":7345,"tenno74":12899,"tenno75":45889,"tenno76":6556,"tenno77":34267,"tenno78":7974,"tenno79":6168,"tenno80":13716,"tenno81":39567,"tenno82":33702,"tenno83":9148,"tenno84":8924,"tenno85":9162,"tenno86":5082,"tenno87":12235,"tenno88":10259,"tenno89":7707,"tenno90":11225,"tenno91":5244,"tenno92":4984,"tenno93":4780,"tenno94":3288,"tenno95":5372,"tenno96":46074,"tenno97":8184,"tenno98":5137,"tenno99":5784,"tenno100":12889,"tenno101":5302,"tenno102":10007,"tenno103":6258,"tenno104":5142,"tenno105":6958,"tenno106":16607,"tenno107":17795,"tenno108":22868,"tenno109":18837,"tenno110":7059,"tenno111":6930,"tenno112":12209,"tenno113":8784,"tenno114":6806,"tenno115":5697,"tenno116":5579,"tenno117":13021,"tenno118":7908,"tenno119":19832,"tenno120":18799,"tenno121":46315,"tenno122":77339,"tenno123":76872,"tenno124":124676,"tenno125":119220,"tenno126":117973,"hokucho1":13004,"hokucho2":6212,"hokucho3":8562,"hokucho4":6463,"hokucho5":4447,"chichibu":31869,"takamatsu":25853,"asahiko":17127,"takahito":4581,"matsunagateitoku":1403,"hoshinamasamitsu":4885,"tokugawahidetada":167051,"sakumashouzan":21166,"ogatakouan":18485,"hayashijussai":1435,"satouissai":3673,"sasakitakayuki":4443,"tsuboishindou":623,"nakaichikuzan":428,"udagawagenshin":734,"tokugawanariaki":21830,"iinaosuke":45136,"naganoshuzen":4333,"kusakagenzui":31001,"takasugishinsaku":51328,"motodanagazane":1606,"inouekowashi":6409,"sugiurajugo":3057,"uchimurakanzo":11933,"kameikoremi":1314,"nakayamatadayasu":4614,"itojinsai":2238,"itotogai":646,"tanakayoritsune":147,"wataraitsuneyoshi":47,"jihen":184,"watarainobutsune":96,"kawabekiyonaga":101,"bonshun":696,"tenkai":23410,"ishinsuden":31178,"yoshidakaneyuki":172,"tomomatsuujioki":71,"tsugarunobumasa":2035,"tokugawayorinobu":17270,"kamosuketada":51,"nishiyoriseisai":70,"yamamotofukusai":237,"tanimashio":52,"tokudaijikinmura":280,"ogimachisanjokintsumu":257,"karasumarumitsutane":278,"bojotoshihaya":84,"ichijomichika":1036,"yamagatadaini":1656,"fujiiumon":291,"karasakikotochika":51,"nakaetoju":4306,"kumazawabanzan":3049,"kaibaraekiken":6050,"araihakuseki":12058,"nonakakenzan":2491,"ogurasansei":51,"hayashihoko":1074,"ogyusorai":8348,"dazaishundai":1938,"ichikawakakumei":112,"ikedamitsumasa":13147,"yoshidakenko":9497,"kiyoharaedakata":452,"kiyoharakunikata":181,"reizeitamezumi":1367,"reizeitamekage":351,"hayashiryuko":154,"hayashihokoku":168,"hayashihotan":152,"hayashikinpo":175,"matsudairanorimori":470,"hayashiteiu":234,"hayashifukusai":1844,"toriiyozo":10716,"tanitateki":10177,"abenoseimei":26425,"tsuchimikadoyasukuni":194,"hiratamoritane":326,"kadanoarimaro":190,"motoorinagayo":2923,"sengetoshizane":224,"sengetakatomi":2415,"nashinokisuketame":74,"fujitakoshiro":3361,"aoyamanobuhisa":256,"yamakawakikue":3137,"kuritatsutomu":144,"kitabatakeakiie":30146,"kusunokimasatsura":12377,"kurokawaharumura":144,"ochiainaoaki":273,"matsuokamisao":539,"yanagitanaohira":754,"inouemichiyasu":503,"katoedanao":213,"kumekeiichiro":520,"tachiharakyosho":329,"sugiyurinosuke":986,"tamakibunnoshin":2639,"yasuisantetsu":1841,"ogimachisanetoyo":344,"ogimachimachiko":421,"ikebeyoshikata":197,"akaokashigeki":26,"ashizusenzou":27,"adachikenichi":264,"adachishyoukei":234,"arimarika":1072,"andoumasatsugu":214,"ishinokouji":68,"imaikeiichi":44,"uesugichisato":108,"ootaakira":642,"oonotoshiyasu":797,"okadanoboru":79,"okamotokenji":134,"ogushikazuo":208,"kamijyoukaoru":16,"kitamijyunkichi":34,"keikouinshyun":336,"kojimashyousaku":48,"kobayashikeiichirou":210,"kohorikunio":1849,"sakuraikatsunoshin":99,"sakuraiharuo":151,"sakokazukiyo":99,"sakotoshimasa":106,"shinodayasuo":126,"shibahirokazu":686,"shimizukiyoshi":182,"senshyuusueyori":893,"takagihiroo":60,"takeuchihoukichi":23,"demuraryuunichi":132,"tomiokashigenaga":1840,"niinonaoyoshi":605,"nishikawakusuo":22,"hasetoyoo":124,"hanataniyukihiko":69,"hamadakouichirou":745,"banisoshirou":152,"handayoshinaga":117,"honmyoutakashi":163,"mayumitsunetada":135,"yamanomototatsunori":170,"watanabekan":200,"watanabetsuyoshi":95,"saitoutaira":147,"hashimotomasayuki":301,"matsumototakashi":92,"ooshimanobuo":69,"kamikokurahitoshi":38,"endoukeita":279,"okanotomohiko":297,"taniguchihironobu":74,"ibarakiyoshiyuki":132,"kobayashikaoru":77,"tsuboikumezou":206,"ryoususumu":125,"watanabeyosuke":664,"watanabekouzou":1417,"nishiokatoranosuke":60,"takeuchirizou":574,"takayanagimitsutoshi":853,"morisueyoshiaki":48,"kuritamototsugu":62,"tsudasoukichi":9672,"ienagasaburou":2616,"inouemitsusada":1733,"nakamurakichiji":290,"nagaharakeiji":853,"torisumichiaki":34,"tokinoyashigeru":96,"yamaguchikousuke":48,"inagawaseiichi":65,"yoshiokaisao":62,"uchidaginzou":240,"miurahiroyuki":425,"kitasadakichi":1265,"nishidanaojirou":272,"nakamuranaokatsu":297,"higokazuo":188,"shibataminoru":99,"akamatsutoshihide":330,"shimizumitsuo":209,"hayashiyatatsusaburou":1034,"uozumisougorou":68,"kitashinroku":123,"hiraizumiakira":287,"tokutomisoho":16835,"arimashinshichi":4360,"arakawakusuo":51,"hiratatoshiharu":76,"hatanakakenji":11172,"takeshitamasahiko":4644,"idamasataka":6067,"anamikorechika":41337,"konoefumimaro":57628,"hiranumakiichirou":12929,"aishinkakurafugi":74164,"kishinobusuke":45185,"yamadaakiyoshi":13144,"iwakuratomomi":42484,"maruyamasakura":247,"kajimamorinosuke":3203,"watanabeshouichi":5373,"fukudatsuneari":8496,"mochimaruhiroshi":1571,"komurakazutoshi":243,"koborikeiichirou":1681,"ashizuuzuhiko":1329,"ichijosanetsune":1151,"ichijokaneyoshi":2902,"sogi":2268,"sanjonishisanetaka":2016,"sanjonishikineda":1084,"sanjonishisaneki":1839,"hosokawayusai":20531,"toshihitoshinno":5380,"ouchiyoshitaka":13800,"shirakawamasatakao":109,"obatakagenori":1964,"hojoujinaga":1857,"shukotan":3785,"soshi":940,"shishi":590,"rito":6,"rikukyuen":324,"niebuhr":151,"sugitagenpaku":12400,"maenoryotaku":3156,"otsukigentaku":1806,"takashimashuhan":3095,"egawahidetatsu":5197,"tokugawaieyasu":441345,"tokugawayorifusa":16256,"ishidabaigan":2669,"saitozenmon":35,"jionni":49,"tejimatoan":298,"fuseshoo":37,"nakazawadoni":165,"uekawakisui":42,"shibatakyuo":162,"oshimaurin":67,"kamataryuo":46,"matsudairasadanobu":26689,"hondatadayoshi":623,"tsuchimikadoharuchika":211,"koshi":18049,"moshi":7995,"shutoni":519,"teiko":422,"teii":419,"oyomei":2747,"ritakugo":676,"ritaikei":776,"kyoko":2184,"kutsugen":3942,"shokatsuryo":31461,"toenmei":4061,"ganshinkei":3818,"buntensho":2575,"shahotoku":167,"ryuin":101,"hokoju":1114,"shibasen":13959,"hakui":2030,"miwashissai":90,"oshioheihachiro":12528,"akamatsuhiromichi":3683,"shotokutaishi":69340,"sogaumako":25928,"eji":623,"onoimoko":16559,"yamashiroooe":11982,"hatanokawakatsu":7457,"sogaemishi":14402,"sogairuka":27770,"jien":5575,"odanobunaga":221123,"toyotomihideyoshi":477546,"takedashingen":80541,"uesugikenshin":62890,"imagawayoshimoto":59115,"taigensessai":8721,"kaisenjouki":4088,"akechimitsuhide":73442,"hosokawatadaoki":43889,"maedatoshiie":131136,"katoukiyomasa":75150,"ishidamitsunari":94539,"naoekanetsugu":31155,"kurodayoshitaka":115185,"datemasamune":73902,"tokugawayoshinao":17916,"karasumarumitsuhiro":4902,"takedakatsuyori":42086,"sanadanobushige":141165,"sakamotoryoma":140185,"katsukaishu":59524,"takechizuizan":51976,"nakaokashintaro":20429,"gotoshojiro":30629,"saigotakamori":94289,"okubotoshimichi":69850,"kidotakayoshi":62532,"yokoishonan":10754,"miyabeteizo":4322,"sanjosanetomi":19911,"kondoisami":40270,"hijikatatoshizo":52663,"okitasoji":36778,"serizawakamo":45657,"yamanamikeisuke":20945,"itokashitaro":17772,"kiyokawahachiro":11296,"matsudairakatamori":40010,"takedakounsai":5841,"yoshidatoshimaro":6360,"takanochoei":7810,"watanabekazan":6979,"siebold":15227,"nakagawajunan":775,"katsuragawahoshu":1653,"hiragagennai":18035,"udagawayoan":2424,"mitsukurigenpo":2180,"aokikonyo":13043,"norogenjo":396,"omuramasujiro":23077,"fukuzawayukichi":42606,"asadagoryu":507,"takahashiyoshitoki":3183,"nakairiken":224,"inotadataka":47503,"hayashishihei":4061,"takayamahikokuro":4313,"gamokunpei":1950,"tokugawayoshimune":47310,"tsujitatsuya":248,"ogawatsunehito":25,"kondokeigo":111,"uchidashuhei":106,"imairintaro":68,"nemotomichiaki":174,"edmundburke":4540,"morishitatatsuo":40,"abekan":6738,"kishisakae":618,"hasegawasaiji":418,"fujiwarahirotatsu":2018,"kikuchitaketoki":1691,"kikuchitakeshige":955,"kikuchitakemitsu":2888,"nawanagatoshi":6272,"mishimayukio":146247,"moritamasakatsu":10995,"suzukikunio":9769,"itohirobumi":65168,"yamagataaritomo":34683,"nogimaresuke":71388,"togoheihachiro":42211,"sugawaranomichizane":56002,"kurokihiroshi":2618,"nishinasekio":1390,"matsudairanagayoshi":19558,"tomiokasadatoshi":1858,"inouesigeyoshi":14746,"ooiatsushi":2119,"shiizakijirou":4276,"kogahidemasa":3164,"ueharajuutarou":2139,"kitaikki":15676,"nishidamitsugi":4063,"ookawashuumei":48105,"mitsukawakametarou":401,"inouenisshou":6771,"gondouseikyou":1321,"tachibanakouzaburou":1639,"yasuokamasahiro":34977,"minodamuneki":2277,"mitsuikoushi":665,"kanokogikazunobu":594,"touyamamitsuru":12574,"kageyamamasaharu":1071,"miuragiichi":1697,"fujiihitoshi":1634,"mikamitaku":11683,"kogakiyoshi":2822,"oogishiyoriyoshi":310,"suematsutahei":336,"isobeasaichi":7678,"muranakatakaji":2528,"andouteruzou":8106,"kuriharayasuhide":6100,"koudakiyosada":2694,"nonakashirou":5244,"aizawasaburou":4563,"shibukawazensuke":1053,"mazakijinzaburou":8115,"arakisadao":13429,"nagatatetsuzan":11962,"katouhiroharu":2732,"suetsugunobumasa":2216,"toujouhideki":106822,"inukaitsuyoshi":112367,"suzukikantarou":39169,"okadakeisuke":11985,"nikkai":46,"oobakei":130,"kanamorinagachika":8698,"yukihideyasu":165752,"ogasawaranagataka":204,"yamatotakeru":48101,"jingukogo":32402,"wakenokiyomaro":16325,"sakanouenotamuramaro":30546,"myoe":3947,"sakuraazumao":319,"uekikoshiro":560,"takahashimamoru":184,"kusakabenoouji":19254,"shuuan":153,"moroshige":618,"yoshifusa":7510,"ranshuu":119,"tokujirou":756,"shigenobu":36702,"tansou":2140,"ransui":177,"naotake":2008,"kazutaka":808,"jou":32439,"keisaku":1112,"hirokata":552,"ienobu":21533,"akifusa":4249,"yoshinaga":26246,"kimimasa":3539,"hakugen":183,"choushuku":125,"munenari":9095,"touken":169,"mitsunobu":534,"iemitsu":64113,"inoutadanori":407,"shigeru":50225,"eisaku":33594,"tokutomiroka":10368,"kusumotoine":13348,"ametomisugaichi":343,"shidocchi":2726,"yasusada":652,"bunshu":644,"hisatada":3948,"sakon":4321,"akikatsu":5264,"mike":4544,"yasushige":442,"kochuuta":1370,"shigetomi":390,"kageyasu":3620,"kagesuke":525,"hitoshi":3025,"kochou":774,"raichou":30474,"noe":17089,"shigeyoshi":448,"setsurei":1761,"masayoshi":1051,"chouryuu":289,"sajuurou":304,"shougorou":1398,"seian":302,"tenmin":75,"shougo":360,"shuuhei":1173,"risaburou":108,"ankou":357,"kanjun":705,"maruyamamasao":10701,"shigehiro":1333,"naomasa":9079,"hirotari":102,"rengetsu":2629,"nanbarashigeru":3881,"shouhei":1,"isoo":1306,"tekkan":9116,"hagoromo":1321,"saishuu":847,"kunen":109,"moriougai":42181,"sanjirou":294,"kimiko":1501,"sachio":3259,"ranguu":108,"zai":24,"jouzan":1984,"ryouan":109,"soan":1357,"souke":1159,"touzan":202,"takanobu":86,"sanetsura":410,"moritoshi":23,"shibukawahisatada":169,"heishuu":1267,"yoriyuki":350,"yoshinobu":93860,"yoshitoshi":184,"yajirou":5471,"yasushi":1588,"kanae":388,"tomitarou":162,"taizou":365,"issei":7435,"toshinori":629,"masagorou":283,"kiyoo":368,"hikosuke":319,"seitarou":198,"jirou":126,"tamaki":834,"senkichi":277,"kouchuu":66,"yonoko":152,"tatsumaro":166,"shigeki":57,"sougo":66,"tessai":2845,"sanshuu":369,"tokinaka":75,"kyuusou":1357,"houshuu":2123,"koushuu":83,"nankai":296,"motohiko":3329,"touyou":174,"michitaka":265,"ryuuken":33,"tadamasa":235364,"joun":7316,"horibousai":47,"shunrou":29,"naoyoshi":688,"masumi":126,"sugane":1026,"bakin":11439,"toyoka":59,"ayatari":380,"sanyou":6317,"matsuake":80,"sukeki":312,"tadatomi":2905,"nakayabu":38,"izutari":31,"sokken":1838,"koudou":443,"kakuryou":328,"keisuke":7443,"bantou":1595,"sanei":393,"bunchou":2041,"yakurou":1558,"morobuchi":807,"koukei":297,"joan":129,"gensai":19923,"kouji":550,"nobuhiro":2100,"chikou":31,"kanemasa":54,"chouan":38,"koumin":840,"marekata":64,"ryuutan":29,"yoshine":15,"shuusaku":6291,"souken":2137,"touin":329,"buhee":236,"harukata":992,"michiyo":1072,"kigin":1228,"bansai":13,"tanemichi":1525,"houkoku":4218,"souan":243,"shuuyou":70,"totsuan":820,"shinkoukei":87,"ranshitsu":113,"suuou":835,"banri":882,"shouin":150,"randai":75,"sawadatoukou":151,"hidenari":58,"koreto":68,"jiken":46,"shimei":109,"tomofusa":1768,"juusuke":485,"nangai":21,"meihoku":39,"tadao":527,"hideo":133,"toshio":229,"jouha":1633,"hiroyuki":3241,"kanbaratouzan":182,"setsuzou":50,"masao":320,"ryousen":1860,"shinna":310,"seikei":396,"ichuu":18,"yokusai":329,"shuutoku":294,"gyokuzan":122,"kanzan":116,"nankaku":458,"shuunan":159,"kinka":74,"kien":904,"gakusai":526,"ichinoshin":2049,"gessen":214,"yoshiyuki":385,"toshinami":97,"kyousai":18,"ranzan":508,"koukan":2400,"soukichi":358,"junjirou":559,"beian":429,"ookuboshibutsu":250,"michishige":298,"butsudou":278,"ujifusa":199,"yasukazu":800,"itoukeisuke":899,"chuuryou":266,"shouzan":121,"osamu":1379,"joukaku":168,"mongaku":6966,"nanmei":753,"shouyou":314,"kawata":975,"ekisai":351,"shizukitadao":1044,"keijirou":133,"akinari":3844,"kageki":617,"daigaku":3546,"jishuu":420,"chazan":848,"raishunsui":622,"buzan":86,"tsuginosuke":11384,"chuushuu":1686,"bousai":640,"roan":220,"kozan":68,"koutaku":439,"gyokusou":386,"hokkai":101,"tenyuu":212,"gakusui":202,"manjirou":58355,"dokushouan":193,"kenji":195,"tomoo":1521,"yoshitake":5010,"takusha":318,"masanao":2184,"kyuuka":26,"shuugyo":88,"shiki":34774,"ri":245,"shibuemasazane":29,"yasusuke":35,"ikeuchihiroshi":244,"kibekouji":333,"masabumi":322,"nobutsuna":3821,"mokurai":1010,"touri":249,"chougetsu":80,"saikou":434,"mitsue":218,"kiyotsuna":888,"tatsuo":1392,"tokiyoshi":119,"shouchiku":282,"seiri":579,"jakusui":276,"riken":205,"wadayasushi":79,"bashou":30347,"sutejo":917,"masaaki":429,"shigeko":367,"juujirou":312,"kuusou":193,"baien":1609,"rokou":58,"minagawakien":526,"tekisai":186,"genshou":186,"ryourai":90,"yuasajouzan":262,"toyobumi":69,"ranryou":44,"ritsuzan":912,"hokuzan":247,"yoshio":1285,"jintarou":45,"kosho":111,"tokuzan":228,"katei":180,"sekitoutouin":221,"torasaburou":1511,"kan":101,"kensai":671,"ikan":95,"eikichi":700,"matsusaburou":37,"masayasu":231,"baiu":66,"chikuri":34,"sankaku":86,"zenshou":74,"sourou":19,"shikyou":40,"shizuo":420,"saburou":863,"nobuharu":238,"jinson":1079,"tsunetsugu":603,"masazumi":117,"tatebeseian":679,"bankei":1062,"nobuatsu":616,"norimune":147,"nariakira":2218,"hidetake":776,"shikou":948,"shichou":176,"ga":337,"yuu":252,"chuukyuu":225,"ren":434,"tadamichi":9525,"shunzou":1012,"masaharu":2049,"yoshidatouyou":25157,"saburousuke":1965,"teisai":123,"taizen":2331,"kinryou":58,"seikou":42,"genboku":3141,"gendou":68,"seikai":199,"honmasouken":275,"akekiyo":187,"einosuke":1513,"rinzou":12049,"sekkyou":118,"atsushige":468,"chikuin":50,"shouou":135,"choushun":109,"wakaki":157,"teruhiko":162,"kanyuu":105,"hakuyuushi":331,"shigetsune":54,"norimoto":173,"jakushi":52,"gentoku":16,"mikisaburou":1904,"itsuan":366,"shihou":211,"tadatsugu":299,"kimio":14,"yasutari":16,"munemitsu":24620,"tonan":55,"entsuu":120,"bunpei":18,"arata":1291,"kunimichi":1612,"tanzan":304,"kohou":30,"ikeuchidaigaku":658,"taneie":3184,"shoukyuu":77,"konzan":214,"useki":70,"rankei":33,"nariyuki":3419,"morinae":129,"unjo":55,"tamotsu":190,"koutarou":869,"rokusuke":305,"koshirou":263,"tsuneki":3029,"tsunetari":161,"toudou":467,"kouan":220,"motokiyoshinaga":231,"kuninori":219,"yoshinokinryou":155,"kumagainaoyoshi":124,"mayumi":44,"sekiin":42,"masanori":1655,"tousai":88,"keinosuke":2576,"ichigaku":286,"kaitei":53,"yoshihira":881,"yoshimasa":707,"matsuokakanae":429,"fuyuyoshi":926,"kimiyasu":317,"kanenari":310,"sanetsuna":389,"okimoto":3666,"yukitaka":1051,"harukazu":3287,"masamori":1815,"ujihira":642,"genpo":73,"hidetoshi":597,"tan":397,"mitsukata":477,"rokkakuhirokata":235,"suketada":141,"mitsu":81,"sutejirou":2645,"ichitarou":863,"genjirou":321,"takami":1565,"koreyoshi":1757,"tomotaka":386,"hironao":442,"sukekata":97,"masateru":98,"ryoui":10592,"kansen":264,"masakata":92,"sekijou":81,"chokunyuu":723,"aizan":138,"kinga":124,"somon":89,"kyouu":171,"yaba":231,"yukiyoshi":235,"ichirou":402,"taneaki":97,"tsunanori":271,"sadafumi":46,"masuzou":291,"mizue":165,"kikuro":78,"tsunetami":3761,"ryouun":1755,"ayasaburou":1730,"seisai":74,"ikutarou":580,"bunkai":246,"sankei":155,"yoshimoto":865,"genhou":80,"morimichi":322,"naoya":24026,"jikkou":66,"ayaru":168,"masato":2104,"chou":90,"ken":76,"ku":28,"shika":409,"fusei":84,"jaku":97,"metsumei":147,"shiyuu":214,"ryuuho":178,"otaninobutomo":2265,"toranosuke":1925,"shunsa":79,"shizan":54,"takitarou":430,"haruo":16979,"rofuu":6571,"masajirou":852,"kouetsu":6583,"kaisen":149,"ikkei":357,"itsuun":147,"kendou":2857,"shintarou":99,"renjou":350,"tadanori":1531,"yukiyasu":320,"shigeaki":95,"hideharu":380,"keigo":6723,"ginkou":4750,"meikaku":1083,"shousuke":74,"kuraki":108,"magoshichirou":902,"kouhei":653,"kenchou":1489,"mitsuaki":6990,"koyata":1124,"utako":1191,"shouhin":321,"motosuke":179,"tsunatsune":603,"michitomi":2416,"hidakachichibu":123,"toshitsugu":3279,"makimuramasanao":5029,"kihee":106,"yasukuni":198,"shigeomi":756,"motonori":7250,"shigenari":77,"youzou":14242,"kuniomi":400,"douun":49,"gozan":114,"hakyou":1209,"hyakusen":160,"zeshin":1015,"miurayasushi":2710,"miyoshitaizou":499,"nakamichi":262,"shuuzou":4557,"yuzuru":251,"kaiseki":282,"tomotsune":365,"motojirou":12176,"shinroku":861,"gitetsu":457,"tateo":49,"taiiki":61,"chikuden":1258,"gyokusen":47,"aigai":310,"eikai":148,"unpou":109,"chinnen":69,"chingaku":220,"gako":143,"untan":40,"bunrei":313,"gentai":77,"kangan":30,"unzen":212,"kaoru":20568,"kousuke":716,"yasuke":1398,"kouzou":744,"tesshuu":16588,"hachirou":212,"hanpei":390,"moriyouzou":512,"asariyoshinobu":167,"muneari":428,"sodou":726,"teishitsu":120,"hararokurou":1063,"taizan":173,"bokushi":1299,"gyokuran":396,"denzen":902,"ikou":56,"oukyo":9461,"yoshiaki":293,"shiseki":484,"tsunenobu":698,"eikyuu":746,"hayaru":669,"shouka":334,"ryou":36,"seigan":1193,"kenkadou":1934,"setsudou":393,"rinshou":1556,"choumin":7081,"ryouko":648,"yuushi":80,"yamawakitouyou":918,"shingen":46,"kikuchigozan":214,"daigan":64,"shoudou":360,"satounobuhiro":1744,"tenju":79,"shunkin":318,"fujitaninariakira":271,"kagamishikou":522,"mochizukigyokusen":73,"seishuu":91547,"oharakeizan":14,"takikatei":428,"nangaku":135,"yonekichi":329,"akiyoshi":2316,"kyorai":821,"shinryou":242,"kagetaka":664,"takako":9893,"yamadaseisai":137,"ryuuwan":315,"bouyou":188,"baishi":206,"tamemura":386,"setsuzan":85,"sukenobu":32,"nagayuki":20,"nushizumi":176,"shirasutaizou":1177,"haisen":216,"senna":67,"riyuu":67,"nakajimabuzan":525,"kinjou":222,"zenan":150,"sadaka":106,"sen":2066,"tadakaze":99,"izuru":2423,"tanenobu":187,"murakamihidetoshi":209,"baigai":126,"toshiaki":760,"gibon":4191,"kouyou":104,"takanori":28203,"tougai":532,"kakei":988,"chijimaro":76,"akinobu":1795,"yoritsune":3243,"en":757,"tanshuu":122,"tsuboiseitarou":204,"chuuji":520,"genpachi":502,"kakichi":677,"dairoku":2505,"mitsuteru":903,"kousai":143,"kayou":52,"jicchiku":147,"soutaku":15,"horiuchimasaharu":171,"genjou":22,"meika":143,"nosakakanzan":55,"masakaze":1184,"harutsuna":580,"seiitsu":174,"kandou":309,"tekiho":120,"kikaku":1876,"ransetsu":668,"kyoriku":454,"jousou":259,"etsujin":152,"sora":4717,"izen":220,"dohou":216,"manko":109,"bonchou":211,"shouhaku":238,"rotsuu":196,"kyokusui":165,"chigetsu":60,"otokuni":73,"mizutamasahide":119,"shadou":171,"mokudou":39,"sonome":197,"motokazu":23,"reijirou":8962,"seiichi":1021,"futabateishimei":10043,"okuzan":28,"rikken":45,"ryouchi":33,"gisaburou":15,"kakumu":26,"jotei":164,"juuzou":2357,"tosa":932,"sadayuu":1011,"joden":305,"fumihiko":1459,"eizaemon":208,"taisuke":42687,"ryouzou":1382,"amanohachirou":1359,"kansai":1737,"takanaka":1669,"tachuu":57,"genichirou":3442,"morikazu":588,"doukai":489,"toshihiko":36,"ekaku":4647,"jakugen":22,"jakurin":20,"genyuu":24,"kotedayasusada":410,"miyazakihachirou":1389,"teisuke":896,"shuujirou":60,"seigou":4041,"joken":236,"fuyumichi":84,"yuuki":154,"kodamakatei":109,"gorou":68,"kawamurakiyoo":920,"shounen":59,"kouton":40,"motoyasu":214,"takeaki":28291,"hisoka":10763,"masaru":5434,"inouemisao":179,"kousaku":1316,"kazuo":4478,"kiku":461,"toshimasa":171,"kiyoshi":156,"agawahiroyuki":10040,"unpo":11,"kenkichi":1938,"gyokushou":779,"seigai":35,"kouseki":101,"goshun":2733,"setsujou":84,"tokutarou":57,"kaikaku":140,"setsuchiku":105,"tenrai":876,"saou":59,"kurosakikendou":253,"shuukaku":112,"goseki":160,"shimadasekkoku":21,"hansuke":1227,"nagatoshi":40,"chousui":91,"tekizan":75,"taishin":84,"shuntei":347,"shunshou":1619,"toyohiko":196,"souhei":94,"kunzan":54,"koutei":92,"gyokusen2":210,"ganku":1248,"fuuko":766,"untei":56,"hiroshige":23553,"fuyou":116,"kiyochika":3966,"ryuuko":114,"ryouzan":51,"enjou":58,"chikanobu":260,"ittei":81,"matashichirouyoshiaki":393,"tekisui":151,"seijuurou":139,"hankou":142,"genki":219,"rosetsu":4323,"tetsuzan":172,"yoshimurakoukei":90,"soken":204,"bunmei":64,"nantei":55,"yuutei":265,"tourei":58,"tanyuu":6798,"uchimura":285,"uchimurayuushi":2166,"uchimurayoshiyuki":301,"haretake":801,"fujiko":538,"hatsuko":535,"tamiji":590,"yasuhiro":691,"fujitarou":389,"yukita":23,"marefumi":59,"hisatsune":876,"terumaro":892,"mawataritoshio":123,"tarou":1088,"jun":1980,"egitakatoo":359,"touichirou":2363,"tokimitsu":63,"kokudou":218,"shiketsu":49,"saihin":278,"chikanao":148,"hiromitsu":19,"hidebumi":266,"yosohachi":298,"ryoujun":4952,"tadasu":2657,"tousuke":624,"kenkai":357,"noriyoshi":64,"kaizan":25,"masudatoyohiko":90,"motokimasahide":87,"masakiyo":79,"hisamichi":40,"munenori":68,"hagiwaraseian":50,"tadaatsu":990,"ryuusei":7034,"tatsuya":509,"jingikan":3095,"ise":34043,"toyomiyazaki":124,"yoshidasha":3016,"heisenji":2646,"bakufu":38447,"hayashi":5627,"aizu":18860,"mitohan":9210,"shokokan":756,"kodokan":2482,"bonanken":154,"suzunoya":466,"ibukinoya":310,"shoka":13715,"teidai":49441,"kokugakuin":18656,"kogakkan":10327,"monbusho":2680,"seiseijuku":3615,"nihongaku":95,"shushikan":1512,"wagaku":452,"kishuhan":7834,"jinjahoncho":12352,"shintoshukyo":61,"shintoshigakkai":49,"minzokugakkai":236,"senkyoshi":128,"daigakko":1225,"kogakusho":121,"kyobusho":525,"daikyoin":610,"shintojimukyoku":289,"jinjakyoku":462,"jingiin":664,"hosaikai":544,"shinshokukai":168,"kotenkoshuka":2615,"gakushuin":4600,"shiko":5617,"yorokan":384,"meidokan":184,"meirinkan":3137,"jishukan":169,"kaitokudo":1105,"agatai":4455,"kogido":250,"kenenjuku":297,"okuraseishin":513,"rikushi":12278,"kaihei":11025,"hoshukai":4625,"kyodai":16861,"shigakukai":257,"kokuminseishin":414,"kokushihenshuin":40,"nihonrekishigakkai":297,"nihonshiken":245,"rekiken":781,"shukokai":146,"kokuminkaigi":850,"nipponkaigi":13517,"shinseiren":5049,"ninsokuyoseba":1152,"senshindo":221,"tojushoin":171,"shinsengumi":78139,"roshigumi":2052,"tosakinnoto":11701,"tekijuku":4982,"narutakijuku":1051,"tatenokai":10787,"issuikai":683,"yuuzonsha":657,"kouchisha":156,"genrinihonsha":499,"kinkeigakuin":1146,"aikyoujuku":474,"ketsumeidan":10045,"kokuikai":359,"katsuyamahan":914,"hikonehan":8384,"keio":7652};
 
 </script>
 <script>
@@ -3302,15 +3316,19 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     // 道を調べる（指示83）: 選んだ道の候補（0 から）と、図で押した人を入れる欄（出発 from・到着 to）
     routeAlt: 0, routeEnd: "to",
     hover: null,
-    sizeBy: "imp",
+    sizeBy: "inf", // バブルの大きさ。はじめは社会的影響力（指示97。平泉澄先生への近さは別の設定）
     scaleMode: "density",
     cats: new Set(["shitei", "kakei", "eikyo", "densho", "org", "other"]),
     showUnverified: true,
-    // 著名な人物・組織の名前をふだんから出す（指示50）。広い画面ははじめから出し、狭い画面ははじめは出さない。選んだ方を端末に覚える
+    // 著名な人物・組織の名前をふだんから出す（指示50）。指示97 から、スマホでもはじめから出す（はじめは有名な人だけを描くので、名前が重なりにくい）。
+    // 選んだ方を端末に覚える（前の覚え書き sg-famous-v1 は、狭い画面ではじめから「出さない」になっていたので使わない）
     famousLabels: (() => {
-      try { const v = localStorage.getItem("sg-famous-v1"); if (v === "1") return true; if (v === "0") return false; } catch (e) { /* 覚えておけない環境では、画面の幅で決める */ }
-      return !(window.matchMedia && window.matchMedia("(max-width: 719px)").matches);
+      try { const v = localStorage.getItem("sg-famous-v2"); if (v === "0") return false; } catch (e) { /* 覚えておけない環境では、出す */ }
+      return true;
     })(),
+    // 段階的に開く地図（指示97）: stars＝有名な人と、見つけた人（選んだ人・検索した人と、その人から平泉澄先生への道の人）だけを描く。all＝全員を描く
+    discover: (() => { try { return localStorage.getItem("sg-discover-v1") === "all" ? "all" : "stars"; } catch (e) { return "stars"; } })(),
+    touring: false, // 「平泉澄先生へ届く道を見る」の間（系譜の人を、その間だけ描く）
     onlyLinked: false,
     showOrgs: true,
     showEmperors: true, // 天皇のバブルを描く
@@ -3462,8 +3480,9 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   function bfs(start, dir) {
     const seen = new Map([[start, { d: 0, prev: null, edge: null }]]);
     const q = [start];
-    while (q.length) {
-      const u = q.shift();
+    // 待ち行列は先頭を指す番号で読む（shift は一つずつ詰め直すので、全員の後世への広がりを数えるときに重い。指示97: 軽く）
+    for (let qi = 0; qi < q.length; qi++) {
+      const u = q[qi];
       const list = dir === "down" ? outL.get(u) : inL.get(u);
       for (const e of list) {
         const v = dir === "down" ? e.t : e.s;
@@ -3491,25 +3510,39 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     n.reach = n.isOrg ? 0 : bfs(n.id, "down").size - 1;
   });
   const maxOf = (k) => Math.max(1, ...nodes.map((n) => n[k]));
-  // 著名な人物・組織（指示50・51）: 世間での知名度（ウィキペディア日本語版の直近 60 日の閲覧数。js/fame.js）の多い人を、
-  // 時代が偏らないように百年ごとに 4 人まで、合わせて 24 人選ぶ（天皇・家・神と平泉澄先生は除く）。組織は閲覧数の多い 6。
-  // 何も選んでいないとき（と平泉澄先生を選んだとき）に、名前をいつも出す
+  // 著名な人物・組織（指示50・51・97）: 世間での知名度（ウィキペディア日本語版の直近 60 日の閲覧数。js/fame.js）の多い人を、
+  // 学者・文人（分野が学問か文学の人）24 人、武将・政治家・皇族・神など 20 人、天皇 8 人に分けて選ぶ（閲覧数だけで選ぶと天皇と武将ばかりになり、
+  // 学統の地図なのに学者がほとんど出ないため）。どれも時代が偏らないように百年ごとの数を限る。家・学統の外の人と平泉澄先生は除く。組織は閲覧数の多い 6。
+  // 指示97 から、はじめの地図はこの人たち（stars）と平泉澄先生だけを描き、名前もいつも出す（何も選んでいないときと、平泉澄先生を選んだとき）
   const FAME = window.SHINTO_FAME || {};
   const famous = new Set();
   {
-    const perCent = new Map();
-    let np = 0;
-    nodes.filter((n) => !n.isOrg && !n.emperor && !n.house && !n.myth && n.id !== FOCUS && n.fl != null && FAME[n.id] > 0)
-      .sort((a, b) => FAME[b.id] - FAME[a.id] || (a.id < b.id ? -1 : 1))
-      .forEach((n) => {
-        if (np >= 24) return;
-        const c = Math.floor(n.fl / 100), k = perCent.get(c) || 0;
-        if (k >= 4) return;
-        perCent.set(c, k + 1);
-        famous.add(n.id);
-        np++;
-      });
+    const NOT_SCHOLAR = new Set(["kozoku", "buke", "seiji", "shukyosha", "notscholar", "geijutsu"]);
+    const pick = (test, total, perCentury) => {
+      const perCent = new Map();
+      let np = 0;
+      nodes.filter((n) => !n.isOrg && !n.house && !n.outer && n.id !== FOCUS && n.fl != null && FAME[n.id] > 0 && !famous.has(n.id) && test(n))
+        .sort((a, b) => FAME[b.id] - FAME[a.id] || (a.id < b.id ? -1 : 1))
+        .forEach((n) => {
+          if (np >= total) return;
+          const c = Math.floor(n.fl / 100), k = perCent.get(c) || 0;
+          if (k >= perCentury) return;
+          perCent.set(c, k + 1);
+          famous.add(n.id);
+          np++;
+        });
+    };
+    pick((n) => !n.emperor && !n.myth && n.fd && !NOT_SCHOLAR.has(n.fd), 24, 5);
+    pick((n) => !n.emperor, 20, 4);
+    pick((n) => n.emperor, 8, 3);
     nodes.filter((n) => n.isOrg && FAME[n.id] > 0).sort((a, b) => FAME[b.id] - FAME[a.id] || (a.id < b.id ? -1 : 1)).slice(0, 6).forEach((n) => famous.add(n.id));
+  }
+  const stars = new Set([FOCUS, ...famous]);
+  // 社会的影響力（指示97）: 世間での知られ方（同じ閲覧数）の順で段に分ける（0＝平泉澄先生、1＝上位 12、2＝次の 36、3＝次の 102、4＝次の 350、5＝ほかと閲覧数のない人）
+  {
+    const ranked = nodes.filter((n) => n.id !== FOCUS && FAME[n.id] > 0).sort((a, b) => FAME[b.id] - FAME[a.id] || (a.id < b.id ? -1 : 1));
+    nodes.forEach((n) => { n.inf = n.id === FOCUS ? 0 : 5; });
+    ranked.forEach((n, i) => { n.inf = i < 12 ? 1 : i < 48 ? 2 : i < 150 ? 3 : i < 500 ? 4 : 5; });
   }
   // 平泉澄先生から見た大切さ（指示57・58）: 平泉澄先生から関係を一歩ずつたどり、ときどき先生の所へ戻る歩き方
   // （個人化ページランク）で、よく行き着く人・組織ほど大切とみる。関係の種類と確度で重みを付ける（細いつながりは使わない）。
@@ -3517,41 +3550,56 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   const IMP_TYPE = { shiji: 1, shishuku: 0.8, eikyo: 0.8, kakei: 0.8, yoshi: 0.8, keisho: 0.6, densho: 0.6, koen: 0.6, shinko: 0.6, koryu: 0.45, hihan: 0.25, org_found: 0.8, org_setup: 0.6, org_member: 0.4 };
   const IMP_CONF = { 確実: 1, 有力: 0.85, 伝承: 0.7, 要確認: 0.5 };
   {
-    const adj = new Map(nodes.map((n) => [n.id, []]));
+    // 人と組織を番号で持ち、数の配列で計算する（前は Map で 50 回まわしていて、読み込みのたびに 0.1 秒ほどかかっていた。指示97: 軽く）
+    const idx = new Map(nodes.map((n, i) => [n.id, i])), N = nodes.length, f = idx.get(FOCUS);
+    const adj = nodes.map(() => []);
     edges.forEach((e) => {
-      if (e.thin || !adj.has(e.s) || !adj.has(e.t)) return;
-      const w = (IMP_TYPE[e.type] || 0.5) * (IMP_CONF[e.conf] || 0.7);
-      adj.get(e.s).push([e.t, w]);
-      adj.get(e.t).push([e.s, w]);
+      if (e.thin || !idx.has(e.s) || !idx.has(e.t)) return;
+      const w = (IMP_TYPE[e.type] || 0.5) * (IMP_CONF[e.conf] || 0.7), a = idx.get(e.s), b = idx.get(e.t);
+      adj[a].push(b, w);
+      adj[b].push(a, w);
     });
-    const tot = new Map([...adj].map(([id, l]) => [id, l.reduce((a, x) => a + x[1], 0)]));
-    let pr = new Map([[FOCUS, 1]]);
+    const tot = new Float64Array(N);
+    adj.forEach((l, i) => { for (let k = 1; k < l.length; k += 2) tot[i] += l[k]; });
+    let pr = new Float64Array(N);
+    pr[f] = 1;
     for (let it = 0; it < 50; it++) {
-      const q = new Map([[FOCUS, 0.25]]);
-      pr.forEach((pu, u) => {
-        const t = tot.get(u);
-        if (!t) { q.set(FOCUS, q.get(FOCUS) + 0.75 * pu); return; }
-        adj.get(u).forEach(([v, w]) => q.set(v, (q.get(v) || 0) + 0.75 * pu * w / t));
-      });
+      const q = new Float64Array(N);
+      q[f] = 0.25;
+      for (let u = 0; u < N; u++) {
+        const pu = pr[u];
+        if (!pu) continue;
+        const t = tot[u], l = adj[u];
+        if (!t) { q[f] += 0.75 * pu; continue; }
+        for (let k = 0; k < l.length; k += 2) q[l[k]] += (0.75 * pu * l[k + 1]) / t;
+      }
       pr = q;
     }
-    const ranked = nodes.filter((n) => n.id !== FOCUS && pr.get(n.id) > 0).sort((a, b) => pr.get(b.id) - pr.get(a.id) || (a.id < b.id ? -1 : 1));
+    const prOf = (n) => pr[idx.get(n.id)];
+    const ranked = nodes.filter((n) => n.id !== FOCUS && prOf(n) > 0).sort((a, b) => prOf(b) - prOf(a) || (a.id < b.id ? -1 : 1));
     nodes.forEach((n) => { n.imp = n.id === FOCUS ? 0 : 4; });
     ranked.forEach((n, i) => { n.imp = i < 12 ? 1 : i < 40 ? 2 : i < 100 ? 3 : 4; });
   }
   const MAX = { degree: maxOf("degree"), reach: maxOf("reach") };
+  // 大きさの決まり。はじめは社会的影響力（指示97）。平泉澄先生への近さ（もとの「平泉澄先生から見た大切さ」）は別の設定で選ぶ。
+  // どの決まりでも、平泉澄先生のバブルだけはいちばん大きくする
   const SIZE_RULES = {
-    imp: { label: "平泉澄先生から見た大切さ", desc: "平泉澄先生から関係（師弟・家系・影響・組織など）をたどって、よく行き着く人・組織ほど大きい", legend: "大きいほど、平泉澄先生から見て大切な人・組織" },
+    inf: { label: "社会的影響力", desc: "世間での知られ方（ウィキペディア日本語版の直近 60 日の閲覧数）が多い人・組織ほど大きい", legend: "大きいほど、世間によく知られている（社会的影響力が大きい）" },
+    imp: { label: "平泉澄先生への近さ", desc: "平泉澄先生から関係（師弟・家系・影響・組織など）をたどって、よく行き着く人・組織ほど大きい", legend: "大きいほど、平泉澄先生に近い（関係をたどって、よく行き着く）人・組織" },
     degree: { label: "つながりの数", desc: "直接の関係（師弟・家系・影響・組織など）の相手の数", legend: "大きいほど、つながりの数が多い" },
     reach: { label: "後世への広がり", desc: "この人から系譜をたどって届く、後の時代の人数", legend: "大きいほど、後世への広がりが多い" },
     none: { label: "一定", desc: "すべて同じ大きさ", legend: "大きさはすべて同じ" }
   };
   // 大切さの段ごとの大きさ。一目で分かるように段の差を大きくし、ほかの人は小さくして「全体」で重ならないようにする（指示57・58）
   const IMP_R = [2.7, 2.1, 1.6, 1.15, 0.55];
+  // 社会的影響力の段ごとの大きさ（大切さと同じ考えで、上の段ほど大きく、ほかの人は小さく）
+  const INF_R = [2.9, 2.1, 1.6, 1.15, 0.8, 0.55];
   function radius(n) {
     const base = 6.2;
+    if (n.id === FOCUS) return base * 2.9; // 平泉澄先生は、どの決まりでもいちばん大きく（指示97）
     if (n.outer) return base * 0.45; // 学統の外の人は、どの決まりでもいちばん小さい人より小さく
     if (state.sizeBy === "none") return base;
+    if (state.sizeBy === "inf") return base * INF_R[n.inf != null ? n.inf : 5];
     if (state.sizeBy === "imp") return base * IMP_R[n.imp != null ? n.imp : 4];
     const v = n[state.sizeBy] || 0;
     return base * (1 + 0.75 * Math.sqrt(v / MAX[state.sizeBy]));
@@ -4157,6 +4205,68 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     return visible(e.source) && visible(e.target);
   }
 
+  // ── 段階的に開く地図（指示97）──────────────────────
+  // 地図に描くのは、有名な人（stars）と、見つけた人（found。見る人が選んだ人・検索した人と、その人から平泉澄先生への道の人。端末に覚える）と、
+  // その時だけの人（選んだ人・重ねた二人目・道の行き先と道の途中、札を開いている間の直接の関係の相手と知り合いの広がり、条件・絞り込みに合う人、
+  // 「平泉澄先生へ届く道を見る」の間の系譜の人）。並べ方（位置）は、描かない人も入れて全員で決めるので、出てきても周りは動かない。
+  // 平泉澄先生を選んでいるとき（はじめの状態）は、道が系譜の全員になるので、道の人を数えない。
+  // 「バブルの出し方」が「すべて」なら全員を描く（学統の外の人を入れるかは、これまでどおり「学統の外の人も出す」で決める）
+  const FOUND_KEY = "sg-found-v1";
+  const found = new Set();
+  try { (JSON.parse(localStorage.getItem(FOUND_KEY) || "[]") || []).forEach((id) => { if (byId.has(id) && !stars.has(id)) found.add(id); }); } catch (e) { /* 覚えておけない環境では、その場だけ */ }
+  let foundVer = 0;
+  const saveFound = () => { try { localStorage.setItem(FOUND_KEY, JSON.stringify([...found])); } catch (e) { /* 覚えておけない環境では、その場だけ */ } };
+  function unlock(ids) {
+    let n = 0;
+    for (const id of ids) if (id && byId.has(id) && !stars.has(id) && !found.has(id)) { found.add(id); n++; }
+    if (n) { foundVer++; saveFound(); }
+    return n;
+  }
+  function resetFound() { found.clear(); foundVer++; saveFound(); }
+  function setDiscover(mode) {
+    state.discover = mode === "all" ? "all" : "stars";
+    try { localStorage.setItem("sg-discover-v1", state.discover); } catch (e) { /* 覚えておけない環境では、その場だけ */ }
+  }
+  // 見る人が選んだ人（検索・地図・札から）と、その人から平泉澄先生への道（道を調べている間は行き先までの道）の人を、見つけた人にする。
+  // 知り合いの広がり・直接の関係の相手は、その時だけ描き、覚えない（広がりは大きくなることがあるため）
+  on((reason) => {
+    if ((reason !== "select" && reason !== "second") || !state.picked || !state.selected) return;
+    const ids = [state.selected, state.second, state.routeTo];
+    if (state.selected !== FOCUS && state.route !== "reach") chainIds().forEach((id) => ids.push(id));
+    unlock(ids);
+  });
+  const cardIsOpen = () => !!(window.SG && window.SG.cardOpen && window.SG.cardOpen());
+  let shownMemo = { key: null, set: null };
+  // 描く人の組（状態が変わったときだけ作り直す。描くたびに千八百人と三千五百本の線で呼ばれるので）
+  function shownSet() {
+    if (state.discover === "all") return null;
+    const narrowing = [...state.conds.values()].some((s) => s.size) || Object.values(state.filters).some((s) => s.size);
+    const sig = narrowing ? [...state.conds].map(([a, s]) => a + ":" + [...s].join(",")).join(";") + "|" + Object.values(state.filters).map((s) => [...s].join(",")).join(";") : "";
+    const key = [foundVer, state.selected, state.second, state.routeTo, state.route, state.routeAlt, state.reachN, cardIsOpen(), sig, state.touring, state.showOuter].join("|");
+    if (shownMemo.key === key) return shownMemo.set;
+    const set = new Set(stars), add = (id) => { if (id) set.add(id); };
+    found.forEach(add);
+    [state.selected, state.second, state.routeTo].forEach(add);
+    if (state.selected && state.selected !== FOCUS) chainIds().forEach(add);
+    if (state.second && state.second !== FOCUS) (routeInfo(state.second).chain || []).forEach((c) => add(c.id));
+    if (state.selected && cardIsOpen()) {
+      nbrAll.get(state.selected).forEach(add);
+      if (state.route === "reach") routeInfo(state.selected).nodes.forEach(add);
+    }
+    // 条件・絞り込み・見方の例: 合う人を全員描く（はじめの絞った地図のままだと、見方の例が空に見えるため）
+    if (narrowing) nodes.forEach((n) => { if (matches(n)) add(n.id); });
+    if (state.touring) ancH.forEach((v, id) => add(id));
+    shownMemo = { key, set };
+    return set;
+  }
+  function shown(n) {
+    if (!visible(n)) return false;
+    const s = shownSet();
+    return !s || s.has(n.id);
+  }
+  const foundCount = () => found.size;
+  const starCount = () => stars.size;
+
   // 強調: 選んだ人の「平泉澄への経路」と直接の関係を濃く、そのほかを薄く
   // o.ignoreHover: 指している人を見ない強調（地図のバブルと名前は、マウスを重ねるたびに書き換えないため。指示52）
   function emphasis(o) {
@@ -4171,12 +4281,14 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     const sec = state.selected && state.second ? pathInfo(state.second) : null;
     const secNbr = sec ? new Set([state.second, ...nbrAll.get(state.second)]) : null;
     const secInc = sec ? new Set(incident.get(state.second).map((e) => e.id)) : null;
+    // はじめの地図（有名な人だけを描き、まだ誰も選んでいない）は、どの人も薄くしない（名前を全部はっきり出すため。指示97）
+    const calm = state.discover === "stars" && state.selected === FOCUS && !state.picked;
     return {
       routeOnly,
       node(n) {
         if (!matches(n)) return 0.1;
         if (hovN) return hovN.has(n.id) ? 1 : 0.2;
-        if (!sel || (routeOnly && !sel.to)) return 1; // 到着を選ぶ前は、どの人も薄くしない（押して選びやすいように）
+        if (!sel || calm || (routeOnly && !sel.to)) return 1; // 到着を選ぶ前は、どの人も薄くしない（押して選びやすいように）
         if (sel.nodes.has(n.id) || selNbr.has(n.id)) return 1;
         if (sec && (sec.nodes.has(n.id) || secNbr.has(n.id))) return 1;
         return n.isOrg ? 0.4 : 0.3;
@@ -4207,6 +4319,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     D, FOCUS, honor, state, famous, on, emit, people, orgs, nodes, byId, edges: allEdges, realEdges: edges, lineageEdges, EDGE_TYPES, CATS, CAT_STYLE, CONF, CONF_RANK,
     inL, outL, incident, nbrAll, ancH, descH, pathInfo, routeInfo, routeOptions, routeRole, RT_SHORT, reachInfo, distTo, radius, SIZE_RULES, FAMILIES, familyOf, colorOf, schoolOf,
     AXES, AXIS, AXIS_GROUPS, groupOf, axisValue, axisValues, condMatch, regionOf, matches, visible, edgeShown, emphasis, esc, edgeOrder,
+    stars, shown, shownSet, unlock, resetFound, setDiscover, foundCount, starCount, isFound: (id) => found.has(id),
     evidenceOf, loadEvidenceSrc, pairKey, thinEdges, thinOf, kinOf, KIN_VALUES, facetOf, FX, EV,
     toggleCond, clearConds, hasCond, PRESETS, applyPreset, GRADES, GRADE,
     get TS() { return TS; }, setScaleMode, setRowFactors, rowsChanged, saveRows, resetRows, bandAt, reignText, eraAt, fmtYear, lifeText, emperorLabel,
@@ -5056,7 +5169,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   // ── 案内（読み方） ────────────────────────────────
   const LEAD = {
     trunk: "神代から平泉澄先生、平泉紀房まで、平泉史学の幹の人を時代の順に、まっすぐ一本の線で結びました（幹の人と枝葉の候補は「平泉史学の幹・選定案」による）。上の木は、ふつうの地面に立つ一本の木で、下から上へ時代の順です。主な根の先が天照大神、ほかの根の先が神武天皇・聖徳太子・天智天皇、幹の真ん中が平泉澄先生、幹の先が平泉紀房で、幹の上には平泉澄先生の門下が葉の冠になって広がります。「幹を巡る」を押すと、金の光が根の先から幹を上り、着いた人では少し止まって、輪が広がり名前が光ります（もう一度押すか、画面に触ると止まります）。幹の人の「枝葉」を押すと、幹から枝が伸びて、その人から分かれる人が銀杏の葉とともに開きます（案の人を先に、そのあとは、データの上で直接つながる人・組織を、平泉澄先生から見た大切さの順に）。幹の間の「間の人」を押すと、二人の時代のあいだにいる人だけを通り、系譜に近い関係（家系・師弟・影響・後援など）でつなぐ、いちばん短い道の人が並びます。名前を押すと札が開きます。",
-    map: "縦は時代と天皇の御代で、下へ読み進めると時代が下ります（同じ年の人が多くて列に収まらない所だけ、少し上下にずらして並べます）。横は上のタブで選ぶ並べ方（全部で 19 通り）で、切り替えると人と組織が新しい列へ移ります。札を開いていないときは線を描かず、バブルと名前だけを出します。人や組織を押すと札が開き、平泉澄先生までの道すじが一本ずつ順に光って線が残ります（その人のほかの線も出ます）。道すじの人の名前は、線やほかの名前にかからない所に出ます（近くに空きがなければ、少し離して置きます）。図の上にはその札が出ます。札は上の帯をつまんで動かし、右下の角で大きさを変えられます。",
+    map: "縦は時代と天皇の御代で、下へ読み進めると時代が下ります（同じ年の人が多くて列に収まらない所だけ、少し上下にずらして並べます）。はじめは、よく知られた人と平泉澄先生だけを、名前つきで描きます。人を押したり検索したりすると、その人と平泉澄先生までの道の人が地図に加わり、使うほど描く人が増えていきます（加わった人はこの端末に覚えます。「絞り込みと表示」で、すべての人を出すことも、はじめに戻すこともできます）。バブルの大きさは、はじめは社会的影響力（世間での知られ方）で、平泉澄先生への近さは「絞り込みと表示」の「点の大きさ」で選べます。平泉澄先生のバブルは、どの決まりでもいちばん大きくします。横は上のタブで選ぶ並べ方（全部で 19 通り）で、切り替えると人と組織が新しい列へ移ります。札を開いていないときは線を描かず、バブルと名前だけを出します。人や組織を押すと札が開き、平泉澄先生までの道すじが一本ずつ順に光って線が残ります（その人のほかの線も出ます）。道すじの人の名前は、線やほかの名前にかからない所に出ます（近くに空きがなければ、少し離して置きます）。図の上にはその札が出ます。札は上の帯をつまんで動かし、右下の角で大きさを変えられます。",
     ancestry: "起点の人から、師や祖を一段ずつたどります。大陸や西洋の学者の、さらに先までさかのぼれます。「全部ひらく」を押すと、傍系（ほかの師・ほかの門下）まで残らず開きます。縦の位置は実際の年代と天皇の御代を表し、下へ読み進めると時代が下ります。短冊を押すと、図の上にその人の札が出ます。",
     relations: "図に描いた関係を、種類・確度・説明つきで一本ずつ並べました。人物・組織の表では、各タブでの分け方を一行にまとめています。行を押すと、表の上にその札が出ます。"
   };
@@ -5297,8 +5410,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     if (!Object.keys(m).length) delete COLW[axis];
   };
   const saveColW = () => { try { localStorage.setItem(COLW_STORE, JSON.stringify(COLW)); } catch (e) { /* 覚えておけない環境では、その場だけ */ } };
-  const LAYOUT_STORE = "sg-layouts-v9"; // 並びの覚え書き（この端末の中だけ。並べ方を変えたら番号を上げる。v9 は、全体でないときのバブルを大きくした版）
-  try { ["sg-layouts-v1", "sg-layouts-v2", "sg-layouts-v3", "sg-layouts-v4", "sg-layouts-v5", "sg-layouts-v6", "sg-layouts-v7", "sg-layouts-v8"].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* 前の並べ方の覚え書きは消す */ }
+  const LAYOUT_STORE = "sg-layouts-v10"; // 並びの覚え書き（この端末の中だけ。並べ方を変えたら番号を上げる。v10 は、大きさのはじめを社会的影響力にした版。指示97）
+  try { ["sg-layouts-v1", "sg-layouts-v2", "sg-layouts-v3", "sg-layouts-v4", "sg-layouts-v5", "sg-layouts-v6", "sg-layouts-v7", "sg-layouts-v8", "sg-layouts-v9"].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* 前の並べ方の覚え書きは消す */ }
   // 文字を打っている間（スマホではキーボードが出ている）
   const typing = () => { const a = document.activeElement; return !!a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.tagName === "SELECT" || a.isContentEditable); };
   // はちの巣の詰め方: 縦の位置（年代）の順に一つずつ、もう置いた点と重ならない、列の中心にいちばん近い横の位置へ置く。
@@ -5393,6 +5506,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
 
     mount(host) {
       if (this.kIndex == null) this.kIndex = 0;
+      this.lastFound = SG.foundCount(); // 見つけた人の数（増えたら知らせる。指示97）
       // 冒頭の説明・数・ボタン・見方の例は「案内」の欄（card.js の aboutHtml）にまとめた。見出し帯のすぐ下に分け方の段が来る（指示31: 図を大きく）
       host.innerHTML = `
       <h1 class="vh" tabindex="-1">平泉澄先生 学統マップ</h1>
@@ -5689,7 +5803,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (performance.now() - (this.userPan || -1e9) < 6000) return;
       const r = ts.el.getBoundingClientRect();
       const y0 = window.innerHeight * 0.2 - r.top, y1 = window.innerHeight * 0.9 - r.top;
-      const vis = this.items.filter((n) => n.sy >= y0 && n.sy <= y1 && SG.matches(n.p));
+      const vis = this.items.filter((n) => n.sy >= y0 && n.sy <= y1 && SG.matches(n.p) && SG.shown(n.p));
       if (!vis.length) return;
       const w = vis.reduce((a, n) => a + n.r, 0);
       ts.scrollToX(vis.reduce((a, n) => a + n.x * n.r, 0) / w, true);
@@ -6098,7 +6212,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     // 込み合って上下にずらしたバブルは、本当の年の高さに短い横の印を付け、バブルと細い線でつなぐ（指示75: 人の置き場所を正確に）
     drawTrue() {
       const ts = this.ts;
-      const data = this.items.filter((n) => Math.abs(n.dy || 0) >= 3);
+      const data = this.items.filter((n) => Math.abs(n.dy || 0) >= 3 && (!this.shownIds || this.shownIds.has(n.id)));
       const j = this.gTrue.selectAll("path").data(data, (n) => n.id);
       j.exit().remove();
       j.enter().append("path").attr("class", "true-y").merge(j).attr("d", (n) => {
@@ -6118,7 +6232,11 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       SG.drawEvents(this.gEv, ts, W);
       this.drawLife();
       // 線とバブルは全部を描く（スクロールの途中で描き直さずに済むように。指示34）
-      const list = SG.edges.filter((e) => SG.edgeShown(e) && this.byId.has(e.s) && this.byId.has(e.t));
+      // 描くのは、有名な人と見つけた人と、その時だけの人（指示97）。並べ方は全員で決めてあるので、描く人が増えても周りは動かない
+      const shownItems = this.items.filter((n) => SG.shown(n.p));
+      const shownIds = new Set(shownItems.map((n) => n.id));
+      // 両端を描く線だけを先に選んでから、種類や段階の決まりを見る（細いつながりを含めて一万本ほどあるので、決まりを全部に当てると重い）
+      const list = SG.edges.filter((e) => shownIds.has(e.s) && shownIds.has(e.t) && SG.edgeShown(e));
       this.lastList = list; // マウスを重ねたときの軽い描き足し（hoverFast）が使う
       // 動きが止まっていれば線を戻して描く。動いている間（線を隠している間）は、線の描き直しを省く（止まったときに一度だけ描く）
       if (!this.timer && !ts.kTimer) this.edgesAway(false);
@@ -6136,13 +6254,21 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       const mid = (e) => { const a = this.byId.get(e.s), b = this.byId.get(e.t); return [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2]; };
       if (!this.edgesHidden) { SG.drawEdges(this.gKeep, keep, (e) => this.edgePath(e), { mid }); this.markSecond(em); }
       this.quiet(!!sel);
-      const dots = this.items.map((n) => ({ p: n.p, sx: n.sx, sy: n.sy, r: n.r }));
+      const dots = shownItems.map((n) => ({ p: n.p, sx: n.sx, sy: n.sy, r: n.r }));
       const nodeEl = new Map();
       // バブルと名前は、マウスを重ねても薄くしない（指すたびに 1,000 個を書き換えていた。指示52）。重ねた人の名前は必ず出す
       const emStill = SG.emphasis({ ignoreHover: true });
       SG.drawNodes(this.gNode, dots, { pending: this.pending, em: emStill }).each(function (d) { nodeEl.set(d.p.id, this); })
         .classed("is-b", (d) => !!sec && d.p.id === sec).classed("both", (d) => !!sec && emStill.both(d.p));
       this.nodeEl = nodeEl;
+      // 新しく描く人（見つけた人・その時だけの人）は、その場でふわっと出す（指示97）
+      const prevShown = this.shownIds;
+      this.shownIds = shownIds;
+      if (prevShown && !SG.reducedMotion()) shownIds.forEach((id) => {
+        if (prevShown.has(id)) return;
+        const el = nodeEl.get(id);
+        if (el) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 480, easing: "ease-out" });
+      });
       this.drawTrue();
       // 線を描いているときは、名前の置き場を、残した線（と生涯の線）にかからない所から選ぶ
       let lines = null;
@@ -6216,7 +6342,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       this.flowDone = true;
       if (!sel || !this.linesOn() || !this.ts || !this.byId || SG.reducedMotion()) return;
       const info = SG.routeInfo(sel);
-      this.pending = new Set([...info.nodes].filter((id) => id !== sel && this.byId.has(id)));
+      this.pending = new Set([...info.nodes].filter((id) => id !== sel && this.isShown(id)));
       this.flowDone = false;
     },
     // 光が届いた人のバブルを濃くし、名前を出す（描き直さずに、その人の分だけ書き換える）
@@ -6327,7 +6453,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (!SG.state.selected || !this.ts || !this.linesOn()) return;
       const info = SG.routeInfo(SG.state.selected);
       if (info.kind === "self" || delayOf || all) {
-        this.litArcs = SG.edges.filter((e) => info.edges.has(e.id) && SG.edgeShown(e) && this.byId.has(e.s) && this.byId.has(e.t)).map((e) => ({ e }));
+        this.litArcs = SG.edges.filter((e) => info.edges.has(e.id) && SG.edgeShown(e) && this.isShown(e.s) && this.isShown(e.t)).map((e) => ({ e }));
         if (SG.reducedMotion()) this.drawLit(); else this.flowWave(info, delayOf, all);
         return;
       }
@@ -6335,7 +6461,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       // 門下の道は平泉澄先生から下りてくるので、向きを逆にする
       const start = SG.state.selected, rev = info.kind === "down";
       // 道のりの長さ。バブルが重なるほど短い線も、道としては 1 と数える（描くのは省く）
-      const lenOf = (e) => { if (!this.byId.has(e.s) || !this.byId.has(e.t)) return 0; const t = this.trimPath(e); return t ? t.len : 1; };
+      const lenOf = (e) => { if (!this.isShown(e.s) || !this.isShown(e.t)) return 0; const t = this.trimPath(e); return t ? t.len : 1; };
       const arcs = [];
       if (info.kind === "loose") {
         for (let i = 1; i < info.chain.length; i++) { const e = info.chain[i].via; if (e) arcs.push({ e, from: info.chain[i - 1].id, to: info.chain[i].id }); }
@@ -6507,10 +6633,13 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         let a = 64, z = vh - 16;
         const cr = insp && insp.classList.contains("open") ? insp.getBoundingClientRect() : null;
         if (cr && cr.width > window.innerWidth * 0.6) { if (cr.top > vh * 0.4) z = Math.min(z, cr.top - 24); else a = Math.max(a, cr.bottom + 24); }
+        // 全体でないときは、光の先（道の人）を、札にかからない所の真ん中に置き続ける（指示97。前は、行き先が画面のどこかに見えていれば
+        // 動かさず、光が帯の外へ出たときだけ寄せていたので、道の人が画面の端に見えることがあった）。「全体」では前のとおり、帯を出たときだけ寄せる
+        const fit = this.isFit();
         const endV = top + endY, lo = a + (z - a) * 0.3, hi = a + (z - a) * 0.62;
-        const off = endV >= a && endV <= z ? 0 : v > hi ? v - hi : v < lo ? v - lo : 0;
-        if (Math.abs(off) > 0.5) window.scrollBy(0, off * 0.16);
-        // 横にも追う（全体でないときは、列が画面より広くなる。指示71）。札が縦に長く左右の片側にあれば、その側をよける
+        const off = fit ? (endV >= a && endV <= z ? 0 : v > hi ? v - hi : v < lo ? v - lo : 0) : v - (a + z) / 2;
+        if (Math.abs(off) > 0.5) window.scrollBy(0, off * 0.18);
+        // 横にも追う（全体でないときは、列が画面より広くなる。指示71）。札が縦に長く左右の片側にあれば、その側をよけた所の真ん中へ
         let offX = 0;
         const sc = ts.scroller;
         if (sc && sc.scrollWidth > sc.clientWidth + 1) {
@@ -6520,10 +6649,14 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
           let la = sr.left + 16, lz = sr.right - 16;
           if (cr && cr.height > vh * 0.5 && cr.width < window.innerWidth * 0.6) { if (cr.left > window.innerWidth / 2) lz = Math.min(lz, cr.left - 24); else la = Math.max(la, cr.right + 24); }
           const llo = la + (lz - la) * 0.3, lhi = la + (lz - la) * 0.7;
-          offX = endU >= la && endU <= lz ? 0 : u > lhi ? u - lhi : u < llo ? u - llo : 0;
-          if (Math.abs(offX) > 0.5) sc.scrollLeft += offX * 0.16;
+          offX = fit ? (endU >= la && endU <= lz ? 0 : u > lhi ? u - lhi : u < llo ? u - llo : 0) : u - (la + lz) / 2;
+          // 端まで送りきったら、それ以上は寄せない（図の外へは出せない）
+          if (offX > 0 && sc.scrollLeft >= sc.scrollWidth - sc.clientWidth - 1) offX = 0;
+          if (offX < 0 && sc.scrollLeft <= 0) offX = 0;
+          if (Math.abs(offX) > 0.5) sc.scrollLeft += offX * 0.18;
         }
-        if (t < 1 || ((Math.abs(off) > 2 || Math.abs(offX) > 2) && el < T + 900)) this.followRaf = requestAnimationFrame(tick); else this.stopFollow();
+        const offY = off > 0 && window.scrollY + vh >= document.documentElement.scrollHeight - 1 ? 0 : off < 0 && window.scrollY <= 0 ? 0 : off;
+        if (t < 1 || ((Math.abs(offY) > 2 || Math.abs(offX) > 2) && el < T + 1500)) this.followRaf = requestAnimationFrame(tick); else this.stopFollow();
       };
       this.followRaf = requestAnimationFrame(tick);
     },
@@ -6539,6 +6672,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       this.stopTour();
       SG.select(SG.FOCUS, { quiet: true });
       this.tourLines = true; // 案内の間は、札を開いていなくても線を描く（指示56）
+      SG.state.touring = true; // 案内の線が出ている間は、系譜の人を描く（有名な人だけの地図でも、光の通る人が見えるように。指示97）
       this.revealStart();
       this.ts.draw();
       const ts = this.ts;
@@ -6576,6 +6710,10 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
 
     update(reason) {
       if (!this.ts) return;
+      // 見つけた人が増えたら、短く知らせる（指示97: 使うほど地図の人が増えていくのが分かるように）
+      const fc = SG.foundCount();
+      if (this.lastFound != null && fc > this.lastFound) this.toastFound(fc - this.lastFound);
+      this.lastFound = fc;
       this.syncRouteBtn();
       if (reason === "axis") { this.showRule(); this.layout(true); return; }
       if (reason === "filter") { this.outerShown = this.outerSig(); this.build(); this.layout(true); return; }
@@ -6592,12 +6730,32 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       if (reason === "second") { this.ts.draw(); return; } // 重ねる二人目を足した・外した: 描き直すだけ（光は流し直さない）
       if (reason === "select" || reason === "card") {
         this.tourLines = false;
+        SG.state.touring = false;
         if (!this.linesOn()) { this.clearFlow(); this.ts.draw(); return; }
         this.revealStart(); this.ts.draw(); this.flow(); return;
       }
       if (reason === "hover") { this.hoverFast(); return; } // 重ねた人の線だけを描き足す（指示52）
       if (reason === "full") { this.refit(); return; } // 全面表示の出入り: 幅の変化は、枠の大きさの見張りが並べ直す
       this.ts.draw();
+    },
+
+    // 描く人か（指示97。並べ方は全員で決め、描くのは有名な人と見つけた人と、その時だけの人）
+    isShown(id) { const n = this.byId && this.byId.get(id); return !!n && SG.shown(n.p); },
+    // 地図に人が加わったことを、画面の上に短く出す（押せない。2.6 秒で消える）
+    toastFound(added) {
+      if (!added || SG.state.discover === "all") return;
+      let el = document.querySelector(".found-toast");
+      if (!el) {
+        el = document.createElement("p");
+        el.className = "found-toast";
+        el.setAttribute("role", "status");
+        el.setAttribute("aria-live", "polite");
+        document.body.appendChild(el);
+      }
+      el.textContent = `地図に ${added} 人が加わりました（見つけた人 ${SG.foundCount()} 人）`;
+      el.classList.add("on");
+      clearTimeout(this.toastTimer);
+      this.toastTimer = setTimeout(() => el.classList.remove("on"), 2600);
     },
 
     // いま地図に出している学統の外の人の印（選んで浮かべた人が替わったかを見る）
@@ -9864,7 +10022,8 @@ void main() {
     if (state.showOuter) n++;
     if (state.onlyLinked) n++;
     if (!state.showUnverified) n++;
-    if (state.sizeBy !== "imp") n++;
+    if (state.sizeBy !== "inf") n++;
+    if (state.discover === "all") n++;
     if (state.scaleMode !== "density") n++;
     if (state.grades.size !== ALL_GRADES.length) n++;
     return n + state.filters.family.size;
@@ -9980,19 +10139,25 @@ void main() {
       const n = SG.edges.filter((e) => !e.org && (e.grade || "-") === g.id).length;
       return `<button type="button" class="chip gchip" data-grade="${E(g.id)}" aria-pressed="${state.grades.has(g.id)}" title="${E(g.desc)}">${gradeMark(g.id)}${E(GRADE_SHORT[g.id])}<span class="n">${n}</span></button>`;
     }).join("");
+    // バブルの出し方（指示97）: はじめは有名な人だけを描き、選んだ人・検索した人と、その人から平泉澄先生への道の人を「見つけた人」として足していく
+    const nVis = SG.nodes.filter((n) => SG.visible(n) && !n.emperor).length;
+    const discover = [["stars", "有名な人と見つけた人"], ["all", "すべての人"]].map(([k, l]) => `<button type="button" data-discover="${k}" aria-pressed="${state.discover === k}">${l}</button>`).join("");
     return `<div class="pop-head"><h2 id="popTitle">絞り込みと表示</h2>${closeBtn}</div>
+      <section class="f-sec"><div class="f-lab">地図のバブルの出し方</div><div class="seg">${discover}</div>
+        <p class="f-note">はじめは、よく知られた人 ${SG.starCount() - 1} 人と平泉澄先生だけを描きます。人を選んだり検索したりすると、その人と平泉澄先生への道の人が「見つけた人」として地図に残り、使うほど増えていきます（この端末に覚えます）。いま見つけた人は <b>${SG.foundCount()}</b> 人（地図の人と組織は ${nVis}。天皇を除く）。</p>
+        <button type="button" class="btn ghost" data-act="resetFound" ${SG.foundCount() ? "" : "disabled"}>見つけた人を消して、はじめの地図に戻す</button></section>
       <section class="f-sec"><div class="f-lab">関係の種類</div><div class="cats">${cats}</div></section>
       <section class="f-sec"><div class="f-lab">資料の段階</div><div class="cats">${grades}</div><p class="f-note">二人を結ぶ資料を自動で照合した結果です（細いつながりを含む。組織の関係は数えない）。段階は資料の確かさで、関係の強さではありません。</p></section>
       <section class="f-sec"><label class="f-lab" for="fMinDeg">つながりの数がこれ以上の人・組織だけ <b id="fMinDegVal">${state.minDeg}</b></label><input type="range" id="fMinDeg" min="0" max="10" step="1" value="${state.minDeg}"></section>
       <section class="f-sec">
         <label class="toggle" for="fOrgs">組織を表示する<input type="checkbox" class="sw" id="fOrgs" ${state.showOrgs ? "checked" : ""}></label>
         <label class="toggle" for="fEmp">天皇を表示する（◎）<input type="checkbox" class="sw" id="fEmp" ${state.showEmperors ? "checked" : ""}></label>
-        <label class="toggle" for="fOuter">すべての人を含める（学統の外の人も小さく出す）<input type="checkbox" class="sw" id="fOuter" ${state.showOuter ? "checked" : ""}></label>
-        <p class="f-note">学統の外の人（絵・剣術・文学・商いなどの師弟や家族として、地図の人とつながる ${SG.people.filter((p) => p.outer).length} 人）は、ふだんは出していません。検索で選ぶと、その人だけが地図に浮かびます。</p>
+        <label class="toggle" for="fOuter">学統の外の人も入れる（小さく出す）<input type="checkbox" class="sw" id="fOuter" ${state.showOuter ? "checked" : ""}></label>
+        <p class="f-note">学統の外の人（絵・剣術・文学・商いなどの師弟や家族として、地図の人とつながる ${SG.people.filter((p) => p.outer).length} 人）は、ふだんは出していません。検索で選ぶと、その人だけが地図に浮かびます。「すべての人」の出し方で、ここを入れると、学統の外の人も全員が小さく出ます。</p>
         <label class="toggle" for="fLinked">平泉澄先生に系譜でつながる人だけ<input type="checkbox" class="sw" id="fLinked" ${state.onlyLinked ? "checked" : ""}></label>
         <label class="toggle" for="fUnver">「要確認」の関係も描く<input type="checkbox" class="sw" id="fUnver" ${state.showUnverified ? "checked" : ""}></label>
         <label class="toggle" for="fFamous">著名な人物・組織の名前を出す<input type="checkbox" class="sw" id="fFamous" ${state.famousLabels ? "checked" : ""}></label>
-        <p class="f-note">著名な人物・組織は、ウィキペディア日本語版の直近 60 日の閲覧数が多い人物 24 人（百年ごとに 4 人まで。天皇・神は除く）と組織 6 つです。</p>
+        <p class="f-note">著名な人物・組織は、ウィキペディア日本語版の直近 60 日の閲覧数が多い人物 52 人（学者・文人 24 人、武将・政治家・皇族・神など 20 人、天皇 8 人。時代が偏らないように百年ごとの数を限る）と組織 6 つです。はじめの地図は、この人たちと平泉澄先生を描きます。</p>
       </section>
       <section class="f-sec"><div class="f-lab">点の大きさ</div><div class="seg">${sizes}</div></section>
       <section class="f-sec"><div class="f-lab">縦の目盛り</div><div class="seg">${scales}</div></section>
@@ -10070,6 +10235,14 @@ void main() {
         SG.emit("style");
         return;
       }
+      const disc = t.closest("[data-discover]");
+      if (disc) {
+        SG.setDiscover(disc.dataset.discover);
+        pop.querySelectorAll("[data-discover]").forEach((b) => b.setAttribute("aria-pressed", String(b === disc)));
+        SG.emit("style");
+        updateFilterBadge();
+        return;
+      }
       const size = t.closest("[data-size]");
       if (size) {
         state.sizeBy = size.dataset.size;
@@ -10093,6 +10266,12 @@ void main() {
       const b = t.closest("button[data-act]");
       if (!b) return;
       if (b.dataset.act === "close") closePop(true);
+      if (b.dataset.act === "resetFound") {
+        SG.resetFound();
+        pop.innerHTML = filtersHtml();
+        SG.emit("style");
+        return;
+      }
       if (b.dataset.act === "reset") {
         state.cats = new Set(DEFAULT_CATS);
         state.minDeg = 0;
@@ -10101,7 +10280,8 @@ void main() {
         state.showOuter = false;
         state.onlyLinked = false;
         state.showUnverified = true;
-        state.sizeBy = "imp";
+        state.sizeBy = "inf";
+        SG.setDiscover("stars");
         state.grades = new Set(ALL_GRADES);
         state.filters.family.clear();
         const scaleChanged = state.scaleMode !== "density";
@@ -10126,7 +10306,7 @@ void main() {
       if (id === "fUnver") { state.showUnverified = ev.target.checked; SG.emit("style"); }
       if (id === "fFamous") {
         state.famousLabels = ev.target.checked;
-        try { localStorage.setItem("sg-famous-v1", ev.target.checked ? "1" : "0"); } catch (e) { /* 覚えておけない環境では、その場だけ */ }
+        try { localStorage.setItem("sg-famous-v2", ev.target.checked ? "1" : "0"); } catch (e) { /* 覚えておけない環境では、その場だけ */ }
         SG.emit("style");
       }
     });
