@@ -3268,7 +3268,7 @@ window.SHINTO_ADDITIONS = JSON.parse('[{"date":"2026-10-27","title":"天皇と�
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=d5e9c23d0e";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=78b7699c1f";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -4229,27 +4229,32 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   }
   // 見る人が選んだ人（検索・地図・札から）と、その人から平泉澄先生への道（道を調べている間は行き先までの道）の人を、見つけた人にする。
   // 知り合いの広がり・直接の関係の相手は、その時だけ描き、覚えない（広がりは大きくなることがあるため）
+  // 平泉澄先生の「平泉澄先生への道」（系譜の全員）だけは数えない。平泉澄先生から道を調べた道（行き先までの道）は数える
+  const ownLineage = (id) => routeInfo(id).kind === "self";
   on((reason) => {
-    if ((reason !== "select" && reason !== "second") || !state.picked || !state.selected) return;
+    // 道を調べる欄で入れた出発・到着も、見る人が選んだものとして数える（欄からの選び方は「選んだ」印を付けないため）
+    if ((reason !== "select" && reason !== "second") || !state.selected || !(state.picked || (state.route === "to" && state.routeTo))) return;
     const ids = [state.selected, state.second, state.routeTo];
-    if (state.selected !== FOCUS && state.route !== "reach") chainIds().forEach((id) => ids.push(id));
+    if (state.route !== "reach" && !ownLineage(state.selected)) chainIds().forEach((id) => ids.push(id));
     unlock(ids);
   });
-  const cardIsOpen = () => !!(window.SG && window.SG.cardOpen && window.SG.cardOpen());
+  // 線を描いているか（地図と同じ決まり。スマホでは、押して選んだ人なら札を開く前から描く。道を調べている間も描く）
+  const linesOn = () => !!(window.SG && (window.SG.showLines ? window.SG.showLines() : window.SG.cardOpen && window.SG.cardOpen()));
   let shownMemo = { key: null, set: null };
   // 描く人の組（状態が変わったときだけ作り直す。描くたびに千八百人と三千五百本の線で呼ばれるので）
   function shownSet() {
     if (state.discover === "all") return null;
     const narrowing = [...state.conds.values()].some((s) => s.size) || Object.values(state.filters).some((s) => s.size);
     const sig = narrowing ? [...state.conds].map(([a, s]) => a + ":" + [...s].join(",")).join(";") + "|" + Object.values(state.filters).map((s) => [...s].join(",")).join(";") : "";
-    const key = [foundVer, state.selected, state.second, state.routeTo, state.route, state.routeAlt, state.reachN, cardIsOpen(), sig, state.touring, state.showOuter].join("|");
+    const lines = linesOn();
+    const key = [foundVer, state.selected, state.second, state.routeTo, state.route, state.routeAlt, state.reachN, lines, sig, state.touring, state.showOuter].join("|");
     if (shownMemo.key === key) return shownMemo.set;
     const set = new Set(stars), add = (id) => { if (id) set.add(id); };
     found.forEach(add);
     [state.selected, state.second, state.routeTo].forEach(add);
-    if (state.selected && state.selected !== FOCUS) chainIds().forEach(add);
+    if (state.selected && !ownLineage(state.selected)) chainIds().forEach(add);
     if (state.second && state.second !== FOCUS) (routeInfo(state.second).chain || []).forEach((c) => add(c.id));
-    if (state.selected && cardIsOpen()) {
+    if (state.selected && lines) {
       nbrAll.get(state.selected).forEach(add);
       if (state.route === "reach") routeInfo(state.selected).nodes.forEach(add);
     }
@@ -5024,17 +5029,20 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       };
       // 図の外へはみ出す置き場は使わない（切れて読めない）
       const inside = (s) => s.box.x >= 0 && s.box.x + s.box.w <= W && s.box.y >= top && s.box.y + s.box.h <= bottom;
-      let best = null, bc = Infinity, covers = 0;
+      let best = null, bc = Infinity, covers = 0, bestNm = 0;
       for (const [s, base] of spots) {
         if (base >= bc) break; // 残りの候補は好みが低く、いまの一番を超えない
         if (!inside(s)) continue;
         const nm = boxes.reduce((k, b) => k + (meets(b, s.box) ? 1 : 0), 0), bu = bubbles(s.box, d);
         let c = base + 100 * nm + 12 * bu + (sel ? lineCost(s.box) : 0);
         if (s.lead) { const L = leadOf(s.box); c += 50 * boxes.reduce((k, b) => k + (segHitsBox(L[0], L[1], L[2], L[3], b) ? 1 : 0), 0); } // 引き出し線がほかの名前を横切らないように
-        if (c < bc) { bc = c; best = s; covers = nm + bu; }
+        if (c < bc) { bc = c; best = s; covers = nm + bu; bestNm = nm; }
       }
       // ふつうの名前は、ほかの名前やバブルにかかるなら省く。必ず出す名前は、どこも空いていなければ一番ましな所に重ねて出す
       if (!must && (!best || covers)) continue;
+      // 有名な人というだけで出す名前（指示50・97）は、どこに置いてもほかの名前と重なるときは省く（重なった名前はどちらも読めないので、
+      // 先に置いた大きい人の名前を残す。スマホの「全体」では、古い時代に有名な人が詰まるため）。道すじの人・選んだ人の名前は、これまでどおり必ず出す
+      if (best && bestNm > 0 && isFam(d) && pri(d) === 2 && !em.nodeOnPath(d.p) && !(em.nodeOnSecond && em.nodeOnSecond(d.p))) continue;
       if (!best) best = spots[0][0];
       const lead = best.lead ? leadOf(best.box) : null;
       // あとの名前は、この引き出し線もよける
