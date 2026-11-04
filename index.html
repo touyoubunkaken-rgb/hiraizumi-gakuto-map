@@ -3328,7 +3328,7 @@ window.SHINTO_ADDITIONS_LOCKED = {"v":1,"iter":300000,"salt":"XiIQXXRhDxkVRoChy3
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=e8655d0185";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=873d16565d";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -4857,8 +4857,10 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     e.merge(j).each(function (d) {
       const gg = d3.select(this);
       gg.select("line").attr("x1", 0).attr("x2", width).attr("y1", d.py).attr("y2", d.py);
-      const fx = gg.select("text").node().__fx; // placeEvents が選んだ置き場（図の幅に対する割合）。なければ右端
-      gg.select("text").attr("x", fx != null ? fx * width : width - 10).attr("y", d.py - 4).attr("text-anchor", fx != null ? "start" : "end").attr("visibility", d.hide ? "hidden" : null).text(`${SG.fmtYear(d.y)} ${narrow ? shortEvent(d.label) : d.label}`);
+      // placeEvents が選んだ置き場（__fx は図の幅に対する割合で、なければ右端。__fb は線の下）。
+      // 置き場がなく線だけにした出来事（__crowd）は、次に placeEvents が置き直すまで隠しておく（拡大・縮小の途中に出たり消えたりしないように）
+      const t = gg.select("text").node();
+      gg.select("text").attr("x", t.__fx != null ? t.__fx * width : width - 10).attr("y", t.__fb ? d.py + 11 : d.py - 4).attr("text-anchor", t.__fx != null ? "start" : "end").attr("visibility", d.hide || t.__crowd ? "hidden" : null).text(`${SG.fmtYear(d.y)} ${narrow ? shortEvent(d.label) : d.label}`);
     });
   }
 
@@ -5018,6 +5020,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     const glow = SG.latestFound ? SG.latestFound() : null;
     const isGlow = (d) => !!glow && glow.has(d.p.id) && em.node(d.p) >= 0.5;
     const pri = (d) => (d.p.id === state.selected || d.p.id === state.second || d.p.id === state.hover ? 0 : d.p.focus ? 1 : em.nodeOnPath(d.p) || (em.nodeOnSecond && em.nodeOnSecond(d.p)) || isFam(d) || isGlow(d) ? 2 : d.p.isOrg ? 3 : 4);
+    // 有名な人というだけで出す名前（どこに置いても重なるときは省く。指示50・97）。名を挙げた二人（指示98）は省かない
+    const famOnly = (d) => isFam(d) && !isGlow(d) && pri(d) === 2 && !em.nodeOnPath(d.p) && !(em.nodeOnSecond && em.nodeOnSecond(d.p)) && !(SG.pinnedNames && SG.pinnedNames.has(d.p.id));
     const cand = list.filter((d) => d.sy > -30 && d.sy < H + 30 && d.sx > -80 && d.sx < W + 80)
       .sort((a, b) => pri(a) - pri(b) || b.r - a.r);
     const boxes = [];
@@ -5067,14 +5071,18 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
           }
       return n;
     };
-    for (const d of cand) {
+    // 一人の名前を置く。必ず出す名前は、どこも空いていないとき、有名というだけで出す名前を押しのけてよい。
+    // 押しのけた名前は、ほかに空いている所があれば移し、なければ省く（初めて開いた端末のスマホの「全体」で、
+    // 孔子の名前が、先に置いた有名な人の名前と重なっていた。指示100）
+    const place = (d) => {
       const text = d.p.short || d.p.n;
       const fs = d.p.focus ? 14 : d.p.isOrg ? 11.5 : 12;
       const w = textWidth(text, fs), h = fs + 3;
       // 選んだ人・指した人・平泉澄先生・道すじの人は、必ず名前を出す（指示35）。
       // 平泉澄先生ご自身を選んでいるときは、道すじが系譜の全員になるので、ふだんの出し方（重なる名前は省く）にする
       const must = pri(d) <= 1 || (pri(d) === 2 && (state.selected !== SG.FOCUS || isFam(d) || isGlow(d)));
-      if (!must && em.node(d.p) < 0.5) continue;
+      if (!must && em.node(d.p) < 0.5) return;
+      const soft = famOnly(d), push = must && !soft;
       // 光がまだ届いていない人の名前は、置き場だけ決めて透明にしておく（届いたら出す。指示41）
       const cls = (d.p.focus ? "node-label focus" : d.p.isOrg ? "node-label org" : pri(d) <= 1 || em.nodeOnPath(d.p) ? "node-label strong" : "node-label") + (opts.pending && opts.pending.has(d.p.id) ? " pending" : "");
       const right = d.sx + d.r + 6, left = d.sx - d.r - 6 - w, flip = right + w > W - 4;
@@ -5084,10 +5092,10 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       // 選んでいないときのふつうの名前は、これまでどおり好みの横にだけ置き、ほかの名前と重なれば省く
       if (!must && !sel) {
         const s = side(a, 0);
-        if (hit(s.box)) continue;
+        if (hit(s.box)) return;
         boxes.push(s.box);
-        shown.push({ d, x: s.x, y: s.y, text, cls });
-        continue;
+        shown.push({ d, x: s.x, y: s.y, text, cls, box: s.box });
+        return;
       }
       // 置き場の候補を好みの順に: 好みの横、その斜め上・斜め下、反対の横と斜め、真上・真下、一行ずらした横。
       // ほかの名前・バブル・残した線との重なりを点数にし、いちばん少ない所に置く（指示37: できる限り線や文字と重ねない）
@@ -5113,27 +5121,46 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
       };
       // 図の外へはみ出す置き場は使わない（切れて読めない）
       const inside = (s) => s.box.x >= 0 && s.box.x + s.box.w <= W && s.box.y >= top && s.box.y + s.box.h <= bottom;
-      let best = null, bc = Infinity, covers = 0, bestNm = 0;
+      // best は、これまでどおりの一番（どの名前との重なりも同じに数える）。alt は、押しのけてよい名前との重なりを軽く数えた一番
+      let best = null, bc = Infinity, covers = 0, bestNm = 0, alt = null, ac = Infinity, altHard = 0;
       for (const [s, base] of spots) {
-        if (base >= bc) break; // 残りの候補は好みが低く、いまの一番を超えない
+        if (base >= bc && (!push || base >= ac)) break; // 残りの候補は好みが低く、いまの一番を超えない
         if (!inside(s)) continue;
-        const nm = boxes.reduce((k, b) => k + (meets(b, s.box) ? 1 : 0), 0), bu = bubbles(s.box, d);
-        let c = base + 100 * nm + 12 * bu + (sel ? lineCost(s.box) : 0);
+        // 押しのけるなら、有名さ（バブルの大きさ）の小さい名前から
+        let nm = 0, np = 0, pc = 0;
+        for (const b of boxes) if (meets(b, s.box)) { if (b.soft) { np++; pc += 40 + 4 * b.r; } else nm++; }
+        const bu = bubbles(s.box, d);
+        let c = base + 12 * bu + (sel ? lineCost(s.box) : 0);
         if (s.lead) { const L = leadOf(s.box); c += 50 * boxes.reduce((k, b) => k + (segHitsBox(L[0], L[1], L[2], L[3], b) ? 1 : 0), 0); } // 引き出し線がほかの名前を横切らないように
-        if (c < bc) { bc = c; best = s; covers = nm + bu; bestNm = nm; }
+        if (c + 100 * (nm + np) < bc) { bc = c + 100 * (nm + np); best = s; covers = nm + np + bu; bestNm = nm + np; }
+        if (push && c + 100 * nm + pc < ac) { ac = c + 100 * nm + pc; alt = s; altHard = nm; }
       }
       // ふつうの名前は、ほかの名前やバブルにかかるなら省く。必ず出す名前は、どこも空いていなければ一番ましな所に重ねて出す
-      if (!must && (!best || covers)) continue;
+      if (!must && (!best || covers)) return;
       // 有名な人というだけで出す名前（指示50・97）は、どこに置いてもほかの名前と重なるときは省く（重なった名前はどちらも読めないので、
       // 先に置いた大きい人の名前を残す。スマホの「全体」では、古い時代に有名な人が詰まるため）。道すじの人・選んだ人の名前は、これまでどおり必ず出す
-      if (best && bestNm > 0 && isFam(d) && !isGlow(d) && pri(d) === 2 && !em.nodeOnPath(d.p) && !(em.nodeOnSecond && em.nodeOnSecond(d.p)) && !(SG.pinnedNames && SG.pinnedNames.has(d.p.id))) continue;
+      if (best && bestNm > 0 && soft) return;
       if (!best) best = spots[0][0];
+      // 必ず出す名前が、どこに置いてもほかの名前と重なるときだけ、有名というだけの名前を押しのけて置く。
+      // 押しのけた名前は外し、この名前を置いたあとで置き直す（空いている所がなければ省く）
+      let out = [];
+      if (bestNm > 0 && alt && !altHard) { best = alt; out = shown.filter((x) => x.box.soft && meets(x.box, best.box)); }
+      for (const x of out) {
+        boxes.splice(boxes.indexOf(x.box), 1);
+        shown.splice(shown.indexOf(x), 1);
+        if (x.leadLine) lines.splice(lines.indexOf(x.leadLine), 1);
+      }
       const lead = best.lead ? leadOf(best.box) : null;
       // あとの名前は、この引き出し線もよける
-      if (lead) lines.push({ p: lead, w: 3, x0: Math.min(lead[0], lead[2]), x1: Math.max(lead[0], lead[2]), y0: Math.min(lead[1], lead[3]), y1: Math.max(lead[1], lead[3]) });
+      const leadLine = lead ? { p: lead, w: 3, x0: Math.min(lead[0], lead[2]), x1: Math.max(lead[0], lead[2]), y0: Math.min(lead[1], lead[3]), y1: Math.max(lead[1], lead[3]) } : null;
+      if (leadLine) lines.push(leadLine);
+      best.box.soft = soft;
+      best.box.r = d.r;
       boxes.push(best.box);
-      shown.push({ d, x: best.x, y: best.y, text, cls, lead });
-    }
+      shown.push({ d, x: best.x, y: best.y, text, cls, lead, box: best.box, leadLine });
+      out.forEach((x) => place(x.d));
+    };
+    for (const d of cand) place(d);
     // 引き出し線は名前の下に描く
     const lj = g.selectAll("line.label-lead").data(shown.filter((s) => s.lead), (s) => s.d.p.id);
     lj.exit().remove();
@@ -5154,24 +5181,41 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
     return boxes; // 置いた名前の箱（出来事の名前の置き場を選ぶ placeEvents が使う）
   }
 
-  // 出来事の名前を、人の名前やバブルの少ない所に置く（スマホの狭い図で、右の列の人の名前の後ろに隠れないように）。
-  // 右端（もとの置き場）で何にも重ならなければ動かさない。選んだ所は図の幅に対する割合で覚え、拡大・縮小の途中も同じ所に描く
+  // 出来事の名前を、人の名前・バブル・ほかの出来事の名前にかからない所に置く（スマホの狭い図で、右の列の人の名前の後ろに隠れないように）。
+  // 置き場は、線の上の右端（もとの置き場）→ 線の上の左から順 → 線の下の右端 → 線の下の左から順。
+  // どこに置いてもかかるときは、名前を出さずに線だけにする（人の名前を先に読めるように。指示90 の決まりを、人の名前やバブルとの重なりにも広げた。指示100）。
+  // 選んだ所は図の幅に対する割合で覚え、拡大・縮小の途中も同じ所に描く（drawEvents）
   function placeEvents(g, width, boxes, dots) {
+    const placed = [];
+    const step = Math.max(12, width / 24);
     g.selectAll("g.ev text.event-text").each(function (d) {
-      if (!d || this.getAttribute("visibility") === "hidden") return;
-      const w = textWidth(this.textContent, 10.5), y0 = d.py - 15, y1 = d.py - 1;
-      const cost = (x) => {
-        let c = 0;
-        for (const b of boxes) { const ox = Math.min(x + w, b.x + b.w) - Math.max(x, b.x), oy = Math.min(y1, b.y + b.h) - Math.max(y0, b.y); if (ox > 0 && oy > 0) c += ox * oy; }
-        for (const p of dots) if (p.sx + p.r > x && p.sx - p.r < x + w && p.sy + p.r > y0 && p.sy - p.r < y1) c += p.r * p.r * 1.5;
-        return c;
+      if (!d || d.hide) return;
+      const w = textWidth(this.textContent, 10.5), right = width - 10 - w;
+      // 字の箱（白い縁どりを含む）。線の上は字の下の端が線のすぐ上、線の下は字の上の端が線のすぐ下
+      const free = (x, below) => {
+        const y0 = below ? d.py + 1 : d.py - 15, y1 = y0 + 14;
+        const meets = (b) => x < b.x + b.w && b.x < x + w && y0 < b.y + b.h && b.y < y1;
+        if (boxes.some(meets) || placed.some(meets)) return false;
+        for (const p of dots) {
+          const nx = Math.max(x, Math.min(p.sx, x + w)), ny = Math.max(y0, Math.min(p.sy, y1));
+          if ((nx - p.sx) ** 2 + (ny - p.sy) ** 2 < p.r * p.r) return false;
+        }
+        return true;
       };
-      const right = width - 10 - w;
-      let best = right, bc = cost(right);
-      if (bc > 0) for (let x = 6; x < right; x += Math.max(12, width / 24)) { const c = cost(x); if (c < bc - 1) { bc = c; best = x; } }
-      this.__fx = best === right ? null : best / width;
-      setA(this, "x", best === right ? width - 10 : best);
-      setA(this, "text-anchor", best === right ? "end" : "start");
+      let spot = null;
+      for (const below of [false, true]) {
+        if (free(right, below)) spot = [right, below];
+        else for (let x = 6; x < right; x += step) if (free(x, below)) { spot = [x, below]; break; }
+        if (spot) break;
+      }
+      this.__crowd = !spot;
+      this.__fx = spot && spot[0] !== right ? spot[0] / width : null;
+      this.__fb = !!spot && spot[1];
+      if (spot) placed.push({ x: spot[0], y: spot[1] ? d.py + 1 : d.py - 15, w, h: 14 });
+      setA(this, "x", this.__fx != null ? spot[0] : width - 10);
+      setA(this, "y", this.__fb ? d.py + 11 : d.py - 4);
+      setA(this, "text-anchor", this.__fx != null ? "start" : "end");
+      setA(this, "visibility", this.__crowd ? "hidden" : null);
     });
   }
 
@@ -6380,8 +6424,10 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         lines = lines || [];
         pins.forEach((d) => { const [x, y] = this.pinXY(d); lines.push(d.k === "mid" ? { pts: [x - 2, y, x + 2, y], w: 16 } : { pts: [x, y - 3, x, y - 25], w: 20 }); });
       }
-      const labBoxes = SG.drawLabels(this.gLab, dots, { width: W, height: H, lines, top: 16, bottom: H - 6, pending: this.pending, em: emStill });
-      SG.placeEvents(this.gEv, W, labBoxes || [], dots); // 出来事の名前を、人の名前やバブルの少ない所へ
+      // 名前の箱は、図の上の端から 8 px 下まで置いてよい（列の見出しは図のすぐ上で止まり、図に重ならない。16 px だと、
+      // 上の端の天照大神の名前が上へよけられず、右の孔子の名前と重なっていた。指示100）
+      const labBoxes = SG.drawLabels(this.gLab, dots, { width: W, height: H, lines, top: 8, bottom: H - 6, pending: this.pending, em: emStill });
+      SG.placeEvents(this.gEv, W, labBoxes || [], dots); // 出来事の名前を、人の名前やバブルにかからない所へ（なければ線だけ）
       const labelEl = new Map();
       this.gLab.selectAll("text.node-label").each(function (s) { labelEl.set(s.d.p.id, this); });
       this.labelEl = labelEl;
