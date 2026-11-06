@@ -3379,7 +3379,7 @@ window.SHINTO_ADDITIONS_LOCKED = {"v":1,"iter":300000,"salt":"XiIQXXRhDxkVRoChy3
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=27773b59c9";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=fb3818f1f1";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -11223,8 +11223,8 @@ void main(){
   "use strict";
   const SG = window.SG;
   if (!SG || !SG.SpaceModel || !SG.SpaceGL) return;
-  // 入ったときに数秒だけ出す 1 行の案内。出すかどうかは中島さんの答え待ち（11/6）。true にすると出る
-  const HINT = false;
+  // 入ったときに数秒だけ出す 1 行の案内（11/7 の中島さんの答え「案内よしです」で出す。false にすると出ない）
+  const HINT = true;
   const HINT_TEXT = "名前を打つと探せます ・ ドラッグで回る ・ ホイールで近づく ・ 矢印キーで進む ・ Esc で地図に戻る";
   const FOV = (55 * Math.PI) / 180, NEAR = 0.01, FAR = 2e5, FC = 2 / Math.log2(FAR + 1);
   const MAG_LIM = 6.6, MAG_RANGE = 6.6;
