@@ -1684,6 +1684,57 @@ html.rb-dock .stage.wrap { padding-right: calc(376px + max(var(--gutter), env(sa
 .upd-msg { margin: 8px 0 0; font-size: var(--fs-sm); color: var(--ink-3); }
 .clog .cl-by { color: var(--ink-3); font-size: 12px; }
 
+/* ── 宇宙の 3D 空間（指示101。js/space3d.js）──────────────────
+   パソコンだけ（狭い画面・指で触る端末・動きを減らす設定では「3D」を出さない）。3D の間は 2D の画面を隠すだけで、描き直さない */
+.sp-btn[hidden] { display: none !important; }
+@media (max-width: 899px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) { .sp-btn { display: none !important; } }
+html.sp-on { scrollbar-width: none; }
+html.sp-on .site, html.sp-on .inspector, html.sp-on .pill, html.sp-on .route-box, html.sp-on .pop, html.sp-on .tip, html.sp-on .boot { visibility: hidden !important; }
+.sp-root { position: fixed; inset: 0; z-index: 2147483000; overflow: hidden; contain: strict; color: #f3efe6; font-family: var(--font-body); -webkit-font-smoothing: antialiased; transition: opacity 0.45s ease; }
+.sp-root.out { opacity: 0; pointer-events: none; }
+.sp-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; outline: none; }
+.sp-root.hovering .sp-cv { cursor: pointer; }
+.sp-root.dragging .sp-cv { cursor: grabbing; }
+.sp-labels { position: absolute; inset: 0; pointer-events: none; }
+/* 星の名前（押すと、その星へ飛ぶ）。読みを小さく上に、名前を明朝で */
+.sp-lb { --c: 255 226 170; position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 0; margin: 0; padding: 3px 5px; border: 0; background: none; color: inherit; font: inherit; text-align: left; white-space: nowrap; cursor: pointer; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; will-change: transform, opacity; }
+.sp-root.labels-on .sp-lb.on { opacity: 1; pointer-events: auto; }
+.sp-lb .k { font-size: 9.5px; line-height: 1.2; letter-spacing: 0.2em; color: rgb(var(--c) / 0.72); }
+.sp-lb .n { font-family: "Zen Old Mincho", "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif; font-weight: 700; font-size: 12.5px; line-height: 1.22; letter-spacing: 0.12em; color: #f7f2e7; text-shadow: 0 0 5px rgb(var(--c) / 0.75), 0 0 14px rgb(var(--c) / 0.35), 0 1px 2px rgb(0 0 0 / 0.95); }
+.sp-lb.t1 .n { font-size: 15px; }
+.sp-lb.t0 .n { font-size: 22px; letter-spacing: 0.2em; color: #fff8e6; text-shadow: 0 0 8px rgb(255 214 140 / 0.9), 0 0 24px rgb(255 190 100 / 0.5), 0 1px 2px rgb(0 0 0 / 0.95); }
+.sp-lb.t0 .k { font-size: 11px; letter-spacing: 0.32em; }
+.sp-lb.org .n { letter-spacing: 0.06em; }
+.sp-lb:hover .n, .sp-lb.is-sel .n { color: #fff; text-shadow: 0 0 6px rgb(var(--c) / 1), 0 0 20px rgb(var(--c) / 0.6), 0 1px 2px rgb(0 0 0 / 0.95); }
+.sp-lb.on-route .n::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 6px 2px 0; border-radius: 50%; background: rgb(255 214 140); box-shadow: 0 0 6px rgb(255 200 120); vertical-align: middle; }
+.sp-lb:focus-visible { outline: 1px solid rgb(var(--c) / 0.8); outline-offset: 2px; border-radius: 4px; }
+/* 道の関係の名（師事・家系など。押すと、その先の星へ） */
+.sp-rl { position: absolute; left: 0; top: 0; margin: 0; padding: 2px 7px; border: 1px solid rgb(255 214 150 / 0.28); border-radius: 999px; background: rgb(12 14 24 / 0.55); color: rgb(255 228 182 / 0.92); font: 500 10.5px/1.4 var(--font-body); letter-spacing: 0.14em; white-space: nowrap; cursor: pointer; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; will-change: transform, opacity; }
+.sp-root.labels-on .sp-rl.on { opacity: 1; pointer-events: auto; }
+.sp-rl:hover { border-color: rgb(255 214 150 / 0.7); color: #fff; }
+/* いま見ている星の名（左下。押すものではない） */
+.sp-title { --c: 255 214 150; position: absolute; left: clamp(22px, 3.2vw, 56px); bottom: clamp(22px, 6vh, 64px); max-width: min(620px, 56vw); pointer-events: none; opacity: 0; translate: 0 10px; transition: opacity 0.7s ease, translate 0.7s ease; }
+.sp-title.on { opacity: 1; translate: 0 0; }
+.sp-title .tk { margin: 0 0 2px; font-size: 12px; letter-spacing: 0.34em; color: rgb(var(--c) / 0.8); }
+.sp-title .tn { margin: 0; font-family: "Zen Old Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif; font-weight: 700; font-size: clamp(30px, 3.4vw, 46px); line-height: 1.15; letter-spacing: 0.16em; color: #fbf6ea; text-shadow: 0 0 18px rgb(var(--c) / 0.45), 0 2px 6px rgb(0 0 0 / 0.9); }
+.sp-title .tm { margin: 8px 0 0; font-size: 13px; line-height: 1.6; letter-spacing: 0.08em; color: rgb(236 232 222 / 0.78); }
+/* 検索の行（名前を打ち始めると出る。中島さんの案 A） */
+.sp-search { position: absolute; left: 50%; bottom: clamp(22px, 7vh, 72px); translate: -50% 0; width: min(520px, 72vw); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.sp-root:has(.sp-search[data-open="true"]) .sp-title { opacity: 0; }
+.sp-q { width: 100%; height: 48px; padding: 0 20px; border: 1px solid rgb(255 220 160 / 0.32); border-radius: 999px; background: rgb(8 10 20 / 0.66); color: #fbf6ea; font: 500 18px/1 var(--font-body); letter-spacing: 0.08em; outline: none; caret-color: rgb(255 214 140); opacity: 0; translate: 0 8px; transition: opacity 0.25s ease, translate 0.25s ease, border-color 0.25s ease; backdrop-filter: blur(6px); pointer-events: none; }
+.sp-search[data-open="true"] .sp-q { opacity: 1; translate: 0 0; pointer-events: auto; box-shadow: 0 0 0 1px rgb(255 214 140 / 0.12), 0 0 28px rgb(255 190 110 / 0.18); }
+.sp-sug { list-style: none; margin: 0; padding: 6px; display: none; border-radius: 16px; background: rgb(8 10 20 / 0.72); border: 1px solid rgb(255 220 160 / 0.18); backdrop-filter: blur(6px); pointer-events: auto; }
+.sp-search[data-open="true"] .sp-sug:not(:empty) { display: block; }
+.sp-sug li { --c: 255 214 150; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 12px; padding: 7px 14px; border-radius: 10px; cursor: pointer; }
+.sp-sug li[aria-selected="true"], .sp-sug li:hover { background: rgb(var(--c) / 0.16); }
+.sp-sug .sn { font-family: "Zen Old Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif; font-weight: 700; font-size: 16px; letter-spacing: 0.1em; color: #fbf6ea; text-shadow: 0 0 8px rgb(var(--c) / 0.5); }
+.sp-sug .sk { grid-row: 2; font-size: 11px; letter-spacing: 0.16em; color: rgb(var(--c) / 0.75); }
+.sp-sug .sy { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-family: var(--font-mono); font-size: 12px; color: rgb(236 232 222 / 0.6); }
+.sp-sug .empty { display: block; color: rgb(236 232 222 / 0.7); font-size: 13px; cursor: default; }
+/* 入ったときに数秒だけ出す 1 行の案内（js/space3d.js の HINT。出すかは中島さんの答え待ち） */
+.sp-hint { position: absolute; top: 22px; left: 50%; translate: -50% 0; margin: 0; padding: 6px 16px; border-radius: 999px; background: rgb(8 10 20 / 0.5); color: rgb(236 232 222 / 0.82); font-size: 12.5px; letter-spacing: 0.1em; white-space: nowrap; pointer-events: none; animation: sp-hint 7s ease 2.8s both; }
+@keyframes sp-hint { 0% { opacity: 0; } 8% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
 </style>
 
 <div class="boot" id="boot" role="status" aria-live="polite">
@@ -3328,7 +3379,7 @@ window.SHINTO_ADDITIONS_LOCKED = {"v":1,"iter":300000,"salt":"XiIQXXRhDxkVRoChy3
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=873d16565d";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=71278d3b55";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -5305,7 +5356,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
   // ── 案内（読み方） ────────────────────────────────
   const LEAD = {
     trunk: "神代から平泉澄先生、平泉紀房まで、平泉史学の幹の人を時代の順に、まっすぐ一本の線で結びました（幹の人と枝葉の候補は「平泉史学の幹・選定案」による）。上の木は、ふつうの地面に立つ一本の木で、下から上へ時代の順です。主な根の先が天照大神、ほかの根の先が神武天皇・聖徳太子・天智天皇、幹の真ん中が平泉澄先生、幹の先が平泉紀房で、幹の上には平泉澄先生の門下が葉の冠になって広がります。「幹を巡る」を押すと、金の光が根の先から幹を上り、着いた人では少し止まって、輪が広がり名前が光ります（もう一度押すか、画面に触ると止まります）。幹の人の「枝葉」を押すと、幹から枝が伸びて、その人から分かれる人が銀杏の葉とともに開きます（案の人を先に、そのあとは、データの上で直接つながる人・組織を、平泉澄先生から見た大切さの順に）。幹の間の「間の人」を押すと、二人の時代のあいだにいる人だけを通り、系譜に近い関係（家系・師弟・影響・後援など）でつなぐ、いちばん短い道の人が並びます。名前を押すと札が開きます。",
-    map: "縦は時代と天皇の御代で、下へ読み進めると時代が下ります（同じ年の人が多くて列に収まらない所だけ、少し上下にずらして並べます）。はじめは、よく知られた人と平泉澄先生だけを、名前つきで描きます。人を押したり検索したりすると、その人と平泉澄先生までの道の人が地図に加わり、使うほど描く人が増えていきます（加わった人はこの端末に覚えます。「絞り込みと表示」で、すべての人を出すことも、はじめに戻すこともできます）。いちばん新しく見つけた人のバブルは、次に新しい人を見つけるまで金色に光り、見つけた順番と日時は上の「発見」の欄に残ります。バブルの大きさは、はじめは社会的影響力（世間での知られ方）で、平泉澄先生への近さは「絞り込みと表示」の「点の大きさ」で選べます。平泉澄先生のバブルは、どの決まりでもいちばん大きくします。横は上のタブで選ぶ並べ方（全部で 19 通り）で、切り替えると人と組織が新しい列へ移ります。札を開いていないときは線を描かず、バブルと名前だけを出します。人や組織を押すと札が開き、平泉澄先生までの道すじが一本ずつ順に光って線が残ります（その人のほかの線も出ます）。道すじの人の名前は、線やほかの名前にかからない所に出ます（近くに空きがなければ、少し離して置きます）。図の上にはその札が出ます。札は上の帯をつまんで動かし、右下の角で大きさを変えられます。",
+    map: "縦は時代と天皇の御代で、下へ読み進めると時代が下ります（同じ年の人が多くて列に収まらない所だけ、少し上下にずらして並べます）。はじめは、よく知られた人と平泉澄先生だけを、名前つきで描きます。人を押したり検索したりすると、その人と平泉澄先生までの道の人が地図に加わり、使うほど描く人が増えていきます（加わった人はこの端末に覚えます。「絞り込みと表示」で、すべての人を出すことも、はじめに戻すこともできます）。いちばん新しく見つけた人のバブルは、次に新しい人を見つけるまで金色に光り、見つけた順番と日時は上の「発見」の欄に残ります。バブルの大きさは、はじめは社会的影響力（世間での知られ方）で、平泉澄先生への近さは「絞り込みと表示」の「点の大きさ」で選べます。平泉澄先生のバブルは、どの決まりでもいちばん大きくします。横は上のタブで選ぶ並べ方（全部で 19 通り）で、切り替えると人と組織が新しい列へ移ります。札を開いていないときは線を描かず、バブルと名前だけを出します。人や組織を押すと札が開き、平泉澄先生までの道すじが一本ずつ順に光って線が残ります（その人のほかの線も出ます）。道すじの人の名前は、線やほかの名前にかからない所に出ます（近くに空きがなければ、少し離して置きます）。図の上にはその札が出ます。札は上の帯をつまんで動かし、右下の角で大きさを変えられます。パソコンでは、上の「3D」を押すと、白い図の枠が割れて宇宙の 3D 空間に入ります（平泉澄先生がいちばん大きな恒星で、人は時代と学派の銀河の星や、周りを回る惑星・衛星になります。名前を打ち始めると探せて、その星へ飛び、平泉澄先生への道が光ります。ドラッグで回り込み、ホイールで近づき、矢印キーで進みます。Esc で地図に戻ります）。",
     found: "地図で選んだ人・検索した人と、その人から平泉澄先生への道の人を、見つけた順番と日時で並べています。同じ操作で見つけた人は一つのまとまりにし、何をしたときに見つけたか（だれを選んだか、どの道を調べたか）を上に書いています。名前を押すと札が開きます。記録はこの端末にだけ残ります。",
     updates: "この端末で地図に加わった人を、新しい順に、解放された順番・日時・名前で並べています。地図の版の更新の記録は、コードを入れると、この端末の中で開きます。",
     ancestry: "起点の人から、師や祖を一段ずつたどります。大陸や西洋の学者の、さらに先までさかのぼれます。「全部ひらく」を押すと、傍系（ほかの師・ほかの門下）まで残らず開きます。縦の位置は実際の年代と天皇の御代を表し、下へ読み進めると時代が下ります。短冊を押すと、図の上にその人の札が出ます。",
@@ -5657,7 +5708,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
           <button type="button" class="btn" data-act="filters" aria-label="絞り込み" aria-haspopup="dialog" aria-controls="filterPop">${ICON_FILTER}<span class="l">絞り込み</span><span class="n" hidden></span></button>
           <div class="zoom" role="group" aria-label="縦の倍率"><button type="button" data-act="kout" aria-label="縦を狭く">−</button><span id="kLabel">${K_STEPS[this.kIndex].label}</span><button type="button" data-act="kin" aria-label="縦を広く">＋</button></div>
           <button type="button" class="btn" data-act="fit" aria-label="全体" aria-pressed="false" title="神代から令和までの全部を、一画面に収めて見る">${ICON_FIT}<span class="l">全体</span></button>
-          ${SG.fullBtn()}${SG.guideBtn()}
+          ${SG.fullBtn()}${SG.Space3D ? SG.Space3D.button() : ""}${SG.guideBtn()}
           <button type="button" class="btn rt-btn" data-act="route" aria-label="道を調べる" aria-pressed="false" title="二人のあいだの道を、乗換案内のように調べる">${ICON_ROUTE}<span class="l">道を調べる</span></button>
           <button type="button" class="btn" data-act="focus" aria-label="平泉澄先生へ"><span class="lf">平泉澄先生へ</span><span class="sf">先生へ</span></button>
         </div>
@@ -5718,10 +5769,12 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         if (act === "kout") this.zoomStep(-1);
         if (act === "fit") this.toggleFit();
         if (act === "full") SG.setFull(!SG.state.full);
+        if (act === "space" && SG.Space3D) SG.Space3D.enter(b); // 宇宙の 3D 空間（指示101。js/space3d.js）
         if (act === "focus") { SG.select(SG.FOCUS); this.focus(SG.FOCUS); }
         if (act === "route") SG.setRoute(SG.state.route === "to" ? "focus" : "to");
       });
       this.syncRouteBtn();
+      if (SG.Space3D) SG.Space3D.reveal(host); // 「3D」は、WebGL2 で速く描けるパソコンだと分かってから出す
       // 狭い画面では分け方の説明を一行に縮め、押すと全文を出す
       host.querySelector("#axisRule").addEventListener("click", (ev) => ev.currentTarget.classList.toggle("open"));
       this.ts = new SG.TimeScroll(host.querySelector("#mapBody"), {
@@ -5731,7 +5784,8 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         onZoomFrame: () => this.zoomFrame(),
         onZoomStart: () => this.edgesAway(true),
         onHScroll: (sl) => this.syncHead(sl),
-        onResize: () => { if (this.ts && Math.abs(this.ts.viewW() - (this.lastW || 0)) > 24) this.layout(!!this.cols); },
+        // 宇宙の 3D 空間の間（全画面への切り替えなどで大きさが変わる）は並べ直さず、2D に戻ったときに一度だけ（spaceDone）
+        onResize: () => { if (SG.spaceOn) { this.spaceResize = true; return; } if (this.ts && Math.abs(this.ts.viewW() - (this.lastW || 0)) > 24) this.layout(!!this.cols); },
         onK: () => this.layout(true)
       });
       const g = this.ts.g;
@@ -6927,6 +6981,13 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
 
     // いま地図に出している学統の外の人の印（選んで浮かべた人が替わったかを見る）
     outerSig() { return SG.nodes.filter((n) => n.outer && SG.visible(n)).map((n) => n.id).join(","); },
+
+    // 宇宙の 3D 空間から戻ったとき: その間に図の幅が変わっていれば並べ直す
+    spaceDone() {
+      if (!this.spaceResize) return;
+      this.spaceResize = false;
+      if (this.ts && Math.abs(this.ts.viewW() - (this.lastW || 0)) > 24) this.layout(!!this.cols);
+    },
 
     focus(id) {
       const n = this.byId && this.byId.get(id);
@@ -9590,6 +9651,2337 @@ void main() {
   };
 
   SG.views.trunk = view;
+})();
+
+</script>
+<!-- 宇宙の 3D 空間（指示101）: 並べ方 → 描く層（WebGL2）→ 入り口と動かし方 -->
+<script>
+/* 宇宙の 3D 空間の並べ方（指示101）。描くのは js/space-gl.js、動かすのは js/space3d.js。
+ * - 平泉澄先生をいちばん大きな恒星（原点）にする。先生と直接の師弟・家族と、先生が創った組織は、先生の周りを回る惑星（平泉澄先生の太陽系）。
+ * - ほかの人・組織も、つながりの強い（師事・家系・養子・跡継ぎ・私淑・伝承・後援・創設）、より名の知られた人の周りを回る惑星・衛星にする。
+ *   周りを回る相手（主星）は、活動の年が 80 年以内の人だけ（遠い時代の人の周りは回らない。それぞれの時代の所に残る）。
+ *   組織への所属・思想の継承・交流・批判では回らない（大きな組織や昔の思想家に、時代の違う人が集まりすぎるため）。
+ * - だれの周りも回らない人は恒星。平泉澄先生から時代が離れるほど外へ（神代がいちばん外。年の差は対数で縮める）、
+ *   学派の系統ごとに渦の腕に並べる（銀河の円盤）。先生と同じ時代と、あとの時代の人は、中心の膨らみ（円盤の上下）に置く。
+ *   系の大きさ（いちばん外の軌道）が重ならないように、大きい系から順に置き、重なれば近くの空いた所へずらす。
+ * - 軌道は円。内側ほど速く回る（ケプラーの法則のように、周期は半径の 1.5 乗）。一つの系の中は同じ向きに回る。
+ * 並べ方は人の id から決まる乱数で決めるので、開くたびに同じ形になる。毎こまの位置は update(t) が、確保済みの配列に書く。
+ */
+(function () {
+  "use strict";
+  const SG = window.SG;
+  if (!SG) return;
+  const F = SG.FOCUS;
+  // 主星に選べる関係と重み（人と人の強い結びつき）
+  const HOST_W = { shiji: 1, kakei: 0.9, yoshi: 0.9, keisho: 0.8, shishuku: 0.6, densho: 0.5, koen: 0.5, org_found: 0.7 };
+  const CONF_W = { 確実: 1, 有力: 0.9, 伝承: 0.8, 要確認: 0.6 };
+  const FAME_B = [0, 40, 20, 10, 4, 0]; // 世間での知られ方（core.js の inf の段）を、重さに足す
+  const T_MAX = 80;
+  // 銀河の大きさ（1 は、ふつうの恒星の半径くらい）
+  const GAL = { A: 1150, TAU: 20, TWIST: 1.05, ARM_W: 0.2 };
+
+  // id から決まる乱数（同じ人はいつも同じ値）
+  function seedOf(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function rng(seed) {
+    let a = seed >>> 0;
+    return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const gauss = (r) => Math.sqrt(-2 * Math.log(1 - r() * 0.999999)) * Math.cos(2 * Math.PI * r());
+  // 軸 n から、乱数で決めた向きに ang（ラジアン）まで傾けた単位ベクトル
+  function tilt(n, ang, r) {
+    const [ux, uy, uz] = perp(n), vx = n[1] * uz - n[2] * uy, vy = n[2] * ux - n[0] * uz, vz = n[0] * uy - n[1] * ux;
+    const az = r() * Math.PI * 2, ca = Math.cos(az), sa = Math.sin(az), c = Math.cos(ang), s = Math.sin(ang);
+    const x = n[0] * c + (ux * ca + vx * sa) * s, y = n[1] * c + (uy * ca + vy * sa) * s, z = n[2] * c + (uz * ca + vz * sa) * s;
+    const l = Math.hypot(x, y, z) || 1;
+    return [x / l, y / l, z / l];
+  }
+  // n に垂直な単位ベクトル
+  function perp(n) {
+    const ax = Math.abs(n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+    let x = n[1] * ax[2] - n[2] * ax[1], y = n[2] * ax[0] - n[0] * ax[2], z = n[0] * ax[1] - n[1] * ax[0];
+    const l = Math.hypot(x, y, z) || 1;
+    return [x / l, y / l, z / l];
+  }
+
+  // CSS の色（#hex・oklch など）を RGB（0〜1）に直す。読めなければ null
+  let c1 = null;
+  const rgbCache = new Map();
+  function rgb(css) {
+    css = (css || "").trim();
+    if (!css) return null;
+    if (rgbCache.has(css)) return rgbCache.get(css);
+    let v = null;
+    const m = /^#([0-9a-f]{6})$/i.exec(css);
+    if (m) { const k = parseInt(m[1], 16); v = [(k >> 16) / 255, ((k >> 8) & 255) / 255, (k & 255) / 255]; }
+    else if (typeof document !== "undefined" && document.createElement) {
+      try {
+        if (!c1) { const cv = document.createElement("canvas"); cv.width = cv.height = 1; c1 = cv.getContext("2d", { willReadFrequently: true }); }
+        if (c1) {
+          c1.fillStyle = "#010203"; c1.fillStyle = css;
+          if (String(c1.fillStyle).toLowerCase() !== "#010203") { c1.clearRect(0, 0, 1, 1); c1.fillRect(0, 0, 1, 1); const d = c1.getImageData(0, 0, 1, 1).data; v = [d[0] / 255, d[1] / 255, d[2] / 255]; }
+        }
+      } catch (e) { v = null; }
+    }
+    rgbCache.set(css, v);
+    return v;
+  }
+  function cssColor(varExpr) {
+    const m = /var\((--[\w-]+)\)/.exec(varExpr || "");
+    if (!m || typeof getComputedStyle !== "function") return null;
+    return rgb(getComputedStyle(document.documentElement).getPropertyValue(m[1]));
+  }
+  // 学派の系統の色が読めないとき（node の中の検査など）の決まった色（css の --c1〜--c8・--c0）
+  const FAM_FALLBACK = { kodai: [0.17, 0.44, 0.79], ise: [0.89, 0.4, 0.18], yoshida: [0.08, 0.64, 0.48], kimon: [0.87, 0.62, 0], mito: [0.88, 0.38, 0.61], kokugaku: [0.12, 0.54, 0.23], kindai: [0.4, 0.32, 0.81], hiraizumi: [0.84, 0.25, 0.29], other: [0.55, 0.56, 0.59] };
+  // 学派に属さない人の星の色（本物の星の色: 赤みの橙から青白まで）
+  const STAR_TINTS = [[1, 0.72, 0.45], [1, 0.82, 0.6], [1, 0.9, 0.76], [1, 0.96, 0.9], [0.92, 0.95, 1], [0.78, 0.86, 1]];
+
+  // ローマ字をひらがなに（検索で、日本語入力を使わずに打った読みでも探せるように）
+  const RO = (() => {
+    const t = {};
+    const add = (k, v) => { t[k] = v; };
+    "a:あ,i:い,u:う,e:え,o:お,ka:か,ki:き,ku:く,ke:け,ko:こ,sa:さ,si:し,shi:し,su:す,se:せ,so:そ,ta:た,ti:ち,chi:ち,tu:つ,tsu:つ,te:て,to:と,na:な,ni:に,nu:ぬ,ne:ね,no:の,ha:は,hi:ひ,hu:ふ,fu:ふ,he:へ,ho:ほ,ma:ま,mi:み,mu:む,me:め,mo:も,ya:や,yu:ゆ,yo:よ,ra:ら,ri:り,ru:る,re:れ,ro:ろ,wa:わ,wo:を,ga:が,gi:ぎ,gu:ぐ,ge:げ,go:ご,za:ざ,zi:じ,ji:じ,zu:ず,ze:ぜ,zo:ぞ,da:だ,di:ぢ,du:づ,de:で,do:ど,ba:ば,bi:び,bu:ぶ,be:べ,bo:ぼ,pa:ぱ,pi:ぴ,pu:ぷ,pe:ぺ,po:ぽ,va:ゔぁ,vi:ゔぃ,vu:ゔ,ve:ゔぇ,vo:ゔぉ,fa:ふぁ,fi:ふぃ,fe:ふぇ,fo:ふぉ,je:じぇ,che:ちぇ,she:しぇ,xa:ぁ,xi:ぃ,xu:ぅ,xe:ぇ,xo:ぉ,la:ぁ,li:ぃ,lu:ぅ,le:ぇ,lo:ぉ,xtu:っ,ltu:っ,xya:ゃ,xyu:ゅ,xyo:ょ,-:ー"
+      .split(",").forEach((p) => { const [k, v] = p.split(":"); add(k, v); });
+    const ys = { k: "き", s: "し", t: "ち", n: "に", h: "ひ", m: "み", r: "り", g: "ぎ", z: "じ", j: "じ", d: "ぢ", b: "び", p: "ぴ" };
+    Object.entries(ys).forEach(([c, h]) => { add(c + "ya", h + "ゃ"); add(c + "yu", h + "ゅ"); add(c + "yo", h + "ょ"); });
+    ["sh", "ch", "j"].forEach((c) => { const h = c === "j" ? "じ" : c === "sh" ? "し" : "ち"; add(c + "a", h + "ゃ"); add(c + "u", h + "ゅ"); add(c + "o", h + "ょ"); });
+    return t;
+  })();
+  function romaji(s) {
+    s = s.toLowerCase();
+    let out = "", i = 0;
+    while (i < s.length) {
+      const c = s[i];
+      if (c === "n" && (i + 1 >= s.length || (s[i + 1] !== "y" && !/[aiueo]/.test(s[i + 1])))) { out += "ん"; i += s[i + 1] === "n" || s[i + 1] === "'" ? 2 : 1; continue; }
+      if (i + 1 < s.length && c === s[i + 1] && /[bcdfghjkmpqrstvwxyz]/.test(c)) { out += "っ"; i++; continue; }
+      let hit = false;
+      for (let L = 3; L >= 1; L--) {
+        const k = s.substr(i, L);
+        if (RO[k]) { out += RO[k]; i += L; hit = true; break; }
+      }
+      if (!hit) { out += c; i++; }
+    }
+    return out;
+  }
+
+  let model = null;
+  function build() {
+    if (model) return model;
+    const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
+    const nodes = SG.nodes, N = nodes.length;
+    const idx = new Map(nodes.map((n, i) => [n.id, i]));
+    const fi = idx.get(F);
+    const FL0 = nodes[fi].fl;
+    const mass = new Float64Array(N);
+    nodes.forEach((n, i) => { mass[i] = n.id === F ? 1e9 : n.degree + FAME_B[n.inf != null ? n.inf : 5]; });
+
+    // ── 主星を決める（重さの順は id で同点を分けるので、輪にならない）──
+    const host = new Int32Array(N).fill(-1);
+    const hostEdge = new Array(N).fill(null);
+    for (let i = 0; i < N; i++) {
+      if (i === fi) continue;
+      const x = nodes[i];
+      let best = -1, bs = 0, be = null;
+      for (const e of SG.incident.get(x.id)) {
+        const w = HOST_W[e.type];
+        if (!w) continue;
+        const hid = e.s === x.id ? e.t : e.s, j = idx.get(hid);
+        if (j == null || mass[j] < mass[i] || (mass[j] === mass[i] && hid > x.id)) continue;
+        const d = Math.abs(nodes[j].fl - x.fl);
+        if (!(d <= T_MAX)) continue;
+        const s = w * (CONF_W[e.conf] || 0.7) * Math.exp(-((d / 60) * (d / 60))) * Math.log(2 + Math.min(mass[j], 300));
+        if (s > bs) { bs = s; best = j; be = e; }
+      }
+      host[i] = best;
+      hostEdge[i] = be;
+    }
+    // 入れ子は 3 段まで（恒星 → 惑星 → 衛星 → その衛星）。もっと深い人は、主星の主星の周りを回る（系が大きくなりすぎないように）
+    const MAX_DEPTH = 3;
+    {
+      const dep = new Int8Array(N).fill(-1);
+      const depOf = (i) => { if (dep[i] >= 0) return dep[i]; let d = 0, h = host[i]; while (h >= 0) { d++; h = host[h]; } return d; };
+      for (let pass = 0; pass < 12; pass++) {
+        let changed = false;
+        for (let i = 0; i < N; i++) {
+          if (host[i] < 0) continue;
+          if (depOf(i) > MAX_DEPTH) { host[i] = host[host[i]]; changed = true; }
+        }
+        if (!changed) break;
+      }
+    }
+    const kids = Array.from({ length: N }, () => []);
+    for (let i = 0; i < N; i++) if (host[i] >= 0) kids[host[i]].push(i);
+    // 親が先に来る順（根から幅優先）
+    const order = new Int32Array(N);
+    const depth = new Uint8Array(N);
+    const sysRoot = new Int32Array(N);
+    let qn = 0;
+    for (let i = 0; i < N; i++) if (host[i] < 0) { order[qn++] = i; sysRoot[i] = i; }
+    for (let q = 0; q < qn; q++) { const u = order[q]; for (const v of kids[u]) { depth[v] = Math.min(255, depth[u] + 1); sysRoot[v] = sysRoot[u]; order[qn++] = v; } }
+
+    // ── 大きさ・明るさ・色 ──
+    const R = new Float32Array(N), L = new Float32Array(N), col = new Float32Array(N * 3), seed = new Float32Array(N);
+    const kind = new Uint8Array(N); // 0: 平泉澄先生（太陽）1: 恒星 2: 惑星・衛星
+    const isOrg = new Uint8Array(N);
+    const famIdx = new Uint8Array(N);
+    const famIds = SG.FAMILIES.map((f) => f.id);
+    const famCol = SG.FAMILIES.map((f) => cssColor(f.color) || FAM_FALLBACK[f.id] || FAM_FALLBACK.other);
+    for (let k = 0; k < qn; k++) {
+      const i = order[k], n = nodes[i], h = host[i];
+      const r = rng(seedOf(n.id));
+      seed[i] = r();
+      isOrg[i] = n.isOrg ? 1 : 0;
+      const fam = Math.max(0, famIds.indexOf(n.s));
+      famIdx[i] = fam;
+      if (i === fi) { kind[i] = 0; R[i] = 15; L[i] = 16000; }
+      else if (h < 0) { kind[i] = 1; R[i] = Math.min(4.6, 1.0 + 0.8 * Math.log2(1 + mass[i] / 3)); L[i] = 34 * Math.pow(R[i] / 1.3, 2.6); }
+      else { kind[i] = 2; R[i] = Math.max(0.2, Math.min(0.55 * R[h], 0.3 + 0.21 * Math.log2(1 + mass[i]))); L[i] = 0.9 * R[i] * R[i]; }
+      if (n.outer) { R[i] *= 0.7; L[i] *= 0.4; }
+      let c = famCol[fam];
+      if (famIds[fam] === "other" && kind[i] !== 2) c = STAR_TINTS[Math.floor(r() * STAR_TINTS.length) % STAR_TINTS.length];
+      if (i === fi) c = [1.0, 0.82, 0.52]; // 平泉澄先生の太陽は、金色の白（学派の色ではなく、太陽の色）
+      col[i * 3] = c[0]; col[i * 3 + 1] = c[1]; col[i * 3 + 2] = c[2];
+    }
+
+    // ── 軌道（子から親へ: 系の広がり ext を先に決める）──
+    const ext = new Float32Array(N), orbA = new Float32Array(N), orbPh = new Float32Array(N), orbW = new Float32Array(N);
+    const orbU = new Float32Array(N * 3), orbV = new Float32Array(N * 3), sysN = new Float32Array(N * 3);
+    // 系の向き（根は銀河の北から少し傾け、衛星を持つ惑星はさらに傾ける）
+    for (let k = 0; k < qn; k++) {
+      const i = order[k], r = rng(seedOf(nodes[i].id + "#n"));
+      const base = host[i] < 0 ? [0, 1, 0] : [sysN[host[i] * 3], sysN[host[i] * 3 + 1], sysN[host[i] * 3 + 2]];
+      const n = tilt(base, (host[i] < 0 ? 0.42 : 0.55) * r(), r);
+      sysN.set(n, i * 3);
+    }
+    // 子は、小さい系から内側の軌道へ。一つの軌道（輪）に、弧の長さが収まるだけ並べる（同じ速さで回るので、ぶつからない）。
+    // 平泉澄先生の惑星だけは、一つずつ別の軌道に置く（太陽系のように）
+    const FILL = 0.72;
+    for (let k = qn - 1; k >= 0; k--) {
+      const i = order[k], ch = kids[i];
+      if (!ch.length) { ext[i] = R[i]; continue; }
+      const solo = i === fi;
+      const gap = (0.7 + 0.12 * R[i]) * (solo ? 2.6 : 1);
+      const list = ch.slice().sort((a, b) => ext[a] - ext[b] || (nodes[a].id < nodes[b].id ? -1 : 1));
+      const r = rng(seedOf(nodes[i].id + "#o"));
+      const n0 = [sysN[i * 3], sysN[i * 3 + 1], sysN[i * 3 + 2]];
+      let prevR = 0, prevMax = 0, li = 0;
+      while (li < list.length) {
+        const first = ext[list[li]];
+        let rr = prevR ? prevR + prevMax + first + gap : R[i] * 2.3 + 0.6 + first;
+        const members = [];
+        let used = 0, maxE = first;
+        while (li < list.length) {
+          const c = list[li], e = ext[c], need = 2 * e + gap;
+          const rNeed = prevR ? prevR + prevMax + e + gap : R[i] * 2.3 + 0.6 + e;
+          const r2 = Math.max(rr, rNeed);
+          if (members.length && (solo || used + need > Math.PI * 2 * r2 * FILL)) break;
+          rr = r2;
+          members.push(c);
+          used += need;
+          if (e > maxE) maxE = e;
+          li++;
+        }
+        // 輪の面と回る速さは一つ。弧の余りは等しく分ける
+        const nrm = tilt(n0, (solo ? 0.16 : 0.2) * r(), r);
+        const u = perp(nrm), v = [nrm[1] * u[2] - nrm[2] * u[1], nrm[2] * u[0] - nrm[0] * u[2], nrm[0] * u[1] - nrm[1] * u[0]];
+        const P = Math.max(9, Math.min(900, 15 * Math.pow(rr / (R[i] * 3), 1.5)));
+        const slack = (Math.PI * 2 * rr - used) / members.length;
+        let arc = r() * Math.PI * 2 * rr;
+        members.forEach((c) => {
+          const need = 2 * ext[c] + gap;
+          orbA[c] = rr;
+          orbPh[c] = (arc + need / 2) / rr;
+          arc += need + slack;
+          orbW[c] = (Math.PI * 2) / P;
+          orbU.set(u, c * 3);
+          orbV.set(v, c * 3);
+        });
+        prevR = rr;
+        prevMax = maxE;
+      }
+      ext[i] = prevR + prevMax;
+    }
+
+    // ── 恒星を銀河に置く ──
+    const base = new Float64Array(N * 3);
+    const E0 = ext[fi];
+    const rho0 = E0 * 1.9 + 50;
+    const roots = [];
+    for (let i = 0; i < N; i++) if (host[i] < 0 && i !== fi) roots.push(i);
+    const target = new Map();
+    const namedArms = famIds.filter((f) => f !== "other").length;
+    roots.forEach((i) => {
+      const n = nodes[i], r = rng(seedOf(n.id + "#g")), dt = n.fl - FL0, fam = famIds[famIdx[i]];
+      let th = fam === "other" ? r() * Math.PI * 2 : (famIdx[i] / namedArms) * Math.PI * 2 + gauss(r) * GAL.ARM_W;
+      let p;
+      if (dt < -8) {
+        const rho = rho0 + GAL.A * Math.log(1 + -dt / GAL.TAU);
+        th += GAL.TWIST * Math.log(rho / rho0);
+        p = [rho * Math.cos(th), gauss(r) * (0.035 * rho + 8), rho * Math.sin(th)];
+      } else {
+        const rr = rho0 * 0.62 + GAL.A * 0.55 * Math.log(1 + Math.abs(dt) / GAL.TAU);
+        const el = dt > 8 ? (r() < 0.5 ? -1 : 1) * (0.32 + 0.62 * r()) : gauss(r) * 0.12;
+        p = [rr * Math.cos(el) * Math.cos(th), rr * Math.sin(el), rr * Math.cos(el) * Math.sin(th)];
+      }
+      target.set(i, p);
+    });
+    // 大きい系から置き、重なれば近くの空いた所へ（恒星は数百なので、置いた系を全部見る）
+    const placed = [];
+    const addGrid = (i) => { placed.push(i); };
+    const free = (p, e) => {
+      for (let k = 0; k < placed.length; k++) {
+        const j = placed[k], dx = base[j * 3] - p[0], dy = base[j * 3 + 1] - p[1], dz = base[j * 3 + 2] - p[2], need = (ext[j] + e) * 1.35 + 6;
+        if (dx * dx + dy * dy + dz * dz < need * need) return false;
+      }
+      return true;
+    };
+    base[fi * 3] = base[fi * 3 + 1] = base[fi * 3 + 2] = 0;
+    addGrid(fi);
+    let moved = 0;
+    roots.slice().sort((a, b) => ext[b] - ext[a] || (nodes[a].id < nodes[b].id ? -1 : 1)).forEach((i) => {
+      const t = target.get(i), r = rng(seedOf(nodes[i].id + "#p"));
+      let p = t;
+      if (!free(p, ext[i])) {
+        moved++;
+        const step = Math.max(6, ext[i] * 0.8);
+        for (let k = 1; k <= 400; k++) {
+          const d = step * Math.pow(k, 0.62), a = r() * Math.PI * 2, y = (r() - 0.5) * 0.5;
+          const q = [t[0] + d * Math.cos(a), t[1] + d * y, t[2] + d * Math.sin(a)];
+          if (free(q, ext[i])) { p = q; break; }
+        }
+      }
+      base[i * 3] = p[0]; base[i * 3 + 1] = p[1]; base[i * 3 + 2] = p[2];
+      addGrid(i);
+    });
+
+    // ── 名前の出しやすさ（大きいほど先に名前を出す）──
+    const prio = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const n = nodes[i];
+      prio[i] = i === fi ? 1000 : Math.log2(1 + n.degree) + (SG.famous.has(n.id) ? 4 : 0) + (n.inf != null && n.inf <= 2 ? 2 : 0) + (kind[i] === 1 ? 1 : 0) - (n.outer ? 3 : 0);
+    }
+    // 検索の索引（名前・よみ・短い名）
+    const norm = (s) => (s || "").normalize("NFKC").replace(/\s/g, "").replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60)).toLowerCase();
+    const index = nodes.map((n, i) => ({ i, a: norm(n.n), b: norm(n.k), c: norm(n.short), d: simp(norm(n.k)) }));
+
+    let galR = 0;
+    for (let i = 0; i < N; i++) { const d = Math.hypot(base[i * 3], base[i * 3 + 1], base[i * 3 + 2]) + ext[i]; if (d > galR) galR = d; }
+    const pos = new Float64Array(N * 3);
+    model = {
+      N, nodes, idx, fi, host, hostEdge, kids, order, depth, sysRoot, kind, isOrg, famIdx, famIds, famCol, R, L, col, seed, mass, prio,
+      ext, orbA, orbPh, orbW, orbU, orbV, sysN, base, pos, rho0, galR, E0, index, norm, romaji, GAL,
+      stats: { ms: 0, roots: roots.length + 1, moved, solar: 0 }
+    };
+    model.stats.solar = (function count(i) { return 1 + kids[i].reduce((s, c) => s + count(c), 0); })(fi);
+    update(0);
+    model.stats.ms = Math.round(((typeof performance !== "undefined" ? performance.now() : Date.now()) - t0) * 10) / 10;
+    return model;
+  }
+
+  // t 秒のときの、すべての星の位置（世界の座標）を pos に書く。新しいメモリは使わない
+  function update(t) {
+    const m = model, pos = m.pos, base = m.base, order = m.order, host = m.host, A = m.orbA, P = m.orbPh, W = m.orbW, U = m.orbU, V = m.orbV, N = m.N;
+    for (let k = 0; k < N; k++) {
+      const i = order[k], h = host[i], o = i * 3;
+      if (h < 0) { pos[o] = base[o]; pos[o + 1] = base[o + 1]; pos[o + 2] = base[o + 2]; continue; }
+      const ph = P[i] + W[i] * t, c = Math.cos(ph) * A[i], s = Math.sin(ph) * A[i], q = h * 3;
+      pos[o] = pos[q] + U[o] * c + V[o] * s;
+      pos[o + 1] = pos[q + 1] + U[o + 1] * c + V[o + 1] * s;
+      pos[o + 2] = pos[q + 2] + U[o + 2] * c + V[o + 2] * s;
+    }
+  }
+
+  // ローマ字の長音は書かないことが多い（Shōin → shoin）ので、ローマ字で探すときは、お段のあとの「う」と「ー」を省いて比べる
+  function simp(s) { return s.replace(/([おこそとのほもよろごぞどぼぽょ])う/g, "$1").replace(/ー/g, ""); }
+  // 名前・よみ（ひらがな・カタカナ・ローマ字）で探す。app.js の検索と同じ並べ方（前方一致 → 含む → つながりの多い順）
+  function search(text, max) {
+    const m = build();
+    const raw = (text || "").trim();
+    if (!raw) return [];
+    const t = m.norm(raw);
+    const ro = /^[a-z' -]+$/i.test(raw) ? simp(m.norm(romaji(raw.replace(/[\s']/g, "")))) : null;
+    const score = (x) => {
+      if (x.a.startsWith(t) || x.b.startsWith(t) || (ro && x.d.startsWith(ro))) return 0;
+      if (x.a.includes(t) || x.b.includes(t) || (x.c && x.c.includes(t)) || (ro && ro.length > 1 && x.d.includes(ro))) return 1;
+      return 9;
+    };
+    const out = [];
+    for (const x of m.index) { const s = score(x); if (s < 9) out.push([s, x.i]); }
+    out.sort((p, q) => p[0] - q[0] || m.nodes[q[1]].degree - m.nodes[p[1]].degree);
+    return out.slice(0, max || 6).map((p) => p[1]);
+  }
+
+  SG.SpaceModel = { build, update, search, romaji, rgb, cssColor, seedOf, rng, get model() { return model; } };
+})();
+
+</script>
+<script>
+/* 宇宙の 3D 空間を描く層（指示101）。WebGL2 を手で書く（ライブラリは使わない。build.mjs は js を普通の script に埋め込むため）。
+ * 並べ方は js/space-model.js、動かし方・名前・検索は js/space3d.js。
+ * - 星の位置は、毎こま js/space3d.js が「カメラから見た位置」（倍精度で引いてから単精度）にして、数の画像（RGBA32F）に一度だけ送る。
+ *   星・光・軌道・道は、その画像を番号で読む（同じ位置を何度も送らない）。
+ * - 星と惑星は四角い板に描き、板の上で球との交わりを計算する（インスタンス描画で一度に）。縁は alpha-to-coverage でなめらかに。
+ *   遠くて 1 画素より小さい星は、点の光だけを描く。明るさは距離の 2 乗で弱め（等級のように対数で見せる）、見かけの大きさは遠近で変わる。
+ * - 奥行きは対数の深度（近い 0.01 から遠い 20 万まで、一つの深度の箱で足りるように）。
+ * - 背景の星雲は、立方体の画像に初めに一度だけ描いておき、毎こまはそれを読むだけ。
+ * - 白い図の枠が割れる場面（js/space3d.js の enter）は、破片ごとの動きを式で決め、頂点の台本で動かす（毎こまの計算なし）。
+ */
+(function () {
+  "use strict";
+  const SG = window.SG;
+  if (!SG) return;
+
+  const HEAD = "#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\nprecision highp sampler3D;\n";
+  // 模様のもと: 64×64×64 の雑音の画像を一度だけ作り、読むだけにする（式で雑音を作ると、台本の準備に 1 秒以上かかったため）
+  const NOISE = `
+uniform sampler3D u_noise;
+float fbm(vec3 p){ float s = 0.0, a = 0.5; for (int k = 0; k < 4; k++){ s += a * texture(u_noise, p * 0.015625).r; p = p * 2.02 + vec3(0.171, 0.37, 0.93); a *= 0.5; } return s * 1.0667; }
+`;
+  // どの台本にも入れる: カメラ・投影・対数の深度・星の数の画像の読み方
+  const COMMON = `
+uniform mat3 u_view; uniform mat4 u_proj; uniform float u_fc; uniform vec2 u_res; uniform float u_focal; uniform float u_time;
+uniform sampler2D u_dyn; uniform sampler2D u_sta;
+vec4 dyn0(int i){ return texelFetch(u_dyn, ivec2((i % 64) * 2, i / 64), 0); }
+vec4 dyn1(int i){ return texelFetch(u_dyn, ivec2((i % 64) * 2 + 1, i / 64), 0); }
+vec4 sta0(int i){ return texelFetch(u_sta, ivec2((i % 64) * 2, i / 64), 0); }
+vec4 sta1(int i){ return texelFetch(u_sta, ivec2((i % 64) * 2 + 1, i / 64), 0); }
+vec4 project(vec3 v){ vec4 p = u_proj * vec4(v, 1.0); p.z = (log2(max(1e-6, 1.0 + p.w)) * u_fc - 1.0) * p.w; return p; }
+`;
+  const CULL = "gl_Position = vec4(2.0, 2.0, 2.0, 1.0);";
+
+  // ── 星と惑星（球）──
+  const BODY_VS = HEAD + COMMON + `
+in vec2 a_q;
+out vec3 v_vp; out vec3 v_c; out float v_r; out vec4 v_col; out vec4 v_misc; out vec3 v_lw;
+void main(){
+  int i = gl_InstanceID;
+  vec4 d0 = dyn0(i), d1 = dyn1(i), s0 = sta0(i), s1 = sta1(i);
+  float R = s0.x;
+  vec3 c = u_view * d0.xyz;
+  float z = -c.z;
+  float rpx = R * u_focal / max(z, 1e-6);
+  if (d0.w <= 0.002 || z <= R * 1.05 || rpx < 0.7) { ${CULL} return; }
+  float k = z / sqrt(max(z * z - R * R, 1e-9));
+  vec3 vp = c + vec3(a_q * R * k * 1.3, 0.0);
+  gl_Position = project(vp);
+  v_vp = vp; v_c = c; v_r = R; v_col = vec4(s1.rgb, s0.y); v_misc = vec4(s0.z, s0.w, d0.w, d1.w); v_lw = d1.xyz;
+}`;
+  const BODY_FS = HEAD + COMMON + NOISE + `
+in vec3 v_vp; in vec3 v_c; in float v_r; in vec4 v_col; in vec4 v_misc; in vec3 v_lw;
+out vec4 o;
+void main(){
+  vec3 dir = normalize(v_vp);
+  float b = dot(dir, v_c);
+  float disc = b * b - (dot(v_c, v_c) - v_r * v_r);
+  float aa = clamp(0.5 + disc / max(fwidth(disc), 1e-12), 0.0, 1.0);
+  if (aa <= 0.0) discard;
+  float t = b - sqrt(max(disc, 0.0));
+  vec3 P = dir * t;
+  gl_FragDepth = log2(1.0 + max(-P.z, 1e-6)) * u_fc * 0.5;
+  vec3 N = normalize(P - v_c);
+  mat3 iv = transpose(u_view);
+  vec3 Nw = iv * N;
+  float mu = clamp(dot(N, -dir), 0.0, 1.0);
+  float kind = v_col.w, seed = v_misc.x, isOrg = v_misc.y, hi = v_misc.w;
+  vec3 col = v_col.rgb;
+  vec3 c;
+  if (kind < 1.5) {
+    // 恒星: 中心は白に近く、縁ほど暗く赤みを帯びる（周辺減光）。表面の細かい粒（対流の模様）がゆっくり動く。平泉澄先生の太陽には小さな黒点
+    float limb = pow(mu, 0.45);
+    float sp = u_time * 0.02;
+    vec3 q = vec3(Nw.x * cos(sp) - Nw.z * sin(sp), Nw.y, Nw.x * sin(sp) + Nw.z * cos(sp));
+    float gran = fbm(q * 24.0 + vec3(0.0, u_time * 0.07, seed * 31.0));
+    float cells = fbm(q * 6.5 + vec3(seed * 13.0, u_time * 0.015, 0.0));
+    float spots = kind < 0.5 ? smoothstep(0.77, 0.83, fbm(q * 3.2 + 7.0)) : 0.0;
+    vec3 center = mix(col, vec3(1.0, 0.97, 0.9), 0.62);
+    vec3 edge = col * vec3(0.98, 0.7, 0.5);
+    c = mix(edge, center, limb) * (0.86 + 0.24 * gran + 0.1 * (cells - 0.5));
+    c *= 1.0 - 0.6 * spots * smoothstep(0.2, 0.6, mu);
+    c += col * pow(1.0 - mu, 5.0) * 0.5;
+    c *= 1.0 + hi * 0.15;
+  } else {
+    // 惑星・衛星: 主星の光で昼と夜。表面は学派の色の縞か模様、縁に大気の光。組織は金属のような落ち着いた色
+    vec3 Lw = normalize(v_lw + vec3(1e-6));
+    float ndl = dot(Nw, Lw);
+    float sp = u_time * (0.04 + seed * 0.1);
+    vec3 q = vec3(Nw.x * cos(sp) - Nw.z * sin(sp), Nw.y, Nw.x * sin(sp) + Nw.z * cos(sp));
+    float pat = fract(seed * 7.13) < 0.42 ? fbm(vec3(q.x * 1.2, q.y * 7.5, q.z * 1.2) + seed * 13.0) : fbm(q * 2.6 + seed * 13.0);
+    vec3 deep = col * 0.26 + 0.02, mid = col * 0.8 + 0.05, light = mix(col, vec3(1.0), 0.5);
+    vec3 surf = mix(deep, mid, smoothstep(0.32, 0.58, pat));
+    surf = mix(surf, light, smoothstep(0.6, 0.82, pat));
+    if (isOrg > 0.5) surf = mix(surf, vec3(dot(surf, vec3(0.333))) * 1.15 + 0.07, 0.5);
+    float diff = smoothstep(-0.12, 0.35, ndl) * (0.18 + 0.82 * max(ndl, 0.0));
+    float rim = pow(1.0 - mu, 2.2);
+    vec3 atm = mix(col, vec3(0.75, 0.88, 1.0), 0.35) * rim * (0.12 + 0.88 * smoothstep(-0.25, 0.45, ndl));
+    vec3 V = iv * (-dir);
+    vec3 H = normalize(Lw + V);
+    // カメラの側からの弱い補助光（夜の側でも模様が少し見える）と、逆光のときに縁で光る大気（光が回り込む）
+    float fill = max(dot(Nw, V), 0.0);
+    float back = pow(max(dot(-V, Lw), 0.0), 5.0);
+    c = surf * (diff + fill * 0.17 + 0.03) + atm * 0.95 + col * 0.018;
+    c += mix(col, vec3(1.0, 0.93, 0.82), 0.55) * pow(rim, 0.75) * back * 1.15;
+    c += pow(max(dot(Nw, H), 0.0), 48.0) * 0.3 * step(0.0, ndl) * (isOrg > 0.5 ? 1.6 : 1.0);
+    c += hi * vec3(1.0, 0.82, 0.48) * rim * 0.7;
+  }
+  o = vec4(c * v_misc.z, aa);
+}`;
+
+  // ── 光（点の光・恒星のコロナ・光の筋）。足し合わせて描く ──
+  const GLOW_VS = HEAD + COMMON + `
+in vec2 a_q;
+uniform float u_magLim; uniform float u_magRange;
+out vec2 v_uv; out vec3 v_col; out vec4 v_p;
+void main(){
+  int i = gl_InstanceID;
+  vec4 d0 = dyn0(i), d1 = dyn1(i), s0 = sta0(i), s1 = sta1(i);
+  float vis = d0.w;
+  vec3 c = u_view * d0.xyz;
+  float z = -c.z;
+  if (vis <= 0.002 || z < 1e-4) { ${CULL} return; }
+  float R = s0.x, kind = s0.y, L = s1.a, hi = d1.w;
+  float dist = length(d0.xyz);
+  float rpx = R * u_focal / z;
+  float F = L / max(dist * dist, 1e-12);
+  float I = clamp((log2(F) * 0.30103 + u_magLim) / u_magRange, 0.0, 1.0);
+  I = pow(I, 1.35) * vis;
+  bool star = kind < 1.5;
+  float psf = star ? (1.8 + 34.0 * pow(I, 2.4)) : (1.2 + 7.0 * I * I);
+  float corona = star ? rpx * (kind < 0.5 ? 4.6 : 3.0) : rpx * 1.32;
+  float sz = max(psf, corona) + hi * 9.0;
+  if (I < 0.004 && rpx < 0.6 && hi < 0.01) { ${CULL} return; }
+  vec4 pc = u_proj * vec4(c, 1.0);
+  float wf = max(z - R, 1e-3);
+  pc.z = (log2(1.0 + wf) * u_fc - 1.0) * pc.w;
+  float sx = kind < 0.5 ? 2.6 : 1.0;
+  pc.xy += a_q * vec2(sz * sx, sz) * 2.0 / u_res * pc.w;
+  gl_Position = pc;
+  v_uv = a_q * vec2(sx, 1.0);
+  v_col = star ? mix(s1.rgb, vec3(1.0), 0.18) : s1.rgb;
+  v_p = vec4(I + hi * 0.35, rpx / sz, star ? smoothstep(0.62, 0.95, I) * 0.55 : 0.0, kind);
+}`;
+  const GLOW_FS = HEAD + `
+in vec2 v_uv; in vec3 v_col; in vec4 v_p;
+out vec4 o;
+void main(){
+  float r = length(v_uv);
+  float I = v_p.x, rd = v_p.y, kind = v_p.w;
+  float e = 0.0;
+  if (kind < 0.5) {
+    // 平泉澄先生の太陽: 縁から広がるコロナと、横に伸びる光の筋（映画のレンズのように。円盤の上には重ねない）
+    float outer = max(r - rd, 0.0) / max(1.0 - rd, 1e-3);
+    float inner = step(r, 1.0);
+    e += exp(-outer * 5.2) * smoothstep(rd * 0.8, rd, r) * inner;
+    e += exp(-r * 5.5) * 0.35 * (1.0 - smoothstep(0.0, 0.4, rd)) * inner;
+    float streak = exp(-abs(v_uv.y) * 70.0) * exp(-abs(v_uv.x) * 1.4) * 0.42 * (0.3 + 0.7 * smoothstep(0.0, 0.2, rd)) * smoothstep(rd * 0.98, rd * 1.25, r);
+    e += streak;
+    if (r > 1.0 && streak < 0.004) discard;
+  } else {
+    if (r > 1.0) discard;
+    float pt = 1.0 - smoothstep(0.0, 0.45, rd);
+    e += (exp(-r * r * 55.0) + exp(-r * 7.0) * 0.5 + exp(-r * r * 12.0) * 0.22) * pt;
+    float outer = max(r - rd, 0.0) / max(1.0 - rd, 1e-3);
+    e += rd > 0.02 ? exp(-outer * 6.5) * smoothstep(rd * 0.6, rd, r) * 0.85 : 0.0;
+    e += v_p.z * (exp(-abs(v_uv.y) * 85.0) + exp(-abs(v_uv.x) * 85.0)) * (1.0 - r);
+  }
+  vec3 col = mix(v_col, vec3(1.0), clamp(e - 0.6, 0.0, 1.0) * 0.6);
+  o = vec4(col * e * I, 0.0);
+}`;
+
+  // ── 輪（組織の星）──
+  const RING_VS = HEAD + COMMON + `
+in vec2 a_q; in vec4 a_r; // 体の番号, 輪の外の半径の倍率, 内の倍率, _
+in vec3 a_n;
+out vec2 v_uv; out vec3 v_col; out vec4 v_p; out vec3 v_lw; out vec3 v_nv; out vec3 v_vv;
+void main(){
+  int i = int(a_r.x + 0.5);
+  vec4 d0 = dyn0(i), d1 = dyn1(i), s0 = sta0(i), s1 = sta1(i);
+  float R = s0.x, ro = R * a_r.y;
+  vec3 c = u_view * d0.xyz;
+  float z = -c.z;
+  if (d0.w <= 0.002 || z <= ro * 1.05 || ro * u_focal / max(z, 1e-6) < 1.5) { ${CULL} return; }
+  vec3 n = normalize(a_n);
+  vec3 u = normalize(abs(n.y) < 0.9 ? cross(n, vec3(0,1,0)) : cross(n, vec3(1,0,0)));
+  vec3 w = cross(n, u);
+  vec3 wp = d0.xyz + (u * a_q.x + w * a_q.y) * ro;
+  vec3 v = u_view * wp;
+  gl_Position = project(v);
+  v_uv = a_q; v_col = s1.rgb; v_p = vec4(a_r.z / a_r.y, d0.w, s0.z, d1.w); v_lw = d1.xyz; v_nv = n; v_vv = wp;
+}`;
+  const RING_FS = HEAD + COMMON + `
+in vec2 v_uv; in vec3 v_col; in vec4 v_p; in vec3 v_lw; in vec3 v_nv; in vec3 v_vv;
+out vec4 o;
+void main(){
+  float r = length(v_uv);
+  if (r > 1.0 || r < v_p.x) discard;
+  float x = (r - v_p.x) / (1.0 - v_p.x);
+  float bands = 0.55 + 0.45 * sin(x * 38.0 + v_p.z * 20.0) * sin(x * 11.0 + 1.3);
+  float gap = smoothstep(0.42, 0.45, x) * (1.0 - smoothstep(0.5, 0.53, x));
+  float a = (0.25 + 0.55 * bands) * (1.0 - gap * 0.85) * smoothstep(0.0, 0.06, x) * (1.0 - smoothstep(0.92, 1.0, x));
+  float lit = 0.35 + 0.65 * abs(dot(normalize(v_nv), normalize(v_lw + vec3(1e-6))));
+  vec3 c = mix(v_col, vec3(0.92, 0.9, 0.85), 0.55) * lit * (1.0 + v_p.w * 0.3);
+  a *= 0.78 * v_p.y;
+  o = vec4(c * a, a);
+}`;
+
+  // ── 軌道（主星の周りの円。回っている人のすぐ後ろを明るく）──
+  const ORBIT_VS = HEAD + COMMON + `
+in float a_k; in vec4 a_o0; in vec4 a_o1; in vec4 a_o2;
+uniform float u_seg; uniform float u_orbA;
+out float v_a; out vec3 v_col;
+void main(){
+  int bi = int(a_o0.x + 0.5), hi = int(a_o0.y + 0.5);
+  vec4 h = dyn0(hi), b = dyn0(bi);
+  float th = a_k / u_seg * 6.2831853;
+  vec3 p = h.xyz + a_o0.z * (a_o1.xyz * cos(th) + a_o2.xyz * sin(th));
+  gl_Position = project(u_view * p);
+  float now = a_o0.w + a_o1.w * u_time;
+  float behind = mod(now - th, 6.2831853) / 6.2831853;
+  float tail = exp(-behind * 5.0);
+  float pr = a_o0.z * u_focal / max(length(h.xyz), 1e-4);
+  float fade = smoothstep(6.0, 46.0, pr) * (1.0 - smoothstep(6000.0, 24000.0, pr));
+  float hl = max(dyn1(bi).w, dyn1(hi).w * 0.55);
+  v_a = min(h.w, b.w) * fade * u_orbA * (0.075 * a_o2.w + 0.45 * tail) * (1.0 + hl * 1.6);
+  v_col = mix(sta1(bi).rgb, vec3(1.0), 0.4);
+}`;
+  const ORBIT_FS = HEAD + `
+in float v_a; in vec3 v_col;
+out vec4 o;
+void main(){ if (v_a < 0.002) discard; o = vec4(v_col * v_a, 0.0); }`;
+
+  // ── 平泉澄先生への道（光の帯。届いた所から光り、届いたあとは中心へ向かう光の粒が流れる）──
+  const ROUTE_VS = HEAD + COMMON + `
+in vec2 a_ts; in vec4 a_r0; in vec4 a_r1;
+uniform float u_now; uniform float u_width;
+out float v_t; out float v_side; out float v_prog; out vec3 v_col; out float v_base;
+void main(){
+  int ia = int(a_r0.x + 0.5), ib = int(a_r0.y + 0.5);
+  vec3 A = dyn0(ia).xyz, B = dyn0(ib).xyz;
+  float Ra = sta0(ia).x, Rb = sta0(ib).x;
+  vec3 AB = B - A;
+  float L = max(length(AB), 1e-6);
+  vec3 up = vec3(0.0, 1.0, 0.0);
+  vec3 sd0 = cross(AB / L, up);
+  vec3 C = (A + B) * 0.5 + normalize(up + sd0 * 0.4 + vec3(1e-6)) * L * 0.1;
+  float ta = clamp(Ra * 1.6 / L, 0.0, 0.45), tb = 1.0 - clamp(Rb * 1.6 / L, 0.0, 0.45);
+  float t = mix(ta, tb, a_ts.x);
+  vec3 P = mix(mix(A, C, t), mix(C, B, t), t);
+  vec3 T = (1.0 - t) * (C - A) + t * (B - C);
+  vec3 vP = u_view * P, vT = u_view * T;
+  vec3 sd = cross(vT, vP);
+  float ls = length(sd);
+  sd = ls > 1e-12 ? sd / ls : vec3(1.0, 0.0, 0.0);
+  vP += sd * u_width * max(-vP.z, 1e-4) / u_focal * a_ts.y;
+  gl_Position = project(vP);
+  v_t = a_ts.x; v_side = a_ts.y;
+  v_prog = clamp((u_now - a_r0.z) / max(a_r0.w, 1e-3), 0.0, 1.0);
+  v_col = a_r1.rgb; v_base = a_r1.w;
+}`;
+  const ROUTE_FS = HEAD + `
+in float v_t; in float v_side; in float v_prog; in vec3 v_col; in float v_base;
+uniform float u_now;
+out vec4 o;
+void main(){
+  float across = 1.0 - abs(v_side);
+  float core = smoothstep(0.6, 1.0, across);
+  float glow = across * across * 0.6;
+  float lit = step(v_t, v_prog);
+  float moving = step(0.001, v_prog) * (1.0 - step(0.999, v_prog));
+  float head = exp(-pow((v_t - v_prog) * 16.0, 2.0)) * moving;
+  float pulse = pow(0.5 + 0.5 * sin((v_t * 5.0 - u_now * 1.5) * 6.2831853), 6.0) * step(0.999, v_prog);
+  float a = lit * (core * 0.95 + glow * 0.55) * (0.7 + 0.6 * pulse) + head * (core * 1.6 + glow * 1.4) + v_base * (core * 0.12 + glow * 0.05);
+  vec3 c = mix(v_col, vec3(1.0), core * 0.45 + head * 0.4);
+  o = vec4(c * a, 0.0);
+}`;
+
+  // ── 背景: 星雲（立方体の画像を読む）と遠い星 ──
+  const SKY_VS = HEAD + `
+out vec2 v_ndc;
+void main(){ vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.0 : -1.0); v_ndc = p; gl_Position = vec4(p, 0.9999, 1.0); }`;
+  const SKY_FS = HEAD + `
+in vec2 v_ndc;
+uniform mat3 u_iview; uniform vec2 u_tan; uniform samplerCube u_sky; uniform float u_bgA;
+out vec4 o;
+float h12(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+void main(){
+  vec3 d = u_iview * normalize(vec3(v_ndc * u_tan, -1.0));
+  vec3 c = texture(u_sky, d).rgb + (h12(gl_FragCoord.xy) - 0.5) / 255.0;
+  o = vec4(max(c, 0.0) * u_bgA, u_bgA);
+}`;
+  const BAKE_VS = SKY_VS;
+  const BAKE_FS = HEAD + `
+in vec2 v_ndc;
+uniform int u_face;
+uniform sampler3D u_noise;
+out vec4 o;
+float fbm(vec3 p){ float s = 0.0, a = 0.5; for (int k = 0; k < 6; k++){ s += a * texture(u_noise, p * 0.015625).r; p = p * 2.03 + vec3(0.171, 0.37, 0.93); a *= 0.5; } return s * 1.016; }
+void main(){
+  vec2 uv = v_ndc;
+  vec3 d;
+  if (u_face == 0) d = vec3(1.0, -uv.y, -uv.x);
+  else if (u_face == 1) d = vec3(-1.0, -uv.y, uv.x);
+  else if (u_face == 2) d = vec3(uv.x, 1.0, uv.y);
+  else if (u_face == 3) d = vec3(uv.x, -1.0, -uv.y);
+  else if (u_face == 4) d = vec3(uv.x, -uv.y, 1.0);
+  else d = vec3(-uv.x, -uv.y, -1.0);
+  d = normalize(d);
+  float n1 = fbm(d * 2.1 + vec3(3.1, 1.7, 5.2));
+  float n2 = fbm(d * 4.3 + vec3(n1 * 1.6, n1 * 0.7, 2.0));
+  float n3 = fbm(d * 3.0 + vec3(7.0, 2.0, 9.0));
+  float band = exp(-pow(d.y * 3.0 + (n1 - 0.5) * 0.7, 2.0));
+  vec3 c = vec3(0.006, 0.008, 0.017) + vec3(0.004, 0.006, 0.012) * band;
+  c += vec3(0.05, 0.022, 0.085) * smoothstep(0.42, 0.88, n2) * (0.35 + 0.65 * band);
+  c += vec3(0.012, 0.05, 0.065) * smoothstep(0.5, 0.95, n3);
+  c += vec3(0.075, 0.045, 0.022) * band * smoothstep(0.35, 0.85, n1) * 0.65;
+  c *= 1.0 - 0.6 * band * smoothstep(0.55, 0.8, fbm(d * 7.0 + 11.0));
+  o = vec4(c, 1.0);
+}`;
+  const STAR_VS = HEAD + COMMON + `
+in vec4 a_s0; in vec4 a_s1;
+uniform float u_bgA; uniform float u_dpr;
+out vec3 v_c;
+void main(){
+  vec3 v = u_view * a_s0.xyz;
+  vec4 p = u_proj * vec4(v, 1.0);
+  p.z = p.w * 0.99998;
+  gl_Position = p;
+  float tw = 0.82 + 0.18 * sin(u_time * (1.1 + a_s1.w) + a_s1.w * 40.0);
+  gl_PointSize = (1.0 + a_s0.w * 2.4) * u_dpr;
+  v_c = a_s1.rgb * (0.25 + a_s0.w) * tw * u_bgA;
+}`;
+  const STAR_FS = HEAD + `
+in vec3 v_c;
+out vec4 o;
+void main(){ vec2 q = gl_PointCoord - 0.5; float a = exp(-dot(q, q) * 14.0); o = vec4(v_c * a, 0.0); }`;
+
+  // ── 銀河の淡い光（人の星の周りの、名前のない星の雲）──
+  const GAL_VS = HEAD + COMMON + `
+in vec2 a_q; in vec4 a_g0; in vec4 a_g1;
+uniform vec3 u_cam; uniform float u_galA;
+out vec2 v_uv; out vec3 v_c; out float v_seed;
+void main(){
+  vec3 v = u_view * (a_g0.xyz - u_cam);
+  float z = -v.z;
+  float spx = a_g0.w * u_focal / max(z, 1e-4);
+  float f = smoothstep(1.5, 7.0, spx) * (1.0 - smoothstep(0.12, 0.28, spx / u_res.y));
+  if (z < 1e-3 || f < 0.003) { ${CULL} return; }
+  v.xy += a_q * a_g0.w;
+  gl_Position = project(v);
+  v_uv = a_q; v_c = a_g1.rgb * a_g1.a * f * u_galA; v_seed = fract(a_g0.x * 0.0137 + a_g0.z * 0.0071);
+}`;
+  // 星の雲: 縁で 0 になる丸いぼかしに、雑音で濃淡を付ける（四角くにじまないように）
+  const GAL_FS = HEAD + `
+in vec2 v_uv; in vec3 v_c; in float v_seed;
+uniform sampler3D u_noise;
+out vec4 o;
+void main(){
+  float r2 = dot(v_uv, v_uv);
+  if (r2 >= 1.0) discard;
+  float fall = (1.0 - r2) * (1.0 - r2) * exp(-r2 * 1.6);
+  float n = texture(u_noise, vec3(v_uv * 0.11 + v_seed, v_seed * 3.1)).r * 0.6 + texture(u_noise, vec3(v_uv * 0.27 + v_seed * 1.7, v_seed)).r * 0.4;
+  o = vec4(v_c * fall * (0.35 + 1.1 * n * n), 0.0);
+}`;
+
+  // ── 速く飛ぶときの光の筋（カメラの周りの塵が、進む向きに伸びる）──
+  const DUST_VS = HEAD + COMMON + `
+in vec4 a_d;
+uniform vec3 u_off; uniform float u_box; uniform vec3 u_velV; uniform float u_warp;
+out float v_a;
+void main(){
+  vec3 p = fract(a_d.xyz - u_off) - 0.5;
+  vec3 v = u_view * (p * u_box);
+  v -= u_velV * a_d.w;
+  gl_Position = project(v);
+  float edge = 1.0 - smoothstep(0.32, 0.5, max(max(abs(p.x), abs(p.y)), abs(p.z)));
+  v_a = u_warp * edge * (1.0 - a_d.w * 0.9);
+}`;
+  const DUST_FS = HEAD + `
+in float v_a;
+out vec4 o;
+void main(){ o = vec4(vec3(0.75, 0.85, 1.0) * v_a, 0.0); }`;
+
+  // ── 割れる白い枠の破片（場面の初めだけ）──
+  const SHARD_VS = HEAD + COMMON + `
+in vec4 a_c; in vec3 a_l; in vec3 a_v; in vec4 a_ax; in vec3 a_b; in vec3 a_uvd;
+uniform vec3 u_cam; uniform float u_tS; uniform vec3 u_n;
+out vec3 v_b; out vec2 v_uv; out float v_dist; out vec3 v_nv; out vec3 v_vv; out float v_fly;
+vec3 rot(vec3 p, vec3 ax, float a){ float c = cos(a), s = sin(a); return p * c + cross(ax, p) * s + ax * dot(ax, p) * (1.0 - c); }
+void main(){
+  float ts = max(u_tS - a_c.w, 0.0);
+  float ease = ts * ts / (ts + 0.18);
+  vec3 ax = normalize(a_ax.xyz + vec3(1e-6));
+  float ang = a_ax.w * ease;
+  vec3 w = a_c.xyz + a_v * ease + rot(a_l, ax, ang);
+  vec3 v = u_view * (w - u_cam);
+  gl_Position = project(v);
+  v_b = a_b; v_uv = a_uvd.xy; v_dist = a_uvd.z; v_nv = u_view * rot(u_n, ax, ang); v_vv = v; v_fly = ts;
+}`;
+
+  const SHARD_FS = HEAD + `
+in vec3 v_b; in vec2 v_uv; in float v_dist; in vec3 v_nv; in vec3 v_vv; in float v_fly;
+uniform float u_crack; uniform float u_alpha; uniform vec3 u_paper; uniform vec3 u_rule; uniform vec3 u_light; uniform float u_flash;
+uniform vec2 u_chart; uniform float u_radius; uniform sampler2D u_tex; uniform float u_useTex;
+out vec4 o;
+void main(){
+  // 角の丸み（図の枠と同じ）と縁の線
+  vec2 px = v_uv * u_chart;
+  vec2 q = abs(px - u_chart * 0.5) - (u_chart * 0.5 - vec2(u_radius));
+  float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - u_radius;
+  if (sd > 0.5) discard;
+  vec3 base = u_useTex > 0.5 ? texture(u_tex, v_uv).rgb : u_paper;
+  float border = smoothstep(-1.6, -0.4, sd);
+  base = mix(base, u_rule, border);
+  // 割れ目（破片の外の縁）: ひびが届いた所から、細い光の線が走る（後ろの宇宙の光が漏れる）。図の枠そのものの縁は割れ目にしない
+  float ePx = v_b.x / max(fwidth(v_b.x), 1e-6);
+  float line = 1.0 - smoothstep(0.0, 1.05, ePx);
+  float glow = exp(-ePx * 0.6) * 0.5;
+  float reached = (1.0 - smoothstep(u_crack - 0.04, u_crack, v_dist)) * (1.0 - smoothstep(-7.0, -2.5, sd));
+  float far = 1.0 - smoothstep(0.0, 0.8, v_dist) * 0.5;
+  vec3 N = normalize(v_nv);
+  vec3 V = normalize(-v_vv);
+  float spec = pow(max(dot(reflect(-u_light, N), V), 0.0), 24.0) * smoothstep(0.0, 0.25, v_fly);
+  float shade = 0.86 + 0.14 * abs(dot(N, V));
+  vec3 crack = vec3(1.0, 0.86, 0.56);
+  // 割れ目は細い暗い線（すき間の奥の宇宙）で、その両脇に、後ろから漏れる淡い金色の光
+  vec3 c = base * shade + spec * 0.6;
+  c = mix(c, vec3(0.05, 0.06, 0.1), line * reached * 0.88);
+  c += crack * glow * reached * far * 0.3 * (1.0 - line);
+  c += crack * u_flash * exp(-v_dist * 28.0) * 1.5;
+  float a = u_alpha * smoothstep(4.0, 40.0, -v_vv.z);
+  o = vec4(c * a, a);
+}`;
+  // ── 2D のバブルの写し（割れる前は図と同じ形。割れたあと、それぞれの星へ飛んで光になる）──
+  const DISC_VS = HEAD + COMMON + `
+in vec2 a_q; in vec4 a_d0; in vec4 a_d1; in vec4 a_d2;
+out vec2 v_uv; out vec4 v_c; out vec4 v_p;
+void main(){
+  vec3 v = u_view * a_d0.xyz;
+  v.xy += a_q * a_d0.w * 1.6;
+  gl_Position = project(v);
+  v_uv = a_q * 1.6; v_c = a_d1; v_p = a_d2;
+}`;
+  const DISC_FS = HEAD + `
+in vec2 v_uv; in vec4 v_c; in vec4 v_p;
+out vec4 o;
+void main(){
+  float isOrg = v_p.x, glow = v_p.y, fill = v_p.z;
+  vec2 a = abs(v_uv);
+  float r = isOrg > 0.5 ? max(a.x, a.y) * 0.96 + 0.04 * length(v_uv) : length(v_uv);
+  float body = 1.0 - smoothstep(0.9, 1.0, r);
+  float ring = smoothstep(0.66, 0.8, r) * body;
+  vec3 fc = mix(v_c.rgb, vec3(1.0), 0.78 * fill);
+  vec3 c = mix(fc, v_c.rgb, ring);
+  float ga = glow * exp(-r * r * 2.2);
+  float al = body * v_c.a;
+  o = vec4(c * al + mix(v_c.rgb, vec3(1.0), 0.5) * ga * v_c.a, al);
+}`;
+
+  // 台本の準備は、まとめて頼んでから待たずに戻る（KHR_parallel_shader_compile があれば、ブラウザが裏で進める）。済んだかは ready で見る
+  const SOURCES = {
+    body: [BODY_VS, BODY_FS], glow: [GLOW_VS, GLOW_FS], ring: [RING_VS, RING_FS], orbit: [ORBIT_VS, ORBIT_FS], route: [ROUTE_VS, ROUTE_FS],
+    sky: [SKY_VS, SKY_FS], bake: [BAKE_VS, BAKE_FS], star: [STAR_VS, STAR_FS], gal: [GAL_VS, GAL_FS], dust: [DUST_VS, DUST_FS],
+    shard: [SHARD_VS, SHARD_FS], disc: [DISC_VS, DISC_FS]
+  };
+  function startProgram(gl, vsSrc, fsSrc) {
+    const vs = gl.createShader(gl.VERTEX_SHADER), fs = gl.createShader(gl.FRAGMENT_SHADER), p = gl.createProgram();
+    gl.shaderSource(vs, vsSrc); gl.compileShader(vs);
+    gl.shaderSource(fs, fsSrc); gl.compileShader(fs);
+    gl.attachShader(p, vs); gl.attachShader(p, fs);
+    gl.linkProgram(p);
+    return { p, vs, fs };
+  }
+  function finishProgram(gl, q, name) {
+    if (!gl.getProgramParameter(q.p, gl.LINK_STATUS)) {
+      const log = gl.getShaderInfoLog(q.vs) || gl.getShaderInfoLog(q.fs) || gl.getProgramInfoLog(q.p) || "link";
+      throw new Error(name + ": " + log);
+    }
+    const u = {};
+    const n = gl.getProgramParameter(q.p, gl.ACTIVE_UNIFORMS);
+    for (let k = 0; k < n; k++) { const info = gl.getActiveUniform(q.p, k); const nm = info.name.replace(/\[0\]$/, ""); u[nm] = gl.getUniformLocation(q.p, info.name); }
+    gl.deleteShader(q.vs); gl.deleteShader(q.fs);
+    return { p: q.p, u };
+  }
+
+  const ORB_SEG = 128, ROUTE_SEG = 40;
+
+  class SpaceGL {
+    constructor(canvas, model) {
+      const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: true, depth: true, stencil: false, powerPreference: "high-performance", preserveDrawingBuffer: false });
+      if (!gl) throw new Error("webgl2");
+      this.gl = gl;
+      this.cv = canvas;
+      this.m = model;
+      this.info = { renderer: "" };
+      try {
+        const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+        this.info.renderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+      } catch (e) { this.info.renderer = "?"; }
+      this.W = 1; this.H = 1; this.dpr = 1;
+      this.T0 = performance.now();
+      this.par = gl.getExtension("KHR_parallel_shader_compile");
+      this.pending = Object.keys(SOURCES).map((k) => [k, startProgram(gl, SOURCES[k][0], SOURCES[k][1])]);
+      this.info.parallel = !!this.par;
+      this.info.submitMs = Math.round(performance.now() - this.T0);
+      this.ready = false;
+    }
+
+    // 台本の準備が済んだか（済んでいれば、残りの準備をして true）。済むまでは描かない
+    poll() {
+      if (this.ready) return true;
+      const gl = this.gl;
+      if (this.par) for (const [, q] of this.pending) if (!gl.getProgramParameter(q.p, this.par.COMPLETION_STATUS_KHR)) return false;
+      const T1 = performance.now();
+      this.P = {};
+      for (const [k, q] of this.pending) this.P[k] = finishProgram(gl, q, k);
+      this.pending = null;
+      this.info.compileMs = Math.round(T1 - this.T0);
+      this.makeNoise();
+      this.initData();
+      this.bakeSky(512);
+      this.info.initMs = Math.round(performance.now() - this.T0);
+      this.info.finishMs = Math.round(performance.now() - T1);
+      this.ready = true;
+      return true;
+    }
+
+    // 模様のもとの雑音（64×64×64、くり返してつながる）
+    makeNoise() {
+      const gl = this.gl, n = 64, d = new Uint8Array(n * n * n);
+      const r = SG.SpaceModel.rng(19350);
+      for (let i = 0; i < d.length; i++) d[i] = Math.floor(r() * 256);
+      const t = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_3D, t);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage3D(gl.TEXTURE_3D, 0, gl.R8, n, n, n, 0, gl.RED, gl.UNSIGNED_BYTE, d);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.REPEAT);
+      this.noiseTex = t;
+    }
+
+    attr(prog, name, size, stride, off, div) {
+      const gl = this.gl, l = gl.getAttribLocation(prog.p, name);
+      if (l < 0) return;
+      gl.enableVertexAttribArray(l);
+      gl.vertexAttribPointer(l, size, gl.FLOAT, false, stride, off);
+      gl.vertexAttribDivisor(l, div);
+    }
+    buf(data, usage) {
+      const gl = this.gl, b = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, b);
+      gl.bufferData(gl.ARRAY_BUFFER, data, usage || gl.STATIC_DRAW);
+      return b;
+    }
+    floatTex(w, h, data) {
+      const gl = this.gl, t = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, w, h, 0, gl.RGBA, gl.FLOAT, data);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return t;
+    }
+
+    initData() {
+      const gl = this.gl, m = this.m, N = m.N;
+      // 星ごとの数の画像（1 行に 64 人、1 人 2 画素）
+      this.TW = 128; this.TH = Math.ceil(N / 64);
+      this.dyn = new Float32Array(this.TW * this.TH * 4);
+      const sta = new Float32Array(this.TW * this.TH * 4);
+      for (let i = 0; i < N; i++) {
+        const o = ((Math.floor(i / 64) * this.TW) + (i % 64) * 2) * 4;
+        sta[o] = m.R[i]; sta[o + 1] = m.kind[i]; sta[o + 2] = m.seed[i]; sta[o + 3] = m.isOrg[i];
+        sta[o + 4] = m.col[i * 3]; sta[o + 5] = m.col[i * 3 + 1]; sta[o + 6] = m.col[i * 3 + 2]; sta[o + 7] = m.L[i];
+      }
+      this.staTex = this.floatTex(this.TW, this.TH, sta);
+      this.dynTex = this.floatTex(this.TW, this.TH, this.dyn);
+      this.dynOff = (i) => ((Math.floor(i / 64) * this.TW) + (i % 64) * 2) * 4;
+
+      const quad = this.buf(new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]));
+      const P = this.P;
+      // 星・光: 板だけ（中身は数の画像から）
+      this.vBody = gl.createVertexArray(); gl.bindVertexArray(this.vBody); gl.bindBuffer(gl.ARRAY_BUFFER, quad); this.attr(P.body, "a_q", 2, 8, 0, 0);
+      this.vGlow = gl.createVertexArray(); gl.bindVertexArray(this.vGlow); gl.bindBuffer(gl.ARRAY_BUFFER, quad); this.attr(P.glow, "a_q", 2, 8, 0, 0);
+      // 組織の輪
+      const rings = [];
+      for (let i = 0; i < N; i++) if (m.isOrg[i]) rings.push(i, 2.35, 1.45, 0, m.sysN[i * 3], m.sysN[i * 3 + 1], m.sysN[i * 3 + 2]);
+      this.nRing = rings.length / 7;
+      this.vRing = gl.createVertexArray(); gl.bindVertexArray(this.vRing);
+      gl.bindBuffer(gl.ARRAY_BUFFER, quad); this.attr(P.ring, "a_q", 2, 8, 0, 0);
+      this.buf(new Float32Array(rings)); this.attr(P.ring, "a_r", 4, 28, 0, 1); this.attr(P.ring, "a_n", 3, 28, 16, 1);
+      // 軌道（同じ輪に並ぶ人の線は、その数で割って重ね、明るくなりすぎないように）
+      const ringCount = new Map();
+      for (let i = 0; i < N; i++) if (m.host[i] >= 0) { const k = m.host[i] + ":" + m.orbA[i].toFixed(4); ringCount.set(k, (ringCount.get(k) || 0) + 1); }
+      const orb = [];
+      for (let i = 0; i < N; i++) {
+        const h = m.host[i];
+        if (h < 0) continue;
+        const cnt = ringCount.get(h + ":" + m.orbA[i].toFixed(4)) || 1;
+        orb.push(i, h, m.orbA[i], m.orbPh[i], m.orbU[i * 3], m.orbU[i * 3 + 1], m.orbU[i * 3 + 2], m.orbW[i], m.orbV[i * 3], m.orbV[i * 3 + 1], m.orbV[i * 3 + 2], 1 / cnt);
+      }
+      this.nOrb = orb.length / 12;
+      const ks = new Float32Array(ORB_SEG + 1);
+      for (let k = 0; k <= ORB_SEG; k++) ks[k] = k;
+      this.vOrb = gl.createVertexArray(); gl.bindVertexArray(this.vOrb);
+      this.buf(ks); this.attr(P.orbit, "a_k", 1, 4, 0, 0);
+      this.buf(new Float32Array(orb)); this.attr(P.orbit, "a_o0", 4, 48, 0, 1); this.attr(P.orbit, "a_o1", 4, 48, 16, 1); this.attr(P.orbit, "a_o2", 4, 48, 32, 1);
+      // 道
+      const ts = new Float32Array((ROUTE_SEG + 1) * 4);
+      for (let k = 0; k <= ROUTE_SEG; k++) ts.set([k / ROUTE_SEG, -1, k / ROUTE_SEG, 1], k * 4);
+      this.routeData = new Float32Array(64 * 8);
+      this.nRoute = 0;
+      this.vRoute = gl.createVertexArray(); gl.bindVertexArray(this.vRoute);
+      this.buf(ts); this.attr(P.route, "a_ts", 2, 8, 0, 0);
+      this.routeBuf = this.buf(this.routeData, gl.DYNAMIC_DRAW); this.attr(P.route, "a_r0", 4, 32, 0, 1); this.attr(P.route, "a_r1", 4, 32, 16, 1);
+      // 遠い星（名前のない背景の星）
+      const r = SG.SpaceModel.rng(20261106);
+      const NS = 9000, st = new Float32Array(NS * 8);
+      const tints = [[1, 0.78, 0.6], [1, 0.88, 0.75], [1, 0.95, 0.9], [0.95, 0.97, 1], [0.8, 0.88, 1], [0.72, 0.82, 1]];
+      for (let k = 0; k < NS; k++) {
+        const u = r() * 2 - 1, a = r() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+        const mag = Math.pow(r(), 3.2), tt = tints[Math.floor(r() * tints.length) % tints.length];
+        st.set([s * Math.cos(a), u, s * Math.sin(a), mag, tt[0], tt[1], tt[2], r() * 3], k * 8);
+      }
+      this.nStar = NS;
+      this.vStar = gl.createVertexArray(); gl.bindVertexArray(this.vStar);
+      this.buf(st); this.attr(P.star, "a_s0", 4, 32, 0, 0); this.attr(P.star, "a_s1", 4, 32, 16, 0);
+      // 銀河の淡い光: 恒星の系ごとに数個と、中心の膨らみ
+      const gal = [];
+      for (let i = 0; i < N; i++) {
+        if (m.host[i] >= 0) continue;
+        const rr = SG.SpaceModel.rng(SG.SpaceModel.seedOf(m.nodes[i].id + "#d"));
+        const c = [m.famCol[m.famIdx[i]], [0.7, 0.75, 0.9]][m.famIds[m.famIdx[i]] === "other" ? 1 : 0];
+        const nsp = i === m.fi ? 0 : 3;
+        for (let k = 0; k < nsp; k++) {
+          const sp = 50 + rr() * 120, sz = 70 + rr() * 170;
+          gal.push(m.base[i * 3] + (rr() - 0.5) * sp * 2, m.base[i * 3 + 1] + (rr() - 0.5) * sp * 0.4, m.base[i * 3 + 2] + (rr() - 0.5) * sp * 2, sz,
+            c[0] * 0.5 + 0.32, c[1] * 0.5 + 0.32, c[2] * 0.5 + 0.36, 0.04 + rr() * 0.04);
+        }
+      }
+      // 中心の膨らみの、金色の淡い光（平泉澄先生の太陽系の周り）
+      const rb = SG.SpaceModel.rng(7);
+      for (let k = 0; k < 90; k++) {
+        const a = rb() * Math.PI * 2, d = m.E0 * 1.4 + Math.pow(rb(), 0.8) * m.rho0 * 1.6, sz = 160 + rb() * 360;
+        gal.push(Math.cos(a) * d, (rb() - 0.5) * d * 0.3, Math.sin(a) * d, sz, 1.0, 0.84, 0.6, 0.03 + rb() * 0.025);
+      }
+      this.nGal = gal.length / 8;
+      this.vGal = gl.createVertexArray(); gl.bindVertexArray(this.vGal);
+      gl.bindBuffer(gl.ARRAY_BUFFER, quad); this.attr(P.gal, "a_q", 2, 8, 0, 0);
+      this.buf(new Float32Array(gal)); this.attr(P.gal, "a_g0", 4, 32, 0, 1); this.attr(P.gal, "a_g1", 4, 32, 16, 1);
+      // 速く飛ぶときの塵
+      const ND = 700, dd = new Float32Array(ND * 2 * 4);
+      for (let k = 0; k < ND; k++) { const x = r(), y = r(), z = r(); dd.set([x, y, z, 0, x, y, z, 1], k * 8); }
+      this.nDust = ND;
+      this.vDust = gl.createVertexArray(); gl.bindVertexArray(this.vDust);
+      this.buf(dd); this.attr(P.dust, "a_d", 4, 16, 0, 0);
+      // バブルの写し（場面の初めだけ。中身は毎こま js/space3d.js が書く）
+      this.discData = new Float32Array(400 * 12);
+      this.nDisc = 0;
+      this.vDisc = gl.createVertexArray(); gl.bindVertexArray(this.vDisc);
+      gl.bindBuffer(gl.ARRAY_BUFFER, quad); this.attr(P.disc, "a_q", 2, 8, 0, 0);
+      this.discBuf = this.buf(this.discData, gl.DYNAMIC_DRAW); this.attr(P.disc, "a_d0", 4, 48, 0, 1); this.attr(P.disc, "a_d1", 4, 48, 16, 1); this.attr(P.disc, "a_d2", 4, 48, 32, 1);
+      gl.bindVertexArray(null);
+      this.nShard = 0;
+    }
+
+    // 星雲を立方体の画像に一度だけ描く
+    bakeSky(size) {
+      const gl = this.gl;
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+      for (let f = 0; f < 6; f++) gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + f, 0, gl.RGBA8, size, size, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      const fb = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.viewport(0, 0, size, size);
+      gl.disable(gl.DEPTH_TEST);
+      gl.disable(gl.BLEND);
+      gl.useProgram(this.P.bake.p);
+      gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_3D, this.noiseTex); gl.uniform1i(this.P.bake.u.u_noise, 4);
+      gl.bindVertexArray(null);
+      for (let f = 0; f < 6; f++) {
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + f, tex, 0);
+        gl.uniform1i(this.P.bake.u.u_face, f);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.deleteFramebuffer(fb);
+      this.skyTex = tex;
+    }
+
+    resize(w, h, dpr) {
+      const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
+      if (this.cv.width !== pw || this.cv.height !== ph) { this.cv.width = pw; this.cv.height = ph; }
+      this.W = w; this.H = h; this.dpr = dpr; this.pw = pw; this.ph = ph;
+    }
+
+    // 道の帯: [{ a, b, start, dur, col: [r, g, b], base }]（a・b は星の番号、start・dur は秒）
+    setRoute(segs) {
+      const gl = this.gl, d = this.routeData;
+      const n = Math.min(64, segs.length);
+      for (let k = 0; k < n; k++) { const s = segs[k]; d.set([s.a, s.b, s.start, s.dur, s.col[0], s.col[1], s.col[2], s.base || 0], k * 8); }
+      this.nRoute = n;
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.routeBuf);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, d, 0, n * 8 || 8);
+    }
+    // バブルの写し: discData に [x, y, z（カメラから）, 半径, r, g, b, a, 組織か, 光, 塗り, _] を n 個
+    setDiscs(n) {
+      const gl = this.gl;
+      this.nDisc = n;
+      if (!n) return;
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.discBuf);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.discData, 0, n * 12);
+    }
+    // 破片: 頂点ごとに [中心 3 と動き出す遅れ 1, 中心からの位置 3, 速さ 3, 回る軸 3 と速さ 1, 重心の座標 3, 図の上の位置 2 と衝撃の点からの距離 1]（20 個）
+    setShards(verts, n) {
+      const gl = this.gl, P = this.P;
+      if (this.vShard) { gl.deleteVertexArray(this.vShard); gl.deleteBuffer(this.shardBuf); this.vShard = null; }
+      this.nShard = n || 0;
+      if (!n) return;
+      this.vShard = gl.createVertexArray();
+      gl.bindVertexArray(this.vShard);
+      this.shardBuf = this.buf(verts);
+      const S = 20 * 4;
+      this.attr(P.shard, "a_c", 4, S, 0, 0); this.attr(P.shard, "a_l", 3, S, 16, 0); this.attr(P.shard, "a_v", 3, S, 28, 0);
+      this.attr(P.shard, "a_ax", 4, S, 40, 0); this.attr(P.shard, "a_b", 3, S, 56, 0); this.attr(P.shard, "a_uvd", 3, S, 68, 0);
+      gl.bindVertexArray(null);
+    }
+    setShardTexture(tex) { this.shardTex = tex; }
+
+    common(prog, F) {
+      const gl = this.gl, u = prog.u;
+      gl.useProgram(prog.p);
+      if (u.u_view) gl.uniformMatrix3fv(u.u_view, false, F.view);
+      if (u.u_proj) gl.uniformMatrix4fv(u.u_proj, false, F.proj);
+      if (u.u_fc) gl.uniform1f(u.u_fc, F.fc);
+      if (u.u_res) gl.uniform2f(u.u_res, this.pw, this.ph);
+      if (u.u_focal) gl.uniform1f(u.u_focal, F.focal * this.dpr);
+      if (u.u_time) gl.uniform1f(u.u_time, F.t);
+      if (u.u_dyn) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.dynTex); gl.uniform1i(u.u_dyn, 0); }
+      if (u.u_sta) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.staTex); gl.uniform1i(u.u_sta, 1); }
+      if (u.u_noise) { gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_3D, this.noiseTex); gl.uniform1i(u.u_noise, 4); }
+    }
+
+    // 一こま描く。F: { view(mat3), iview(mat3), proj(mat4), fc, focal, tanX, tanY, t, now, cam[3], bgA, galA, orbA, warp, velV[3], box, off[3],
+    //   shard: { tS, crack, alpha, n[3], paper[3], rule[3], light[3], chart[2], radius, useTex } }
+    // 確かめ用: GPU で一こまにかかった時間を測る（EXT_disjoint_timer_query_webgl2 があるときだけ。結果は数こまあとに届く）
+    gpuTiming(on) {
+      this.tq = on ? this.gl.getExtension("EXT_disjoint_timer_query_webgl2") : null;
+      this.tqList = [];
+      this.gpuMs = [];
+      return !!this.tq;
+    }
+    pollTimers() {
+      const gl = this.gl, tq = this.tq;
+      for (let k = 0; k < this.tqList.length;) {
+        const q = this.tqList[k];
+        if (!gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE)) { k++; continue; }
+        if (!gl.getParameter(tq.GPU_DISJOINT_EXT)) this.gpuMs.push(gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6);
+        gl.deleteQuery(q);
+        this.tqList.splice(k, 1);
+      }
+      if (this.gpuMs.length > 600) this.gpuMs.splice(0, this.gpuMs.length - 600);
+    }
+
+    render(F) {
+      const gl = this.gl, P = this.P, N = this.m.N;
+      let tqq = null;
+      if (this.tq) { this.pollTimers(); if (this.tqList.length < 8) { tqq = gl.createQuery(); gl.beginQuery(this.tq.TIME_ELAPSED_EXT, tqq); } }
+      gl.bindTexture(gl.TEXTURE_2D, this.dynTex);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.TW, this.TH, gl.RGBA, gl.FLOAT, this.dyn);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, this.pw, this.ph);
+      gl.depthMask(true);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clearDepth(1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.enable(gl.BLEND);
+      gl.disable(gl.CULL_FACE);
+
+      // 背景（深度は使わない）
+      gl.disable(gl.DEPTH_TEST);
+      gl.depthMask(false);
+      if (F.bgA > 0.001) {
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        const s = P.sky;
+        gl.useProgram(s.p);
+        gl.uniformMatrix3fv(s.u.u_iview, false, F.iview);
+        gl.uniform2f(s.u.u_tan, F.tanX, F.tanY);
+        gl.uniform1f(s.u.u_bgA, F.bgA);
+        gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.skyTex); gl.uniform1i(s.u.u_sky, 2);
+        gl.bindVertexArray(null);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        gl.blendFunc(gl.ONE, gl.ONE);
+        this.common(P.star, F);
+        gl.uniform1f(P.star.u.u_bgA, F.bgA);
+        gl.uniform1f(P.star.u.u_dpr, this.dpr);
+        gl.bindVertexArray(this.vStar);
+        gl.drawArrays(gl.POINTS, 0, this.nStar);
+      }
+      gl.blendFunc(gl.ONE, gl.ONE);
+      // 銀河の淡い光（星より奥に置くので、深度を見ずに先に足す）
+      if (F.galA > 0.001) {
+        this.common(P.gal, F);
+        gl.uniform3f(P.gal.u.u_cam, F.cam[0], F.cam[1], F.cam[2]);
+        gl.uniform1f(P.gal.u.u_galA, F.galA);
+        gl.bindVertexArray(this.vGal);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.nGal);
+      }
+
+      // 星と惑星（不透明。縁は alpha-to-coverage）
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+      gl.depthMask(true);
+      gl.disable(gl.BLEND);
+      gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+      this.common(P.body, F);
+      gl.bindVertexArray(this.vBody);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, N);
+      gl.disable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+      gl.enable(gl.BLEND);
+      gl.depthMask(false);
+      // 組織の輪
+      if (this.nRing) {
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        this.common(P.ring, F);
+        gl.bindVertexArray(this.vRing);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.nRing);
+      }
+      gl.blendFunc(gl.ONE, gl.ONE);
+      // 軌道
+      if (F.orbA > 0.001) {
+        this.common(P.orbit, F);
+        gl.uniform1f(P.orbit.u.u_seg, ORB_SEG);
+        gl.uniform1f(P.orbit.u.u_orbA, F.orbA);
+        gl.bindVertexArray(this.vOrb);
+        gl.drawArraysInstanced(gl.LINE_STRIP, 0, ORB_SEG + 1, this.nOrb);
+      }
+      // 道
+      if (this.nRoute) {
+        this.common(P.route, F);
+        gl.uniform1f(P.route.u.u_now, F.now);
+        gl.uniform1f(P.route.u.u_width, 7.5 * this.dpr);
+        const fsU = P.route.u.u_now;
+        if (fsU) gl.uniform1f(fsU, F.now);
+        gl.bindVertexArray(this.vRoute);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, (ROUTE_SEG + 1) * 2, this.nRoute);
+      }
+      // 光（点の光・コロナ）
+      this.common(P.glow, F);
+      gl.uniform1f(P.glow.u.u_magLim, F.magLim);
+      gl.uniform1f(P.glow.u.u_magRange, F.magRange);
+      gl.bindVertexArray(this.vGlow);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, N);
+      // 速く飛ぶときの光の筋
+      if (F.warp > 0.01) {
+        this.common(P.dust, F);
+        gl.uniform3f(P.dust.u.u_off, F.off[0], F.off[1], F.off[2]);
+        gl.uniform1f(P.dust.u.u_box, F.box);
+        gl.uniform3f(P.dust.u.u_velV, F.velV[0], F.velV[1], F.velV[2]);
+        gl.uniform1f(P.dust.u.u_warp, F.warp);
+        gl.bindVertexArray(this.vDust);
+        gl.drawArrays(gl.LINES, 0, this.nDust * 2);
+      }
+      // 割れる白い枠と、バブルの写し
+      if (this.nShard && F.shard) {
+        const S = F.shard, u = P.shard.u;
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        gl.depthMask(true);
+        this.common(P.shard, F);
+        gl.uniform3f(u.u_cam, F.cam[0], F.cam[1], F.cam[2]);
+        gl.uniform1f(u.u_tS, S.tS);
+        gl.uniform3fv(u.u_n, S.n);
+        gl.uniform1f(u.u_crack, S.crack);
+        gl.uniform1f(u.u_flash, S.flash || 0);
+        gl.uniform1f(u.u_alpha, S.alpha);
+        gl.uniform3fv(u.u_paper, S.paper);
+        gl.uniform3fv(u.u_rule, S.rule);
+        gl.uniform3fv(u.u_light, S.light);
+        gl.uniform2f(u.u_chart, S.chart[0], S.chart[1]);
+        gl.uniform1f(u.u_radius, S.radius);
+        gl.uniform1f(u.u_useTex, this.shardTex && S.useTex ? 1 : 0);
+        if (this.shardTex) { gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, this.shardTex); gl.uniform1i(u.u_tex, 3); }
+        gl.bindVertexArray(this.vShard);
+        gl.drawArrays(gl.TRIANGLES, 0, this.nShard);
+        gl.depthMask(false);
+      }
+      if (this.nDisc) {
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        gl.disable(gl.DEPTH_TEST);
+        this.common(P.disc, F);
+        gl.bindVertexArray(this.vDisc);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.nDisc);
+      }
+      gl.bindVertexArray(null);
+      if (tqq) { gl.endQuery(this.tq.TIME_ELAPSED_EXT); this.tqList.push(tqq); }
+    }
+
+    error() { const gl = this.gl; const e = gl.getError(); return e === gl.NO_ERROR ? 0 : e; }
+    lost() { return this.gl.isContextLost(); }
+    destroy() {
+      const gl = this.gl;
+      try { const lose = gl.getExtension("WEBGL_lose_context"); if (lose && !gl.isContextLost()) lose.loseContext(); } catch (e) { /* もう失われている */ }
+    }
+  }
+
+  SG.SpaceGL = { create(canvas, model) { return new SpaceGL(canvas, model); } };
+})();
+
+</script>
+<script>
+/* 宇宙の 3D 空間（指示101）の入り口と動かし方。並べ方は js/space-model.js、描くのは js/space-gl.js。
+ * - 地図の道具帯の「3D」（パソコンだけ。指で触る端末・狭い画面・WebGL2 のない（速く描けない）ブラウザ・「動きを減らす」設定では出さない）。
+ * - 入ると、白い図の枠に平泉澄先生のバブルからひびが入って割れ、破片が飛び散り、バブルはそれぞれの星へ飛んでいく。
+ *   カメラは割れた枠を抜けて、平泉澄先生の太陽系へ進む。そのあと全画面にする（押してから 5 秒のうちなら、ブラウザが全画面を許す）。
+ * - 動かし方: 左ドラッグで回り込む、右ドラッグで見回す、真ん中のドラッグで横へずらす、ホイールで近づく・離れる、矢印キーと PageUp・PageDown で進む。
+ *   名前（星の名前と道の関係の名）を押すと、その星へ飛ぶ。名前を打ち始めると画面の下に検索の行が出る（中島さんが選んだ案 A。11/6）。
+ * - 探した星へは、いったん引いてから近づく道すじで飛ぶ（van Wijk と Nuij の、なめらかに引いて寄る道すじ）。着くと、平泉澄先生への道
+ *   （地図と同じ SG.pathInfo の道）に光が一本ずつ流れ、中心の太陽へ向かう。カメラは太陽がその星の奥に見える向きに着く。
+ * - Esc で 2D の地図へ戻る。全画面のときの Esc はブラウザが全画面を抜けるのに使うので、全画面が終わったときも 2D へ戻す。
+ * - 3D の間は 2D の地図を隠すだけ（visibility）にし、描き直さない。選んだ人は、戻るときに地図でも選ぶ。見つけた人の記録（指示99）には、選んだときに足す。
+ * 毎こまの計算は、確保済みの配列の書き換えだけ（新しいメモリを使わない）。
+ */
+(function () {
+  "use strict";
+  const SG = window.SG;
+  if (!SG || !SG.SpaceModel || !SG.SpaceGL) return;
+  // 入ったときに数秒だけ出す 1 行の案内。出すかどうかは中島さんの答え待ち（11/6）。true にすると出る
+  const HINT = false;
+  const HINT_TEXT = "名前を打つと探せます ・ ドラッグで回る ・ ホイールで近づく ・ 矢印キーで進む ・ Esc で地図に戻る";
+  const FOV = (55 * Math.PI) / 180, NEAR = 0.01, FAR = 2e5, FC = 2 / Math.log2(FAR + 1);
+  const MAG_LIM = 6.6, MAG_RANGE = 6.6;
+  const LMAX = 44;
+  const GOLD = [1.0, 0.8, 0.46];
+  const T_SHATTER = 0.78, T_END = 2.6;
+  let avail = null, S = null, pre = null;
+
+  const mq = (q) => !!(window.matchMedia && window.matchMedia(q).matches);
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const easeIO = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const esc = SG.esc;
+
+  // ── 出してよい端末か ──
+  function deviceOK() {
+    if (SG.reducedMotion && SG.reducedMotion()) return false;
+    if (!mq("(hover: hover) and (pointer: fine)")) return false;
+    return window.innerWidth >= 900;
+  }
+  // WebGL2 が速く描けるか（ソフトウェアで描く端末では出さない。ラグになるため）。地図を開いて手の空いたときに一度だけ試す
+  function probe() {
+    if (avail !== null) return avail;
+    avail = false;
+    if (!("WebGL2RenderingContext" in window)) return avail;
+    try {
+      const c = document.createElement("canvas");
+      c.width = c.height = 4;
+      const gl = c.getContext("webgl2", { failIfMajorPerformanceCaveat: true });
+      if (gl) {
+        avail = gl.getParameter(gl.MAX_TEXTURE_SIZE) >= 2048;
+        const lose = gl.getExtension("WEBGL_lose_context");
+        if (lose) lose.loseContext();
+      }
+    } catch (e) { avail = false; }
+    return avail;
+  }
+  function syncButtons() {
+    const ok = avail === true && deviceOK();
+    document.querySelectorAll('[data-act="space"]').forEach((b) => { b.hidden = !ok; });
+  }
+  const ICON = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.7" fill="currentColor"/><ellipse cx="8" cy="8" rx="6.7" ry="2.5" fill="none" stroke="currentColor" stroke-width="1.3" transform="rotate(-24 8 8)"/><circle cx="13.3" cy="5.5" r="1.15" fill="currentColor"/></svg>';
+  function button() {
+    return `<button type="button" class="btn sp-btn" data-act="space" hidden aria-label="宇宙の 3D 空間で見る" title="宇宙の 3D 空間で見る（Esc で地図に戻る）">${ICON}<span class="l">3D</span></button>`;
+  }
+  const idle = (fn, ms) => (window.requestIdleCallback ? window.requestIdleCallback(fn, { timeout: ms || 1500 }) : setTimeout(fn, 60));
+  function reveal(host) {
+    const b = host && host.querySelector('[data-act="space"]');
+    if (!b) return;
+    // 手の空いたときに WebGL2 を確かめ、出せるなら、台本の準備も裏で先に始めておく（押したときに待たせない）
+    const go = () => { probe(); syncButtons(); if (avail) prewarm(); };
+    if (avail !== null) go(); else idle(go, 2500);
+    b.addEventListener("pointerenter", prewarm);
+    b.addEventListener("focus", prewarm);
+  }
+  window.addEventListener("resize", () => { if (avail !== null) syncButtons(); });
+  ["(prefers-reduced-motion: reduce)", "(hover: hover) and (pointer: fine)"].forEach((q) => { try { window.matchMedia(q).addEventListener("change", () => { if (avail !== null) syncButtons(); }); } catch (e) { /* 古いブラウザ */ } });
+
+  // ── 先に作っておく（ボタンにマウスを重ねたとき。押してからの待ちをなくす）──
+  function make() {
+    const m = SG.SpaceModel.build();
+    const root = document.createElement("div");
+    root.className = "sp-root";
+    root.setAttribute("role", "application");
+    root.setAttribute("aria-label", "平泉澄先生 学統マップの宇宙の 3D 空間。名前を打つと探せます。Esc で地図に戻ります");
+    root.innerHTML = `<canvas class="sp-cv" aria-hidden="true"></canvas><div class="sp-labels"></div>
+      <div class="sp-title" aria-hidden="true"></div>
+      <div class="sp-search" data-open="false"><ul class="sp-sug" id="spSug" role="listbox" aria-label="探した人物・組織の候補"></ul>
+        <input class="sp-q" id="spQ" type="text" role="combobox" aria-autocomplete="list" aria-controls="spSug" aria-expanded="false" aria-label="人物・組織を、名前かよみで探す（ローマ字でも）" autocomplete="off" spellcheck="false" enterkeyhint="go"></div>
+      <p class="sp-hint" hidden></p><p class="vh sp-live" aria-live="polite"></p>`;
+    const cv = root.querySelector("canvas");
+    const gl = SG.SpaceGL.create(cv, m);
+    return { m, root, cv, gl };
+  }
+  let warming = false, entering = false;
+  function prewarm() {
+    if (pre || S || warming || avail !== true || !deviceOK()) return;
+    warming = true;
+    idle(() => {
+      if (pre || S) { warming = false; return; }
+      const t0 = performance.now();
+      try { pre = make(); } catch (e) { pre = null; warming = false; return; }
+      pre.makeMs = Math.round(performance.now() - t0);
+      const tick = () => { if (!pre) { warming = false; return; } try { if (!pre.gl.poll()) { idle(tick, 300); return; } } catch (e) { pre = null; } warming = false; };
+      idle(tick, 300);
+    }, 800);
+  }
+
+  // ── 2D の図を読み取る（白い枠の場所と、見えているバブル）──
+  function capture2D(m) {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const chart = document.querySelector("#view .chart");
+    let cr = chart ? chart.getBoundingClientRect() : null;
+    if (!cr || cr.width < 40 || cr.height < 40) cr = { left: 0, top: 0, right: vw, bottom: vh, width: vw, height: vh };
+    const L = Math.max(0, cr.left), T = Math.max(0, cr.top), R = Math.min(vw, cr.right), B = Math.min(vh, cr.bottom);
+    const rect = { x: L, y: T, w: Math.max(1, R - L), h: Math.max(1, B - T) };
+    const cs = chart ? getComputedStyle(chart) : null;
+    const paper = (cs && SG.SpaceModel.rgb(cs.backgroundColor)) || [0.99, 0.995, 0.99];
+    const rule = (cs && SG.SpaceModel.rgb(cs.borderTopColor)) || [0.84, 0.85, 0.84];
+    const radius = cs ? parseFloat(cs.borderTopLeftRadius) || 0 : 0;
+    const discs = [];
+    const map = SG.views && SG.views.map, els = map && map.nodeEl;
+    if (els && els.forEach) els.forEach((g, id) => {
+      const i = m.idx.get(id);
+      if (i == null || !g.isConnected) return;
+      const sh = g.querySelector(".shape");
+      if (!sh) return;
+      const b = sh.getBoundingClientRect();
+      const cx = b.left + b.width / 2, cy = b.top + b.height / 2, r = Math.max(b.width, b.height) / 2;
+      if (r < 0.5 || cx < rect.x || cx > rect.x + rect.w || cy < rect.y || cy > rect.y + rect.h) return;
+      discs.push({ i, x: cx, y: cy, r });
+    });
+    const f = discs.find((d) => d.i === m.fi);
+    const impact = f ? [f.x, f.y] : [rect.x + rect.w / 2, rect.y + rect.h * 0.42];
+    return { rect, full: { x: cr.left, y: cr.top, w: cr.width, h: cr.height }, paper, rule, radius, discs, impact, vw, vh };
+  }
+
+  // ── 白い枠を割る破片（ボロノイの分け方。衝撃の点の近くほど細かく）──
+  function clipPoly(poly, nx, ny, mx, my) {
+    const out = [];
+    for (let k = 0; k < poly.length; k++) {
+      const a = poly[k], b = poly[(k + 1) % poly.length];
+      const da = (a[0] - mx) * nx + (a[1] - my) * ny, db = (b[0] - mx) * nx + (b[1] - my) * ny;
+      if (da <= 0) out.push(a);
+      if ((da <= 0) !== (db <= 0)) { const t = da / (da - db); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+    }
+    return out;
+  }
+  function shards(cap, plane) {
+    const { rect, impact } = cap;
+    const r = SG.SpaceModel.rng(4242 + Math.round(impact[0] * 7 + impact[1] * 13));
+    const diag = Math.hypot(rect.w, rect.h);
+    // ガラスの割れ方: 衝撃の点から放射状の割れ目と、同心円の割れ目。点を輪の上に並べ（外の輪ほど間隔を広く）、その分け方（ボロノイ）で破片にする
+    const seeds = [];
+    const maxR = Math.max(...[[rect.x, rect.y], [rect.x + rect.w, rect.y], [rect.x, rect.y + rect.h], [rect.x + rect.w, rect.y + rect.h]].map(([x, y]) => Math.hypot(x - impact[0], y - impact[1])));
+    let rr = maxR * 0.018;
+    for (let ring = 0; rr < maxR * 1.08; ring++) {
+      const n = Math.round(6 + ring * 2.3), a0 = r() * Math.PI * 2;
+      for (let k = 0; k < n; k++) {
+        const a = a0 + ((k + (r() - 0.5) * 0.6) / n) * Math.PI * 2, d = rr * (0.82 + r() * 0.36);
+        const x = impact[0] + Math.cos(a) * d, y = impact[1] + Math.sin(a) * d;
+        if (x > rect.x && x < rect.x + rect.w && y > rect.y && y < rect.y + rect.h) seeds.push([x, y]);
+      }
+      rr *= 1.46 + r() * 0.12;
+    }
+    const out = [];
+    const F = plane.f, Rv = plane.r, U = plane.u;
+    const W = (x, y) => [plane.c[0] + Rv[0] * (x - cap.vw / 2) * plane.s + U[0] * (cap.vh / 2 - y) * plane.s, plane.c[1] + Rv[1] * (x - cap.vw / 2) * plane.s + U[1] * (cap.vh / 2 - y) * plane.s, plane.c[2] + Rv[2] * (x - cap.vw / 2) * plane.s + U[2] * (cap.vh / 2 - y) * plane.s];
+    const full = cap.full;
+    const uv = (x, y) => [(x - full.x) / full.w, (y - full.y) / full.h];
+    for (let i = 0; i < seeds.length; i++) {
+      let poly = [[rect.x, rect.y], [rect.x + rect.w, rect.y], [rect.x + rect.w, rect.y + rect.h], [rect.x, rect.y + rect.h]];
+      const [px, py] = seeds[i];
+      for (let j = 0; j < seeds.length && poly.length >= 3; j++) {
+        if (i === j) continue;
+        const [qx, qy] = seeds[j];
+        poly = clipPoly(poly, qx - px, qy - py, (px + qx) / 2, (py + qy) / 2);
+      }
+      if (poly.length < 3) continue;
+      let cx = 0, cy = 0;
+      poly.forEach((p) => { cx += p[0]; cy += p[1]; });
+      cx /= poly.length; cy /= poly.length;
+      const C = W(cx, cy);
+      const dx = cx - impact[0], dy = cy - impact[1], d = Math.hypot(dx, dy) || 1;
+      const sp = (70 + 300 * Math.exp(-d / (0.3 * diag))) * plane.s * 3.2;
+      const out3 = [(Rv[0] * dx - U[0] * dy) / d, (Rv[1] * dx - U[1] * dy) / d, (Rv[2] * dx - U[2] * dy) / d];
+      const toCam = (60 + 160 * r()) * plane.s * 2.4;
+      const V = [out3[0] * sp - F[0] * toCam + (r() - 0.5) * sp * 0.3, out3[1] * sp - F[1] * toCam + (r() - 0.5) * sp * 0.3, out3[2] * sp - F[2] * toCam + (r() - 0.5) * sp * 0.3];
+      const axL = [r() - 0.5, r() - 0.5, (r() - 0.5) * 0.4], al = Math.hypot(...axL) || 1;
+      const AX = [(Rv[0] * axL[0] + U[0] * axL[1] + F[0] * axL[2]) / al, (Rv[1] * axL[0] + U[1] * axL[1] + F[1] * axL[2]) / al, (Rv[2] * axL[0] + U[2] * axL[1] + F[2] * axL[2]) / al];
+      const om = (1.4 + 4.5 * r()) * (r() < 0.5 ? -1 : 1);
+      const delay = (d / diag) * 0.28;
+      for (let k = 0; k < poly.length; k++) {
+        const a = poly[k], b = poly[(k + 1) % poly.length];
+        const tri = [[cx, cy, 1, 0, 0], [a[0], a[1], 0, 1, 0], [b[0], b[1], 0, 0, 1]];
+        for (const [x, y, b0, b1, b2] of tri) {
+          const P = W(x, y), q = uv(x, y);
+          out.push(C[0], C[1], C[2], delay, P[0] - C[0], P[1] - C[1], P[2] - C[2], V[0], V[1], V[2], AX[0], AX[1], AX[2], om, b0, b1, b2, q[0], q[1], Math.hypot(x - impact[0], y - impact[1]) / diag);
+        }
+      }
+    }
+    return new Float32Array(out);
+  }
+
+  // ── 入る ──（台本の準備がまだなら、済むまで待ってから始める）
+  function enter(btn) {
+    if (S || entering || !deviceOK() || !probe()) return;
+    let P = pre;
+    pre = null;
+    try { if (!P) P = make(); } catch (e) { avail = false; syncButtons(); return; }
+    entering = true;
+    const tClick = performance.now();
+    const go = () => {
+      let ok = false;
+      try { ok = P.gl.poll(); } catch (e) { entering = false; avail = false; syncButtons(); try { P.gl.destroy(); } catch (e2) { /* なし */ } return; }
+      if (!ok) { requestAnimationFrame(go); return; }
+      entering = false;
+      P.waitMs = Math.round(performance.now() - tClick);
+      begin(P, btn);
+    };
+    go();
+  }
+  function begin(P, btn) {
+    const m = P.m, N = m.N, gl = P.gl;
+    const cap = capture2D(m);
+    S = {
+      m, N, gl, root: P.root, cv: P.cv, btn: btn || null, t0: performance.now() / 1000,
+      W: window.innerWidth, H: window.innerHeight, dpr: Math.min(2, window.devicePixelRatio || 1), dprMax: Math.min(2, window.devicePixelRatio || 1),
+      t: 0, now: 0, last: 0, pivot: new Float64Array(3), cam: new Float64Array(3), prevCam: new Float64Array(3), dist: 1, distT: 1, yaw: -0.7, pitch: -0.36, fov: FOV,
+      f: [0, 0, -1], r: [1, 0, 0], u: [0, 1, 0], view: new Float32Array(9), iview: new Float32Array(9), proj: new Float32Array(16),
+      focus: m.fi, track: true, sel: -1, hover: -1, fly: null, keys: new Set(), vel: [0, 0, 0], move: [0, 0, 0],
+      drag: null, spin: [0, 0], lastInput: 0,
+      vis: new Float32Array(N), hi: new Float32Array(N), SX: new Float32Array(N), SY: new Float32Array(N), SZ: new Float32Array(N), I: new Float32Array(N),
+      dynOff: new Int32Array(N), cand: [], score: new Float32Array(N),
+      lb: [], lbOf: new Map(), rl: [], route: null, routeSet: new Set(),
+      stats: { iv: new Float32Array(600), js: new Float32Array(600), n: 0, k: 0 }, ema: 16, slowT: 0, fastT: 0,
+      tr: null, warp: 0, F: null, fsByUs: false, exiting: false, waitMs: P.waitMs || 0, makeMs: P.makeMs || 0
+    };
+    for (let i = 0; i < N; i++) S.dynOff[i] = ((Math.floor(i / 64) * gl.TW) + (i % 64) * 2) * 4;
+    document.body.appendChild(S.root);
+    S.root.style.setProperty("--sp-hint", "0");
+    S.labels = S.root.querySelector(".sp-labels");
+    S.title = S.root.querySelector(".sp-title");
+    S.search = S.root.querySelector(".sp-search");
+    S.input = S.root.querySelector(".sp-q");
+    S.sug = S.root.querySelector(".sp-sug");
+    S.live = S.root.querySelector(".sp-live");
+    S.hint = S.root.querySelector(".sp-hint");
+    for (let k = 0; k < LMAX; k++) {
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "sp-lb";
+      el.tabIndex = -1;
+      el.innerHTML = '<span class="k"></span><span class="n"></span>';
+      S.labels.appendChild(el);
+      S.lb.push({ el, i: -1, x: -1e4, y: -1e4, w: 0, h: 0, off: 0, on: false });
+    }
+    resize();
+    // 終わりの見え方（平泉澄先生の太陽系を、少し上から）
+    S.pivot.set([0, 0, 0]);
+    S.dist = S.distT = m.E0 * 1.8;
+    S.yaw = -0.72; S.pitch = -0.4;
+    basis();
+    const endCam = [S.pivot[0] - S.f[0] * S.dist, S.pivot[1] - S.f[1] * S.dist, S.pivot[2] - S.f[2] * S.dist];
+    // 初めの見え方: 終わりの位置から少し引いた所。その前に、画面いっぱいの「紙の面」（2D の図の写し）を置く
+    const back = S.dist * 0.95, D0 = back * 0.55;
+    const c0 = [endCam[0] - S.f[0] * back, endCam[1] - S.f[1] * back, endCam[2] - S.f[2] * back];
+    const h = D0 * Math.tan(FOV / 2);
+    const plane = { c: [c0[0] + S.f[0] * D0, c0[1] + S.f[1] * D0, c0[2] + S.f[2] * D0], f: S.f.slice(), r: S.r.slice(), u: S.u.slice(), s: (2 * h) / cap.vh };
+    const verts = shards(cap, plane);
+    gl.setShards(verts, verts.length / 20);
+    const W2 = (x, y) => [plane.c[0] + plane.r[0] * (x - cap.vw / 2) * plane.s + plane.u[0] * (cap.vh / 2 - y) * plane.s - plane.f[0] * 0.02 * D0,
+      plane.c[1] + plane.r[1] * (x - cap.vw / 2) * plane.s + plane.u[1] * (cap.vh / 2 - y) * plane.s - plane.f[1] * 0.02 * D0,
+      plane.c[2] + plane.r[2] * (x - cap.vw / 2) * plane.s + plane.u[2] * (cap.vh / 2 - y) * plane.s - plane.f[2] * 0.02 * D0];
+    const rd = SG.SpaceModel.rng(99);
+    const discs = cap.discs.slice(0, 400).map((d) => {
+      const c = m.famCol[m.famIdx[d.i]];
+      return { i: d.i, p0: W2(d.x, d.y), r0: d.r * plane.s, col: c, org: m.isOrg[d.i], delay: rd() * 0.35 + (Math.hypot(d.x - cap.impact[0], d.y - cap.impact[1]) / Math.hypot(cap.vw, cap.vh)) * 0.25 };
+    });
+    const discOf = new Set(discs.map((d) => d.i));
+    S.tr = { start: -1, cap, plane, c0, endCam, back, discs, discOf, fsAsked: false };
+    S.cam.set(c0);
+    S.prevCam.set(c0);
+    setVisBase();
+    bind();
+    S.raf = requestAnimationFrame(frame);
+    SG.spaceOn = true;
+    if (HINT) { S.hint.textContent = HINT_TEXT; S.hint.hidden = false; }
+  }
+
+  // 星の見える・見えない（学統の外の人と天皇は、地図の「絞り込みと表示」に合わせる。選んだ人と道の人はいつも出す）
+  function setVisBase() {
+    const m = S.m, st = SG.state;
+    S.visBase = S.visBase || new Float32Array(S.N);
+    for (let i = 0; i < S.N; i++) {
+      const n = m.nodes[i];
+      let v = 1;
+      if (n.outer && !st.showOuter) v = 0;
+      if (n.emperor && st.showEmperors === false) v = 0;
+      if (i === S.sel || S.routeSet.has(i)) v = 1;
+      S.visBase[i] = v;
+    }
+  }
+
+  // ── カメラ ──
+  function basis() {
+    const cp = Math.cos(S.pitch), sp = Math.sin(S.pitch), cy = Math.cos(S.yaw), sy = Math.sin(S.yaw);
+    const f = S.f, r = S.r, u = S.u;
+    f[0] = cp * sy; f[1] = sp; f[2] = -cp * cy;
+    r[0] = cy; r[1] = 0; r[2] = sy;
+    u[0] = -sy * sp; u[1] = cp; u[2] = cy * sp;
+  }
+  function camMatrices() {
+    const f = S.f, r = S.r, u = S.u, v = S.view, iv = S.iview;
+    v[0] = r[0]; v[1] = u[0]; v[2] = -f[0]; v[3] = r[1]; v[4] = u[1]; v[5] = -f[1]; v[6] = r[2]; v[7] = u[2]; v[8] = -f[2];
+    iv[0] = r[0]; iv[1] = r[1]; iv[2] = r[2]; iv[3] = u[0]; iv[4] = u[1]; iv[5] = u[2]; iv[6] = -f[0]; iv[7] = -f[1]; iv[8] = -f[2];
+    const t = 1 / Math.tan(S.fov / 2), a = S.W / S.H, p = S.proj;
+    p.fill(0);
+    p[0] = t / a; p[5] = t; p[10] = (FAR + NEAR) / (NEAR - FAR); p[11] = -1; p[14] = (2 * FAR * NEAR) / (NEAR - FAR);
+    S.focal = S.H / 2 / Math.tan(S.fov / 2);
+  }
+  function resize() {
+    S.W = window.innerWidth; S.H = window.innerHeight;
+    S.dprMax = Math.min(2, window.devicePixelRatio || 1);
+    S.dpr = Math.min(S.dpr, S.dprMax);
+    S.gl.resize(S.W, S.H, S.dpr);
+  }
+
+  // ── 飛ぶ（van Wijk と Nuij のなめらかな道すじ。引いてから寄る）──
+  function vanWijk(w0, w1, u, rho) {
+    const r2 = rho * rho, r4 = r2 * r2;
+    if (u < 1e-6 * Math.max(w0, w1)) {
+      const S1 = Math.abs(Math.log(w1 / w0)) / rho, k = w1 > w0 ? 1 : -1;
+      return { S: S1, at: (s) => [0, w0 * Math.exp(k * rho * s)] };
+    }
+    const b0 = (w1 * w1 - w0 * w0 + r4 * u * u) / (2 * w0 * r2 * u), b1 = (w1 * w1 - w0 * w0 - r4 * u * u) / (2 * w1 * r2 * u);
+    const q0 = Math.log(Math.sqrt(b0 * b0 + 1) - b0), q1 = Math.log(Math.sqrt(b1 * b1 + 1) - b1);
+    const cr0 = Math.cosh(q0), sr0 = Math.sinh(q0);
+    return { S: (q1 - q0) / rho, at: (s) => [(w0 / r2) * (cr0 * Math.tanh(rho * s + q0) - sr0), (w0 * cr0) / Math.cosh(rho * s + q0)] };
+  }
+  function bodyPos(i, out) { const p = S.m.pos; out[0] = p[i * 3]; out[1] = p[i * 3 + 1]; out[2] = p[i * 3 + 2]; return out; }
+  function frameDist(i) {
+    const m = S.m;
+    if (i === m.fi) return m.E0 * 1.15;
+    return Math.max(m.R[i] * 7.5, m.ext[i] * 1.7, 2.6);
+  }
+  function flyTo(i) {
+    const m = S.m, p = bodyPos(i, [0, 0, 0]);
+    const sun = bodyPos(m.fi, [0, 0, 0]);
+    let yaw1 = S.yaw, pitch1 = -0.42;
+    if (i !== m.fi) {
+      const d = [sun[0] - p[0], sun[1] - p[1], sun[2] - p[2]], l = Math.hypot(d[0], d[1], d[2]);
+      if (l > 1e-6) {
+        yaw1 = Math.atan2(d[0] / l, -d[2] / l) + 0.42;
+        pitch1 = clamp(Math.asin(clamp(d[1] / l, -1, 1)) - 0.3, -1.2, 1.2);
+      }
+    }
+    // 回る向きは近いほうへ
+    let dy = yaw1 - S.yaw;
+    dy = ((dy + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+    const w1 = frameDist(i);
+    const u = Math.hypot(p[0] - S.pivot[0], p[1] - S.pivot[1], p[2] - S.pivot[2]);
+    const vw = vanWijk(S.dist, w1, u, 1.35);
+    const dur = clamp(vw.S * 0.72, 1.5, 4.6);
+    S.fly = { t0: S.now, dur, i, p0: [S.pivot[0], S.pivot[1], S.pivot[2]], u, vw, yaw0: S.yaw, dyaw: dy, pitch0: S.pitch, pitch1, w1 };
+    S.track = false;
+    S.focus = i;
+    S.spin[0] = S.spin[1] = 0;
+    S.title.classList.remove("on");
+    return dur;
+  }
+  const tmpP = [0, 0, 0];
+  function stepFly() {
+    const fl = S.fly;
+    const tau = clamp((S.now - fl.t0) / fl.dur, 0, 1);
+    const e = 0.5 * easeIO(tau) + 0.5 * (tau * tau * (3 - 2 * tau));
+    const [uu, w] = fl.vw.at(e * fl.vw.S);
+    const p = bodyPos(fl.i, tmpP);
+    const frac = fl.u > 1e-9 ? clamp(uu / fl.u, 0, 1) : e;
+    for (let k = 0; k < 3; k++) S.pivot[k] = fl.p0[k] + (p[k] - fl.p0[k]) * frac;
+    S.dist = S.distT = w;
+    const ea = easeIO(clamp(tau / 0.86, 0, 1));
+    S.yaw = fl.yaw0 + fl.dyaw * ea;
+    S.pitch = fl.pitch0 + (fl.pitch1 - fl.pitch0) * ea;
+    if (tau >= 1) { S.fly = null; S.track = true; arrived(fl.i); }
+  }
+
+  // ── 選ぶ（検索・名前・星を押す）──
+  function chainOf(id) {
+    if (id === SG.FOCUS) return [];
+    const info = SG.pathInfo(id);
+    const ids = (info.chain || []).map((c) => c.id);
+    if (ids.length && ids[0] === SG.FOCUS) ids.reverse();
+    return ids;
+  }
+  function edgeBetween(a, b) {
+    let best = null;
+    for (const e of SG.incident.get(a) || []) {
+      if ((e.s === a && e.t === b) || (e.s === b && e.t === a)) { if (!best || SG.edgeOrder(e, best) < 0) best = e; }
+    }
+    return best;
+  }
+  function choose(i) {
+    const m = S.m, n = m.nodes[i];
+    S.sel = i;
+    const chain = chainOf(n.id);
+    try { if (SG.unlock) SG.unlock([n.id].concat(chain), ["s", n.id]); } catch (e) { /* 覚えておけない環境でも動く */ }
+    const dur = flyTo(i);
+    setRoute(chain, S.now + dur - 0.3);
+    setVisBase();
+    say(`${n.n}へ移動しています`);
+  }
+  function setRoute(chain, start) {
+    const m = S.m, segs = [];
+    S.routeSet = new Set();
+    S.rl.forEach((r) => r.el.remove());
+    S.rl = [];
+    S.route = null;
+    if (chain.length < 2) { S.gl.setRoute([]); return; }
+    const idx = chain.map((id) => m.idx.get(id)).filter((i) => i != null);
+    idx.forEach((i) => S.routeSet.add(i));
+    let t = start;
+    for (let k = 0; k + 1 < idx.length; k++) {
+      const a = idx[k], b = idx[k + 1];
+      const pa = m.pos, d = Math.hypot(pa[a * 3] - pa[b * 3], pa[a * 3 + 1] - pa[b * 3 + 1], pa[a * 3 + 2] - pa[b * 3 + 2]);
+      const dur = 0.5 + 0.32 * Math.log10(1 + d / 15);
+      const e = edgeBetween(chain[k], chain[k + 1]);
+      let col = GOLD;
+      if (e) { const c = SG.SpaceModel.cssColor(SG.EDGE_TYPES[e.type].color); if (c) col = [GOLD[0] * 0.72 + c[0] * 0.28, GOLD[1] * 0.72 + c[1] * 0.28, GOLD[2] * 0.72 + c[2] * 0.28]; }
+      segs.push({ a, b, start: t, dur, col, base: 0.35 });
+      // 道の関係の名（押すと、その先の星へ）
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "sp-rl";
+      el.tabIndex = -1;
+      el.textContent = e ? SG.RT_SHORT[e.type] || "" : "";
+      el.title = e ? `${m.nodes[a].n} と ${m.nodes[b].n}：${SG.EDGE_TYPES[e.type].label}（押すと ${m.nodes[b].n} へ）` : "";
+      el.addEventListener("click", (ev) => { ev.stopPropagation(); choose(b); refocus(); });
+      S.labels.appendChild(el);
+      S.rl.push({ el, a, b, start: t, dur, x: -1e4, y: -1e4, on: false });
+      t += dur * 0.9;
+    }
+    S.route = { idx, segs, end: t };
+    S.gl.setRoute(segs);
+  }
+  function arrived(i) {
+    const m = S.m, n = m.nodes[i];
+    const d = SG.distTo(n.id);
+    const fam = SG.familyOf(n);
+    const steps = n.id === SG.FOCUS ? "この宇宙の中心" : d.steps != null ? `平泉澄先生まで ${d.steps} 段` : "平泉澄先生への道はまだ見つかっていません";
+    S.title.innerHTML = `<p class="tk">${esc(n.k || "")}</p><p class="tn">${esc(n.n)}</p><p class="tm">${esc(SG.lifeText(n))} ・ ${esc(n.isOrg ? "組織" : fam.label)} ・ ${esc(steps)}</p>`;
+    const c = m.col;
+    S.title.style.setProperty("--c", `${Math.round(c[i * 3] * 255)} ${Math.round(c[i * 3 + 1] * 255)} ${Math.round(c[i * 3 + 2] * 255)}`);
+    S.title.classList.add("on");
+    say(`${n.n}。${steps}`);
+  }
+  function say(text) { if (S && S.live) S.live.textContent = text; }
+
+  // ── 毎こま ──
+  const dt0 = { v: 0 };
+  function frame(ms) {
+    if (!S) return;
+    S.raf = requestAnimationFrame(frame);
+    const now = ms / 1000;
+    const dt = S.last ? clamp(now - S.last, 0, 0.1) : 0.016;
+    const iv = S.last ? (now - S.last) * 1000 : 16.7;
+    S.last = now;
+    S.now = now;
+    const tA = performance.now();
+    if (S.tr && S.tr.start < 0) S.tr.start = now;
+    S.t += dt;
+    SG.SpaceModel.update(S.t);
+    if (S.tr) stepTransition(now, dt); else stepControls(dt);
+    if (S.fly) stepFly();
+    if (S.track && S.focus >= 0 && !S.fly) bodyPos(S.focus, S.pivot);
+    basis();
+    if (!S.tr) {
+      S.dist += (S.distT - S.dist) * (1 - Math.exp(-dt * 12));
+      for (let k = 0; k < 3; k++) S.cam[k] = S.pivot[k] - S.f[k] * S.dist;
+    }
+    // 速さ（光の筋と、視野の少しの広がり）
+    let v2 = 0;
+    for (let k = 0; k < 3; k++) { S.vel[k] = (S.cam[k] - S.prevCam[k]) / Math.max(dt, 1e-3); v2 += S.vel[k] * S.vel[k]; S.prevCam[k] = S.cam[k]; }
+    const rel = Math.sqrt(v2) / Math.max(S.dist, 1e-3);
+    const warpT = S.tr ? 0 : smooth(0.9, 3.2, rel);
+    S.warp += (warpT - S.warp) * (1 - Math.exp(-dt * 8));
+    S.fov = FOV * (1 + 0.14 * S.warp);
+    camMatrices();
+    fillDyn();
+    labels();
+    routeLabels();
+    render(dt);
+    const js = performance.now() - tA;
+    const st = S.stats;
+    st.iv[st.k] = iv; st.js[st.k] = js; st.k = (st.k + 1) % st.iv.length; st.n++;
+    adapt(iv, dt);
+  }
+
+  // 星ごとの値（カメラから見た位置・見える度合い・照らす光の向き・目立たせ）を数の画像へ。名前と押す所のために、画面の位置も出す
+  function fillDyn() {
+    const m = S.m, N = S.N, pos = m.pos, d = S.gl.dyn, off = S.dynOff, cam = S.cam, f = S.f, r = S.r, u = S.u;
+    const vis = S.vis, hi = S.hi, base = S.visBase, R = m.R, L = m.L, root = m.sysRoot;
+    const W2 = S.W / 2, H2 = S.H / 2, fo = S.focal, tr = S.tr;
+    const fade = tr ? tr.bodyFade : 1;
+    for (let i = 0; i < N; i++) {
+      const o = off[i], k = i * 3;
+      const x = pos[k] - cam[0], y = pos[k + 1] - cam[1], z = pos[k + 2] - cam[2];
+      let v = base[i] * (tr && tr.discOf.has(i) ? tr.discVis.get(i) || 0 : fade);
+      vis[i] = v;
+      d[o] = x; d[o + 1] = y; d[o + 2] = z; d[o + 3] = v;
+      const ri = root[i];
+      if (ri !== i) {
+        const q = ri * 3, lx = pos[q] - pos[k], ly = pos[q + 1] - pos[k + 1], lz = pos[q + 2] - pos[k + 2], l = Math.sqrt(lx * lx + ly * ly + lz * lz) || 1;
+        d[o + 4] = lx / l; d[o + 5] = ly / l; d[o + 6] = lz / l;
+      } else { d[o + 4] = 0; d[o + 5] = 0; d[o + 6] = 0; }
+      const h = i === S.sel || i === S.hover ? 1 : S.routeSet.has(i) ? 0.55 : 0;
+      hi[i] += (h - hi[i]) * 0.18;
+      d[o + 7] = hi[i];
+      const zz = x * f[0] + y * f[1] + z * f[2];
+      S.SZ[i] = zz;
+      if (zz > NEAR) {
+        S.SX[i] = W2 + ((x * r[0] + y * r[1] + z * r[2]) / zz) * fo;
+        S.SY[i] = H2 - ((x * u[0] + y * u[1] + z * u[2]) / zz) * fo;
+        const dd = x * x + y * y + z * z;
+        const F = L[i] / Math.max(dd, 1e-12);
+        const I = clamp((Math.log10(F) + MAG_LIM) / MAG_RANGE, 0, 1);
+        S.I[i] = Math.pow(I, 1.35) * v;
+      } else { S.SX[i] = -1e5; S.SY[i] = -1e5; S.I[i] = 0; }
+    }
+  }
+
+  function render(dt) {
+    const tr = S.tr, F = S.F || (S.F = { cam: [0, 0, 0], velV: [0, 0, 0], off: [0, 0, 0], shard: null });
+    F.view = S.view; F.iview = S.iview; F.proj = S.proj; F.fc = FC; F.focal = S.focal; F.t = S.t; F.now = S.now;
+    F.tanX = Math.tan(S.fov / 2) * (S.W / S.H); F.tanY = Math.tan(S.fov / 2);
+    F.cam[0] = S.cam[0]; F.cam[1] = S.cam[1]; F.cam[2] = S.cam[2];
+    F.magLim = MAG_LIM; F.magRange = MAG_RANGE;
+    F.bgA = tr ? tr.bgA : 1; F.galA = tr ? tr.galA : 1; F.orbA = tr ? tr.orbA : 1;
+    F.warp = S.warp;
+    const box = Math.max(S.dist * 1.6, 0.5);
+    F.box = box;
+    F.off[0] = ((S.cam[0] / box) % 1 + 1) % 1; F.off[1] = ((S.cam[1] / box) % 1 + 1) % 1; F.off[2] = ((S.cam[2] / box) % 1 + 1) % 1;
+    const v = S.vel, k = 0.05;
+    F.velV[0] = (v[0] * S.r[0] + v[1] * S.r[1] + v[2] * S.r[2]) * k;
+    F.velV[1] = (v[0] * S.u[0] + v[1] * S.u[1] + v[2] * S.u[2]) * k;
+    F.velV[2] = -(v[0] * S.f[0] + v[1] * S.f[1] + v[2] * S.f[2]) * k;
+    F.shard = tr ? tr.shardU : null;
+    S.gl.render(F);
+  }
+
+  // ── 割れて宇宙へ入る場面 ──
+  function stepTransition(now, dt) {
+    const tr = S.tr, T = now - tr.start;
+    const m = S.m;
+    // 背景・銀河・軌道・星が順に現れる
+    tr.bgA = smooth(0.14, 0.72, T);
+    tr.galA = smooth(0.5, 1.9, T);
+    tr.orbA = smooth(1.5, 2.7, T);
+    tr.bodyFade = smooth(T_SHATTER + 0.25, T_SHATTER + 1.6, T);
+    if (T > 0.72 && !tr.siteHidden) { tr.siteHidden = true; document.documentElement.classList.add("sp-on"); }
+    // カメラ: 割れるまでは止まって（衝撃で少しだけ揺れる）、割れたら枠を抜けて進む
+    const dolly = easeIO(clamp((T - T_SHATTER) / (T_END - T_SHATTER), 0, 1));
+    const shake = T > 0.12 ? Math.exp(-(T - 0.12) * 6) * S.dist * 0.0016 : 0;
+    for (let k = 0; k < 3; k++) S.cam[k] = tr.c0[k] + S.f[k] * tr.back * dolly + (S.r[k] * Math.sin(T * 41) + S.u[k] * Math.cos(T * 33)) * shake;
+    // 破片（白い枠）。ひびは衝撃の点から 0.5 秒で全体へ
+    const tS = T - T_SHATTER;
+    tr.shardU = tr.shardU || { n: tr.plane.f.slice(), paper: tr.cap.paper, rule: tr.cap.rule, light: [-0.35, 0.55, 0.76], chart: [tr.cap.full.w, tr.cap.full.h], radius: tr.cap.radius, useTex: 0 };
+    tr.shardU.tS = tS;
+    // ひびは衝撃の点の近くで速く走り、遠くほどゆっくり広がる
+    const ck = clamp((T - 0.13) / 0.6, 0, 1);
+    tr.shardU.crack = 0.64 * Math.pow(ck, 0.8);
+    tr.shardU.flash = T > 0.1 ? Math.exp(-(T - 0.1) * 7) : 0;
+    tr.shardU.alpha = smooth(0, 0.1, T) * (1 - smooth(1.15, 1.75, tS));
+    // バブルの写し: 割れたら、それぞれの星へ飛ぶ。着いたところで星が光り出す
+    const gl = S.gl, dd = gl.discData;
+    tr.discVis = tr.discVis || new Map();
+    let n = 0;
+    const p = [0, 0, 0];
+    for (const d of tr.discs) {
+      const q = clamp((tS - d.delay) / 1.45, 0, 1), e = easeIO(q);
+      bodyPos(d.i, p);
+      const mid = [d.p0[0] - S.f[0] * 0.0, d.p0[1] + S.u[1] * 0, d.p0[2]];
+      const a = 1 - e;
+      const x = a * a * d.p0[0] + 2 * a * e * (mid[0] + (p[0] - d.p0[0]) * 0.15) + e * e * p[0];
+      const y = a * a * d.p0[1] + 2 * a * e * (mid[1] + (p[1] - d.p0[1]) * 0.15 + S.dist * 0.08) + e * e * p[1];
+      const z = a * a * d.p0[2] + 2 * a * e * (mid[2] + (p[2] - d.p0[2]) * 0.15) + e * e * p[2];
+      const rad = d.r0 * (1 - e) + m.R[d.i] * 1.1 * e;
+      const alpha = smooth(0, 0.1, T) * (1 - smooth(0.82, 1, q));
+      tr.discVis.set(d.i, smooth(0.8, 1, q));
+      if (alpha > 0.003) {
+        dd.set([x - S.cam[0], y - S.cam[1], z - S.cam[2], rad, d.col[0], d.col[1], d.col[2], alpha, d.org, e * 1.4, 1 - e, 0], n * 12);
+        n++;
+      }
+    }
+    gl.setDiscs(n);
+    // 名前は終わりぎわに
+    if (T > T_END - 0.5 && !tr.labelsOn) { tr.labelsOn = true; S.root.classList.add("labels-on"); }
+    // 全画面（押してから 5 秒のうちなら許される）
+    if (T > T_END - 0.15 && !tr.fsAsked) { tr.fsAsked = true; goFullscreen(); }
+    if (T >= T_END) {
+      gl.setShards(null, 0);
+      gl.setDiscs(0);
+      S.tr = null;
+      S.track = true;
+      S.focus = m.fi;
+      S.lastInput = now;
+      arrived(m.fi);
+      refocus();
+    }
+  }
+  function goFullscreen() {
+    const de = document.documentElement;
+    if (document.fullscreenElement || !de.requestFullscreen) return;
+    try {
+      de.requestFullscreen({ navigationUI: "hide" }).then(() => { if (S) S.fsByUs = true; }).catch(() => { /* 埋め込み表示などで全画面が使えないときは、ページの中だけで全面 */ });
+    } catch (e) { /* 同上 */ }
+  }
+
+  // ── 操作 ──
+  function stepControls(dt) {
+    const keys = S.keys;
+    // 矢印キーで進む（速さは見ている所までの距離に比例。Shift で速く）
+    const fwd = (keys.has("ArrowUp") ? 1 : 0) - (keys.has("ArrowDown") ? 1 : 0);
+    const side = (keys.has("ArrowRight") ? 1 : 0) - (keys.has("ArrowLeft") ? 1 : 0);
+    const upd = (keys.has("PageUp") ? 1 : 0) - (keys.has("PageDown") ? 1 : 0);
+    const want = [0, 0, 0];
+    if (fwd || side || upd) {
+      const sp = S.dist * 1.15 * (keys.has("Shift") ? 3.5 : 1);
+      for (let k = 0; k < 3; k++) want[k] = (S.f[k] * fwd + S.r[k] * side + (k === 1 ? upd : 0)) * sp;
+      if (S.fly) { S.fly = null; }
+      S.track = false;
+      S.lastInput = S.now;
+    }
+    const a = 1 - Math.exp(-dt * 7);
+    for (let k = 0; k < 3; k++) { S.move[k] += (want[k] - S.move[k]) * a; S.pivot[k] += S.move[k] * dt; }
+    // 手を離したあとの回転の惰性
+    if (!S.drag && (Math.abs(S.spin[0]) > 1e-4 || Math.abs(S.spin[1]) > 1e-4)) {
+      S.yaw += S.spin[0] * dt;
+      S.pitch = clamp(S.pitch + S.spin[1] * dt, -1.45, 1.45);
+      const dmp = Math.exp(-dt * 3.8);
+      S.spin[0] *= dmp; S.spin[1] *= dmp;
+    }
+    // しばらく触らなければ、ゆっくり回り込む
+    if (!S.drag && !S.fly && S.now - S.lastInput > 12) S.yaw += dt * 0.02 * smooth(12, 16, S.now - S.lastInput);
+  }
+  function pick(x, y) {
+    const m = S.m, N = S.N;
+    let best = -1, bs = Infinity;
+    for (let i = 0; i < N; i++) {
+      if (S.vis[i] < 0.05) continue;
+      const z = S.SZ[i];
+      if (z <= NEAR) continue;
+      const dx = S.SX[i] - x, dy = S.SY[i] - y, rpx = (m.R[i] * S.focal) / z;
+      const hr = Math.max(rpx, S.I[i] > 0.2 ? 9 : 6) + 2, d2 = dx * dx + dy * dy;
+      if (d2 > hr * hr) continue;
+      const inside = rpx > 3 && d2 < rpx * rpx;
+      const sc = (inside ? -10 + z / FAR : 0) + d2 / (hr * hr) - S.I[i] * 0.3;
+      if (sc < bs) { bs = sc; best = i; }
+    }
+    return best;
+  }
+  function onDown(ev) {
+    if (!S || S.tr) return;
+    ev.preventDefault();
+    S.cv.setPointerCapture(ev.pointerId);
+    S.drag = { id: ev.pointerId, b: ev.button === 0 && ev.shiftKey ? 2 : ev.button, x: ev.clientX, y: ev.clientY, x0: ev.clientX, y0: ev.clientY, t: performance.now(), moved: false };
+    S.spin[0] = S.spin[1] = 0;
+    S.lastInput = S.now;
+  }
+  function onMove(ev) {
+    if (!S || S.tr) return;
+    const d = S.drag;
+    if (!d) {
+      const i = pick(ev.clientX, ev.clientY);
+      if (i !== S.hover) { S.hover = i; S.root.classList.toggle("hovering", i >= 0); }
+      return;
+    }
+    const dx = ev.clientX - d.x, dy = ev.clientY - d.y;
+    d.x = ev.clientX; d.y = ev.clientY;
+    if (!d.moved && Math.hypot(d.x - d.x0, d.y - d.y0) > 4) { d.moved = true; S.root.classList.add("dragging"); }
+    if (!d.moved) return;
+    const tnow = performance.now(), dtm = Math.max(1, tnow - d.t) / 1000;
+    d.t = tnow;
+    S.lastInput = S.now;
+    if (S.fly) { S.fly = null; S.track = S.focus >= 0; }
+    if (d.b === 0) {
+      // 回り込む（見ている所を中心に）
+      const ky = 0.0052, kp = 0.0042;
+      S.yaw += dx * ky;
+      S.pitch = clamp(S.pitch + dy * kp, -1.45, 1.45);
+      S.spin[0] = (dx * ky) / dtm * 0.5 + S.spin[0] * 0.5;
+      S.spin[1] = (dy * kp) / dtm * 0.5 + S.spin[1] * 0.5;
+    } else if (d.b === 2) {
+      // 見回す（カメラはそのまま、見る向きを変える）
+      const cam = [S.pivot[0] - S.f[0] * S.dist, S.pivot[1] - S.f[1] * S.dist, S.pivot[2] - S.f[2] * S.dist];
+      S.yaw -= dx * 0.0036;
+      S.pitch = clamp(S.pitch - dy * 0.003, -1.45, 1.45);
+      basis();
+      for (let k = 0; k < 3; k++) S.pivot[k] = cam[k] + S.f[k] * S.dist;
+      S.track = false;
+    } else {
+      // 横へずらす
+      const k = S.dist * 0.0017;
+      for (let j = 0; j < 3; j++) S.pivot[j] += (-S.r[j] * dx + S.u[j] * dy) * k;
+      S.track = false;
+    }
+  }
+  function onUp(ev) {
+    if (!S) return;
+    const d = S.drag;
+    S.drag = null;
+    S.root.classList.remove("dragging");
+    try { S.cv.releasePointerCapture(ev.pointerId); } catch (e) { /* もう離れている */ }
+    if (d && !d.moved && d.b === 0 && !S.tr) {
+      const i = pick(ev.clientX, ev.clientY);
+      if (i >= 0) choose(i);
+    }
+    if (d && d.moved && performance.now() - d.t > 90) { S.spin[0] = S.spin[1] = 0; }
+    refocus();
+  }
+  function onWheel(ev) {
+    if (!S) return;
+    ev.preventDefault();
+    if (S.tr) return;
+    const k = ev.deltaMode === 1 ? 33 : ev.deltaMode === 2 ? 400 : 1;
+    const m = S.m;
+    const minD = S.track && S.focus >= 0 ? m.R[S.focus] * 1.6 : 0.05;
+    if (S.fly) { S.fly = null; S.track = S.focus >= 0; S.distT = S.dist; }
+    S.distT = clamp(S.distT * Math.exp(ev.deltaY * k * 0.0012), minD, m.galR * 4);
+    S.lastInput = S.now;
+  }
+  const FLY_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown"]);
+  // Esc（どこからでも）と、検索の欄の外で押したキー（窓の捕まえる段で受け、地図の画面のキー操作に渡さない）
+  function onKeyCapture(ev) {
+    if (!S) return;
+    if (ev.key === "Escape") {
+      if (ev.isComposing || ev.keyCode === 229) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      exit();
+      return;
+    }
+    if (ev.target === S.input) return; // 検索の欄の中のキーは、欄が受ける（onInputKey）
+    ev.stopPropagation();
+    if (FLY_KEYS.has(ev.key) || ev.key === "Shift") {
+      if (FLY_KEYS.has(ev.key)) ev.preventDefault();
+      S.keys.add(ev.key);
+      return;
+    }
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    // 文字のキー: 検索の欄へ（その文字から欄に入る）
+    if (ev.key.length === 1 || ev.key === "Process" || ev.keyCode === 229) refocus();
+  }
+  function onKeyUpCapture(ev) {
+    if (!S) return;
+    S.keys.delete(ev.key);
+    if (ev.key === "Shift") S.keys.delete("Shift");
+  }
+  function onBlurWin() { if (S) S.keys.clear(); }
+
+  // ── 検索の行（中島さんの案 A: 打ち始めると出る）──
+  let results = [], active = 0;
+  function refocus() { if (S && !S.tr && document.activeElement !== S.input) { try { S.input.focus({ preventScroll: true }); } catch (e) { /* 動かなくても操作は続けられる */ } } }
+  function openSearch(on) {
+    S.search.dataset.open = on ? "true" : "false";
+    S.input.setAttribute("aria-expanded", on && results.length ? "true" : "false");
+  }
+  function renderSug() {
+    const m = S.m;
+    S.sug.innerHTML = results.map((i, k) => {
+      const n = m.nodes[i], c = m.famCol[m.famIdx[i]];
+      return `<li role="option" id="spo${k}" data-i="${i}" aria-selected="${k === active}" style="--c:${Math.round(c[0] * 255)} ${Math.round(c[1] * 255)} ${Math.round(c[2] * 255)}"><span class="sn">${esc(n.n)}</span><span class="sk">${esc(n.k || "")}</span><span class="sy">${esc(n.myth ? "神代" : SG.fmtYear(n.fl))}</span></li>`;
+    }).join("") || (S.input.value.trim() ? '<li class="empty" aria-disabled="true">見つかりません。名前か、よみ（ひらがな・ローマ字）で探せます</li>' : "");
+    if (results.length) S.input.setAttribute("aria-activedescendant", "spo" + active); else S.input.removeAttribute("aria-activedescendant");
+  }
+  function onInput() {
+    const v = S.input.value;
+    results = v.trim() ? SG.SpaceModel.search(v, 6) : [];
+    active = 0;
+    renderSug();
+    openSearch(!!v.trim() || S.composing);
+  }
+  function pickResult(k) {
+    const i = results[k];
+    if (i == null) return;
+    S.input.value = "";
+    results = [];
+    renderSug();
+    openSearch(false);
+    choose(i);
+  }
+  function onInputKey(ev) {
+    if (!S) return;
+    ev.stopPropagation(); // 地図の画面のキー操作（「/」で検索・数字で分け方）に渡さない
+    if (ev.isComposing || ev.keyCode === 229) return;
+    const has = S.input.value.length > 0;
+    if ((ev.key === "ArrowDown" || ev.key === "ArrowUp") && results.length) {
+      ev.preventDefault();
+      active = (active + (ev.key === "ArrowDown" ? 1 : -1) + results.length) % results.length;
+      renderSug();
+      return;
+    }
+    if (ev.key === "Enter") { ev.preventDefault(); if (results.length) pickResult(active); return; }
+    if (FLY_KEYS.has(ev.key) && (!has || ev.key === "PageUp" || ev.key === "PageDown" || ev.key === "ArrowUp" || ev.key === "ArrowDown")) {
+      ev.preventDefault();
+      S.keys.add(ev.key);
+      return;
+    }
+    if (ev.key === "Shift") S.keys.add("Shift");
+  }
+
+  // ── 名前（星の名前は押すとその星へ。重ならないように、明るい星・大事な人から置く）──
+  function labelBox(i, tier) {
+    const n = S.m.nodes[i];
+    const fs = tier === 0 ? 22 : tier === 1 ? 15 : 12.5;
+    let wn = 0;
+    for (const ch of n.n) wn += /[\u0000-ÿ]/.test(ch) ? fs * 0.6 : fs * 1.12;
+    const wk = (n.k || "").length * 9.5 * 1.2;
+    return [Math.max(wn, wk) + 10, fs * 1.25 + 15];
+  }
+  function tierOf(i) {
+    const m = S.m;
+    if (i === m.fi) return 0;
+    return m.kind[i] === 1 && (m.prio[i] > 5 || SG.famous.has(m.nodes[i].id)) ? 1 : 2;
+  }
+  const boxes = [];
+  function labels() {
+    const m = S.m, N = S.N, W = S.W, H = S.H;
+    const on = !S.tr || S.tr.labelsOn;
+    const cand = S.cand;
+    cand.length = 0;
+    // 大きく見える星の円盤: その後ろにある星の名前は出さず、名前もその上には置かない
+    const occ = S.occ || (S.occ = []);
+    occ.length = 0;
+    if (on) for (let i = 0; i < N; i++) {
+      const z = S.SZ[i];
+      if (z > NEAR && S.vis[i] >= 0.3 && (m.R[i] * S.focal) / z >= 14) occ.push(i);
+    }
+    if (on) {
+      for (let i = 0; i < N; i++) {
+        if (S.vis[i] < 0.3) continue;
+        const z = S.SZ[i];
+        if (z <= NEAR) continue;
+        const x = S.SX[i], y = S.SY[i];
+        if (x < -40 || x > W + 40 || y < -30 || y > H + 30) continue;
+        let behind = false;
+        for (let k = 0; k < occ.length; k++) {
+          const j = occ[k];
+          if (j === i || S.SZ[j] >= z) continue;
+          const rj = (m.R[j] * S.focal) / S.SZ[j], dx = x - S.SX[j], dy = y - S.SY[j];
+          if (dx * dx + dy * dy < rj * rj * 0.96) { behind = true; break; }
+        }
+        if (behind) continue;
+        const rpx = (m.R[i] * S.focal) / z, I = S.I[i];
+        const forced = i === S.sel || i === S.hover || i === m.fi || S.routeSet.has(i);
+        // よく知られた人・見つけた人は少し遠くても名前を出す。ほかの人は、近づいて明るく（大きく）見えてから
+        const known = SG.famous.has(m.nodes[i].id) || (SG.isFound && SG.isFound(m.nodes[i].id));
+        if (!forced && rpx < 2.4 && I < (known ? 0.27 : 0.42)) continue;
+        S.score[i] = (forced ? 1000 + (i === S.hover ? 500 : 0) + (i === S.sel ? 300 : 0) : 0) + I * 3 + Math.log2(1 + rpx) * 1.6 + m.prio[i] * 0.35 + (known ? 1.2 : 0);
+        cand.push(i);
+      }
+      cand.sort((a, b) => S.score[b] - S.score[a]);
+    }
+    boxes.length = 0;
+    for (let k = 0; k < occ.length; k++) {
+      const j = occ[k], rj = (m.R[j] * S.focal) / S.SZ[j] * 0.82;
+      boxes.push(S.SX[j] - rj, S.SY[j] - rj, rj * 2, rj * 2);
+    }
+    const keep = S.keepSet || (S.keepSet = new Set());
+    keep.clear();
+    const lim = Math.min(cand.length, 220);
+    for (let k = 0; k < lim && keep.size < LMAX; k++) {
+      const i = cand[k], tier = tierOf(i), [w, h] = labelBox(i, tier);
+      const x = S.SX[i], y = S.SY[i], rpx = (m.R[i] * S.focal) / S.SZ[i];
+      const gap = Math.max(rpx * 1.15, 7) + 3;
+      const opts = rpx > 40 ? [[x - w / 2, y + rpx + 8]] : [[x + gap, y - h / 2], [x - gap - w, y - h / 2], [x - w / 2, y + gap]];
+      let pos = null;
+      for (const [bx, by] of opts) {
+        if (bx < 4 || by < 4 || bx + w > W - 4 || by + h > H - 4) continue;
+        let hit = false;
+        for (let b = 0; b < boxes.length; b += 4) if (bx < boxes[b] + boxes[b + 2] && bx + w > boxes[b] && by < boxes[b + 1] + boxes[b + 3] && by + h > boxes[b + 1]) { hit = true; break; }
+        if (!hit) { pos = [bx, by]; break; }
+      }
+      if (!pos) { if (S.score[i] < 1000) continue; pos = opts[0]; }
+      boxes.push(pos[0], pos[1], w, h);
+      keep.add(i);
+      let e = S.lbOf.get(i);
+      if (!e) {
+        e = S.lb.find((q) => q.i < 0) || S.lb.find((q) => !q.on && !keep.has(q.i));
+        if (!e) continue;
+        if (e.i >= 0) S.lbOf.delete(e.i);
+        e.i = i;
+        S.lbOf.set(i, e);
+        const n = m.nodes[i], c = m.col;
+        e.el.className = "sp-lb t" + tier + (m.isOrg[i] ? " org" : "");
+        e.el.firstChild.textContent = n.k || "";
+        e.el.lastChild.textContent = n.n;
+        e.el.setAttribute("aria-label", `${n.n}（${n.k || ""}）へ移動する`);
+        e.el.style.setProperty("--c", `${Math.round(c[i * 3] * 255)} ${Math.round(c[i * 3 + 1] * 255)} ${Math.round(c[i * 3 + 2] * 255)}`);
+        e.x = -1e4;
+      }
+      if (Math.abs(e.x - pos[0]) > 0.05 || Math.abs(e.y - pos[1]) > 0.05) {
+        e.x = pos[0]; e.y = pos[1];
+        e.el.style.transform = `translate3d(${pos[0].toFixed(1)}px,${pos[1].toFixed(1)}px,0)`;
+      }
+      const cls = (i === S.sel ? " is-sel" : "") + (S.routeSet.has(i) ? " on-route" : "");
+      if (e.cls !== cls) { e.cls = cls; e.el.classList.toggle("is-sel", i === S.sel); e.el.classList.toggle("on-route", S.routeSet.has(i)); }
+      if (!e.on) { e.on = true; e.el.classList.add("on"); }
+    }
+    for (const e of S.lb) {
+      if (e.i >= 0 && !keep.has(e.i) && e.on) { e.on = false; e.el.classList.remove("on"); }
+    }
+  }
+  // 道の関係の名（光がその線を通ったあとに出す）
+  function routeLabels() {
+    if (!S.rl.length) return;
+    const m = S.m, pos = m.pos, cam = S.cam, f = S.f, r = S.r, u = S.u, fo = S.focal;
+    for (const q of S.rl) {
+      const lit = S.now > q.start + q.dur * 0.7;
+      const a = q.a * 3, b = q.b * 3;
+      const x = (pos[a] + pos[b]) / 2 - cam[0], y = (pos[a + 1] + pos[b + 1]) / 2 - cam[1], z = (pos[a + 2] + pos[b + 2]) / 2 - cam[2];
+      const zz = x * f[0] + y * f[1] + z * f[2];
+      let show = lit && zz > NEAR;
+      let sx = 0, sy = 0;
+      if (show) {
+        sx = S.W / 2 + ((x * r[0] + y * r[1] + z * r[2]) / zz) * fo;
+        sy = S.H / 2 - ((x * u[0] + y * u[1] + z * u[2]) / zz) * fo;
+        // 線の両端が近すぎる（重なって見える）ときは出さない
+        const dx = S.SX[q.a] - S.SX[q.b], dy = S.SY[q.a] - S.SY[q.b];
+        if (dx * dx + dy * dy < 70 * 70 || sx < 0 || sx > S.W || sy < 0 || sy > S.H) show = false;
+      }
+      if (show) {
+        if (Math.abs(sx - q.x) > 0.05 || Math.abs(sy - q.y) > 0.05) { q.x = sx; q.y = sy; q.el.style.transform = `translate3d(${sx.toFixed(1)}px,${sy.toFixed(1)}px,0) translate(-50%,-50%)`; }
+      }
+      if (show !== q.on) { q.on = show; q.el.classList.toggle("on", show); }
+    }
+  }
+
+  // こまが遅いときは描く画素を少し減らし、速ければ戻す（見た目の作りは変えない）
+  function adapt(iv, dt) {
+    S.ema += (iv - S.ema) * 0.05;
+    if (S.tr) return;
+    if (S.ema > 21) { S.slowT += dt; S.fastT = 0; } else if (S.ema < 13) { S.fastT += dt; S.slowT = 0; } else { S.slowT = 0; S.fastT = 0; }
+    if (S.slowT > 1.2 && S.dpr > 0.7) { S.dpr = Math.max(0.7, S.dpr * 0.85); S.gl.resize(S.W, S.H, S.dpr); S.slowT = 0; }
+    if (S.fastT > 4 && S.dpr < S.dprMax) { S.dpr = Math.min(S.dprMax, S.dpr * 1.1); S.gl.resize(S.W, S.H, S.dpr); S.fastT = 0; }
+  }
+
+  // ── つなぐ・はずす ──
+  function bind() {
+    const cv = S.cv;
+    S.on = {
+      down: onDown, move: onMove, up: onUp, wheel: onWheel, key: onKeyCapture, keyup: onKeyUpCapture, blur: onBlurWin,
+      ctx: (ev) => ev.preventDefault(),
+      resize: () => resize(),
+      fs: () => { if (S && S.fsByUs && !document.fullscreenElement) exit(); },
+      lost: (ev) => { ev.preventDefault(); exit(); },
+      input: onInput,
+      ikey: onInputKey,
+      ikeyup: (ev) => { ev.stopPropagation(); onKeyUpCapture(ev); },
+      cstart: () => { S.composing = true; openSearch(true); },
+      cend: () => { S.composing = false; onInput(); },
+      sug: (ev) => { const li = ev.target.closest("li[data-i]"); if (li) { const k = results.indexOf(+li.dataset.i); if (k >= 0) pickResult(k); } },
+      sugDown: (ev) => ev.preventDefault(),
+      lab: (ev) => { const el = ev.target.closest(".sp-lb"); if (!el) return; const e = S.lb.find((q) => q.el === el); if (e && e.i >= 0) { choose(e.i); refocus(); } },
+      labMove: (ev) => { const el = ev.target.closest(".sp-lb"); const e = el && S.lb.find((q) => q.el === el); const i = e ? e.i : -1; if (i !== S.hover) S.hover = i; }
+    };
+    const o = S.on;
+    cv.addEventListener("pointerdown", o.down);
+    cv.addEventListener("pointermove", o.move);
+    cv.addEventListener("pointerup", o.up);
+    cv.addEventListener("pointercancel", o.up);
+    cv.addEventListener("wheel", o.wheel, { passive: false });
+    cv.addEventListener("contextmenu", o.ctx);
+    cv.addEventListener("webglcontextlost", o.lost);
+    S.root.addEventListener("wheel", o.wheel, { passive: false });
+    window.addEventListener("keydown", o.key, true);
+    window.addEventListener("keyup", o.keyup, true);
+    window.addEventListener("blur", o.blur);
+    window.addEventListener("resize", o.resize);
+    document.addEventListener("fullscreenchange", o.fs);
+    S.input.addEventListener("input", o.input);
+    S.input.addEventListener("keydown", o.ikey);
+    S.input.addEventListener("keyup", o.ikeyup);
+    S.input.addEventListener("compositionstart", o.cstart);
+    S.input.addEventListener("compositionend", o.cend);
+    S.sug.addEventListener("click", o.sug);
+    S.sug.addEventListener("pointerdown", o.sugDown);
+    S.labels.addEventListener("click", o.lab);
+    S.labels.addEventListener("pointermove", o.labMove);
+  }
+  function unbind() {
+    const o = S.on;
+    if (!o) return;
+    window.removeEventListener("keydown", o.key, true);
+    window.removeEventListener("keyup", o.keyup, true);
+    window.removeEventListener("blur", o.blur);
+    window.removeEventListener("resize", o.resize);
+    document.removeEventListener("fullscreenchange", o.fs);
+  }
+
+  // ── 2D へ戻る ──
+  function exit() {
+    if (!S || S.exiting) return;
+    const st = S;
+    st.exiting = true;
+    unbind();
+    cancelAnimationFrame(st.raf);
+    const last = st.sel >= 0 ? st.m.nodes[st.sel].id : null;
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    document.documentElement.classList.remove("sp-on");
+    st.root.classList.add("out");
+    S = null;
+    SG.spaceOn = false;
+    setTimeout(() => {
+      try { st.gl.destroy(); } catch (e) { /* もう失われている */ }
+      st.root.remove();
+    }, 480);
+    // 3D で選んだ人を、地図でも選ぶ（札は開かない）。地図の大きさが変わっていれば並べ直す
+    if (SG.views && SG.views.map && SG.views.map.spaceDone) SG.views.map.spaceDone();
+    if (last && last !== SG.state.selected) SG.select(last, { quiet: true, focus: true });
+    else if (last) SG.emit("select");
+    const b = st.btn && st.btn.isConnected ? st.btn : document.querySelector('[data-act="space"]');
+    if (b) try { b.focus({ preventScroll: true }); } catch (e) { /* 焦点を戻せなくても戻れる */ }
+  }
+
+  // 測った数（確かめ用）: こまの間隔と、毎こまの台本の時間（ミリ秒。中央値と 95%）
+  function stats() {
+    if (!S) return null;
+    const st = S.stats, n = Math.min(st.n, st.iv.length);
+    const q = (arr, p) => { const a = Array.from(arr.slice(0, n)).sort((x, y) => x - y); return a.length ? Math.round(a[Math.min(a.length - 1, Math.floor(a.length * p))] * 100) / 100 : null; };
+    const g = S.gl.gpuMs ? S.gl.gpuMs.slice().sort((x, y) => x - y) : [];
+    const gq = (p) => (g.length ? Math.round(g[Math.min(g.length - 1, Math.floor(g.length * p))] * 100) / 100 : null);
+    return {
+      frames: st.n, ivP50: q(st.iv, 0.5), ivP95: q(st.iv, 0.95), jsP50: q(st.js, 0.5), jsP95: q(st.js, 0.95), gpuP50: gq(0.5), gpuP95: gq(0.95), gpuN: g.length,
+      renderer: S.gl.info.renderer, parallel: S.gl.info.parallel, submitMs: S.gl.info.submitMs, compileMs: S.gl.info.compileMs, finishMs: S.gl.info.finishMs, initMs: S.gl.info.initMs,
+      buildMs: S.m.stats.ms, makeMs: S.makeMs, waitMs: S.waitMs,
+      dpr: Math.round(S.dpr * 100) / 100, canvas: [S.gl.pw, S.gl.ph], css: [S.W, S.H], glError: S.gl.error(), lost: S.gl.lost(), transition: !!S.tr, fullscreen: !!document.fullscreenElement
+    };
+  }
+  function resetStats() { if (S) { S.stats.n = 0; S.stats.k = 0; if (S.gl.gpuMs) S.gl.gpuMs.length = 0; } }
+  // 確かめ用: GPU の時間も測る（測れるブラウザだけ）
+  function gpuTiming(on) { return S ? S.gl.gpuTiming(on) : false; }
+
+  SG.Space3D = {
+    button, reveal, enter, exit, prewarm, stats, resetStats, gpuTiming,
+    active: () => !!S,
+    available: () => avail === true && deviceOK(),
+    // 確かめ用: 名前で選んで飛ぶ（検索の行と同じ動き）
+    go: (id) => { if (S && S.m.idx.has(id)) choose(S.m.idx.get(id)); },
+    state: () => S
+  };
 })();
 
 </script>
