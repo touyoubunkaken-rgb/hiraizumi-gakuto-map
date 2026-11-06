@@ -3379,7 +3379,7 @@ window.SHINTO_ADDITIONS_LOCKED = {"v":1,"iter":300000,"salt":"XiIQXXRhDxkVRoChy3
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=71278d3b55";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=27773b59c9";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -9654,7 +9654,7 @@ void main() {
 })();
 
 </script>
-<!-- 宇宙の 3D 空間（指示101）: 並べ方 → 描く層（WebGL2）→ 入り口と動かし方 -->
+<!-- 宇宙の 3D 空間（指示101）: 並べ方 → 描く層（WebGL2）→ 音（指示102）→ 入り口と動かし方 -->
 <script>
 /* 宇宙の 3D 空間の並べ方（指示101）。描くのは js/space-gl.js、動かすのは js/space3d.js。
  * - 平泉澄先生をいちばん大きな恒星（原点）にする。先生と直接の師弟・家族と、先生が創った組織は、先生の周りを回る惑星（平泉澄先生の太陽系）。
@@ -10933,6 +10933,280 @@ void main(){
 
 </script>
 <script>
+/* 宇宙の 3D 空間の音（指示102）。動かすのは js/space3d.js。
+ * 中島さんの答え（11/6）: 「生成した曲＋合成」「初めから鳴らす」。
+ * - 曲は Stable Audio 3（この PC の audio-studio）で一つの家族として作った 4 つ（audio/ の MP3。合わせて約 1 MB）:
+ *   惑星を見る曲（64 秒のループ）・ワープの曲（8 小節 15 秒のループ）・割れるときの一撃・着いたときの音。
+ *   3D に入ったときに初めて読み込む（地図のページの読み込みは重くしない）。同じ所の audio/ になければ、GitHub Pages の公開版から読む
+ *   （toubunken.jp の存道の記録は、ページだけを取り込むため）。
+ * - 動きに合わせる音はその場で合成する: ひびが走る細かいガラスの音、速さに合わせて高まる風を切るうなり。曲が間に合わないときの一撃と、
+ *   曲を読めないときの代わりの響きも合成する。合成の音は、同じ響き（残響）に入れる。
+ * - 鐘・鈴の音は使わない（11/6 の中島さんの指示「鐘の音が雰囲気を削ぐので無くしてください」。光の道の鈴をやめ、曲も鐘なしで作り直した）。
+ * - ワープの曲は、速いほど高い音まで開く（低域だけの音から、全部の音へ）。惑星を見る曲は止めず、飛んでいる間は半分ほどで流す。
+ * - 2D の地図の「絞り込みと表示」で切れる（この端末に覚える。切ったときは読み込みもしない）。
+ * ブラウザは、押したときにしか音を始めさせないので、begin は「3D」を押したときに呼ぶ。
+ */
+(function () {
+  "use strict";
+  const SG = window.SG;
+  if (!SG) return;
+  const KEY = "sg-space-music";
+  const FILES = { planet: "space-planet.mp3", warp: "space-warp.mp3", impact: "space-impact.mp3", arrive: "space-arrive.mp3" };
+  // ループの区間（ファイルの前後に 1 秒ずつ続きの音を付けてある。research/space_audio.py）
+  const LOOP = { planet: [1.0, 65.0], warp: [1.0, 16.0] };
+  const BASES = ["audio/", "https://touyoubunkaken-rgb.github.io/hiraizumi-gakuto-map/audio/"];
+  const LEVEL = { planet: 0.8, warp: 0.72, impact: 0.72, arrive: 0.8 };
+  let ctx = null, out = null, comp = null, music = null, sfx = null, send = null, noise = null;
+  const raw = {}, buf = {}, fetching = {};
+  let nodes = {}, lastWarp = -1, warpEnd = 0, rec = null, chunks = [];
+
+  function enabled() { try { return localStorage.getItem(KEY) !== "off"; } catch (e) { return true; } }
+  function setEnabled(on) {
+    try { if (on) localStorage.removeItem(KEY); else localStorage.setItem(KEY, "off"); } catch (e) { /* 覚えておけない環境では、その場だけ */ }
+    if (!on) stop();
+  }
+
+  // 曲のファイルを取る（まだ音の形にはしない。形にするのは decode）
+  function prefetch(keys) {
+    if (!enabled()) return;
+    (keys || Object.keys(FILES)).forEach((k) => {
+      if (raw[k] || fetching[k]) return;
+      fetching[k] = (async () => {
+        for (const b of BASES) {
+          try {
+            const r = await fetch(b + FILES[k], { mode: "cors", credentials: "omit" });
+            const ct = r.headers.get("content-type") || "";
+            if (r.ok && !/text\/html/i.test(ct)) { raw[k] = await r.arrayBuffer(); return; }
+          } catch (e) { /* 次の所へ */ }
+        }
+      })();
+    });
+  }
+  async function decode(k) {
+    if (buf[k] !== undefined) return buf[k];
+    prefetch([k]);
+    await fetching[k];
+    if (buf[k] !== undefined || !ctx) return buf[k];
+    if (!raw[k]) return null;
+    try { buf[k] = await ctx.decodeAudioData(raw[k].slice(0)); } catch (e) { buf[k] = null; }
+    return buf[k];
+  }
+
+  function impulse(sec, decay) {
+    const n = Math.floor(ctx.sampleRate * sec), b = ctx.createBuffer(2, n, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decay); }
+    return b;
+  }
+  function graph() {
+    out = ctx.createGain();
+    out.gain.value = 0.8;
+    // 曲と効果音をまとめる軽い圧縮と、最後に上限（-2.5 dB）で抑える段。割れる一撃と曲が重なっても音割れしないように
+    const glue = ctx.createDynamicsCompressor();
+    glue.threshold.value = -14; glue.knee.value = 10; glue.ratio.value = 3; glue.attack.value = 0.006; glue.release.value = 0.35;
+    comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -3.5; comp.knee.value = 0; comp.ratio.value = 20; comp.attack.value = 0.001; comp.release.value = 0.12;
+    out.connect(glue);
+    glue.connect(comp);
+    comp.connect(ctx.destination);
+    music = ctx.createGain(); music.connect(out);
+    sfx = ctx.createGain(); sfx.connect(out);
+    const verb = ctx.createConvolver();
+    verb.buffer = impulse(3.4, 2.6);
+    send = ctx.createGain(); send.gain.value = 0.5;
+    send.connect(verb); verb.connect(out);
+    const n = Math.floor(ctx.sampleRate * 2), nb = ctx.createBuffer(1, n, ctx.sampleRate), d = nb.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    noise = nb;
+  }
+
+  // 「3D」を押したときに呼ぶ（音を始めてよい合図）。鳴らせないときは false
+  function begin() {
+    if (!enabled()) return false;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    try {
+      if (!ctx) { ctx = new AC({ latencyHint: "interactive" }); graph(); nodes = {}; lastWarp = -1; warpEnd = 0; }
+      if (ctx.state === "suspended") ctx.resume().catch(() => {});
+      out.gain.cancelScheduledValues(ctx.currentTime);
+      out.gain.setValueAtTime(0.8, ctx.currentTime);
+    } catch (e) { ctx = null; return false; }
+    prefetch();
+    Object.keys(FILES).forEach((k) => { decode(k); });
+    return true;
+  }
+
+  function play(b, at, vol, dest) {
+    const s = ctx.createBufferSource(), g = ctx.createGain();
+    s.buffer = b; g.gain.value = vol;
+    s.connect(g); g.connect(dest || sfx);
+    s.start(at);
+  }
+  function startLoop(key, b, at, fade) {
+    const src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = b; src.loop = true; src.loopStart = LOOP[key][0]; src.loopEnd = LOOP[key][1];
+    g.gain.setValueAtTime(0, at);
+    g.gain.linearRampToValueAtTime(LEVEL[key], at + fade);
+    let f = null;
+    if (key === "warp") { f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1400; f.Q.value = 0.6; src.connect(f); f.connect(g); }
+    else src.connect(g);
+    g.connect(music);
+    src.start(at, LOOP[key][0]);
+    nodes[key] = { src, g, f };
+  }
+  function drop(key) {
+    const n = nodes[key];
+    if (!n) return;
+    try { n.src.stop(); } catch (e) { /* もう止まっている */ }
+    try { n.g.disconnect(); } catch (e) { /* なし */ }
+    delete nodes[key];
+  }
+
+  // ひびが走る細かいガラスの音（合成）
+  function tick(at, a) {
+    const s = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), g = ctx.createGain(), pan = ctx.createStereoPanner();
+    s.buffer = noise;
+    hp.type = "highpass"; hp.frequency.value = 2600 + Math.random() * 3200;
+    const len = 0.025 + Math.random() * 0.05;
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.22 * a, at + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+    pan.pan.value = Math.random() * 1.6 - 0.8;
+    s.connect(hp); hp.connect(g); g.connect(pan); pan.connect(sfx); pan.connect(send);
+    s.start(at, Math.random() * 1.6, len + 0.02);
+    const o = ctx.createOscillator(), og = ctx.createGain();
+    o.frequency.value = 3200 + Math.random() * 4200;
+    og.gain.setValueAtTime(0.0001, at);
+    og.gain.exponentialRampToValueAtTime(0.05 * a, at + 0.002);
+    og.gain.exponentialRampToValueAtTime(0.0001, at + 0.09);
+    o.connect(og); og.connect(pan);
+    o.start(at); o.stop(at + 0.1);
+  }
+  // 曲が間に合わないときの一撃（合成。深く沈む低い音と、ざらついた音）
+  function boom(at) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(96, at);
+    o.frequency.exponentialRampToValueAtTime(30, at + 1.4);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.85, at + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 2.6);
+    o.connect(g); g.connect(sfx);
+    o.start(at); o.stop(at + 2.7);
+    const s = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), ng = ctx.createGain();
+    s.buffer = noise; lp.type = "lowpass"; lp.frequency.setValueAtTime(5000, at); lp.frequency.exponentialRampToValueAtTime(300, at + 1.2);
+    ng.gain.setValueAtTime(0.0001, at); ng.gain.exponentialRampToValueAtTime(0.4, at + 0.01); ng.gain.exponentialRampToValueAtTime(0.0001, at + 1.6);
+    s.connect(lp); lp.connect(ng); ng.connect(sfx); ng.connect(send);
+    s.start(at, 0, 1.7);
+  }
+  // 入る場面: ひび → 割れる一撃 → 惑星を見る曲。tShatter は、いまから枠が割れるまでの秒
+  function entry(tShatter) {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    for (let k = 0; k < 26; k++) { const u = Math.pow(k / 26, 0.75); tick(t0 + 0.13 + u * Math.max(0.1, tShatter - 0.22), 0.3 + (0.7 * k) / 26); }
+    decode("impact").then((b) => {
+      if (!ctx) return;
+      const at = t0 + tShatter - 0.1; // 生成した一撃は 0.16 秒目が山
+      if (b && ctx.currentTime < at + 0.06) play(b, Math.max(at, ctx.currentTime), LEVEL.impact);
+      else if (ctx.currentTime < at + 0.4) boom(Math.max(at, ctx.currentTime));
+    });
+    decode("planet").then((b) => {
+      if (!ctx || nodes.planet) return;
+      const at = Math.max(t0 + tShatter + 0.15, ctx.currentTime);
+      if (b) startLoop("planet", b, at, 4.0); else pad(at); // 曲を読めないとき（つながらないなど）は、合成の宇宙の響きで代わりに流す
+    });
+  }
+  // 曲の代わりの、合成の宇宙の響き（ゆっくり揺れる低い和音。ニ長調の 1・5・9 度と 3 度）
+  function pad(at) {
+    const g = ctx.createGain(), lp = ctx.createBiquadFilter(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+    lp.type = "lowpass"; lp.frequency.value = 900; lp.Q.value = 0.5;
+    lfo.frequency.value = 0.07; lg.gain.value = 420; lfo.connect(lg); lg.connect(lp.frequency); lfo.start(at);
+    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(0.16, at + 5);
+    [73.42, 110, 146.83, 164.81, 220].forEach((f, k) => {
+      [-6, 6].forEach((det) => { const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = f; o.detune.value = det + k; o.connect(lp); o.start(at); });
+    });
+    lp.connect(g); g.connect(music); g.connect(send);
+    nodes.planet = { src: lfo, g, f: lp };
+  }
+  // 探した星へ飛ぶ: ワープの曲を重ね、着いたら一撃と和音。dur は飛ぶ秒。
+  // 惑星を見る曲は止めない（飛ぶ間も半分ほどで流し、着く少し前から素早く戻す）。ワープの曲は、惑星の曲が戻るのに重ねてゆっくり消す。
+  // こうして、どの星に着いても、曲が途切れたり谷になったりしない（11/6 の中島さんの指示「音が消えるところがあるので直して」）
+  function flight(dur) {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    if (nodes.planet) { const g = nodes.planet.g.gain; g.cancelScheduledValues(t); g.setTargetAtTime(LEVEL.planet * 0.5, t, 0.25); g.setTargetAtTime(LEVEL.planet, t + Math.max(0.2, dur - 0.35), 0.3); }
+    warpEnd = t + dur + 4;
+    decode("warp").then((b) => {
+      if (!b || !ctx) return;
+      const now = ctx.currentTime;
+      if (!nodes.warp) startLoop("warp", b, now, 0.3);
+      else { const g = nodes.warp.g.gain; g.cancelScheduledValues(now); g.setTargetAtTime(LEVEL.warp, now, 0.1); }
+      nodes.warp.g.gain.setTargetAtTime(0, t + dur + 0.2, 0.7);
+    });
+    decode("arrive").then((b) => { if (b && ctx) play(b, Math.max(t + dur - 0.12, ctx.currentTime), LEVEL.arrive); });
+  }
+  // 速さ（0〜1）。毎こま呼んでよい（変わったときだけ音を動かす）
+  function warp(w) {
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    if (Math.abs(w - lastWarp) > 0.012) {
+      lastWarp = w;
+      if (!nodes.whoosh) {
+        const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+        s.buffer = noise; s.loop = true;
+        f.type = "bandpass"; f.frequency.value = 300; f.Q.value = 0.9;
+        g.gain.value = 0;
+        s.connect(f); f.connect(g); g.connect(sfx); g.connect(send);
+        s.start();
+        nodes.whoosh = { src: s, g, f };
+      }
+      nodes.whoosh.g.gain.setTargetAtTime(0.18 * Math.pow(w, 1.4), now, 0.08);
+      nodes.whoosh.f.frequency.setTargetAtTime(240 + 2800 * w, now, 0.1);
+      if (nodes.warp && nodes.warp.f) nodes.warp.f.frequency.setTargetAtTime(1400 + 15000 * Math.pow(w, 0.8), now, 0.12);
+    }
+    if (nodes.warp && warpEnd && now > warpEnd) drop("warp");
+  }
+  function stop() {
+    if (!ctx) return;
+    const c = ctx, o = out, t = c.currentTime;
+    try { o.gain.cancelScheduledValues(t); o.gain.setTargetAtTime(0, t, 0.12); } catch (e) { /* もう閉じている */ }
+    ctx = null; nodes = {}; lastWarp = -1; warpEnd = 0;
+    setTimeout(() => { try { c.close(); } catch (e) { /* なし */ } }, 800);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!ctx) return;
+    if (document.hidden) ctx.suspend().catch(() => {}); else ctx.resume().catch(() => {});
+  });
+
+  // 確かめ用: 出ている音を録る（MediaRecorder。止めると webm を base64 で返す）
+  function record(on) {
+    if (!ctx) return Promise.resolve(null);
+    if (on) {
+      const dst = ctx.createMediaStreamDestination();
+      comp.connect(dst);
+      chunks = [];
+      rec = new MediaRecorder(dst.stream, { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 160000 });
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      rec.start(250);
+      return Promise.resolve(true);
+    }
+    return new Promise((res) => {
+      if (!rec) { res(null); return; }
+      rec.onstop = async () => {
+        const u = new Uint8Array(await new Blob(chunks, { type: "audio/webm" }).arrayBuffer());
+        let s = "";
+        for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+        rec = null;
+        res(btoa(s));
+      };
+      rec.stop();
+    });
+  }
+  function state() { return ctx ? { state: ctx.state, rate: ctx.sampleRate, loaded: Object.keys(buf).filter((k) => buf[k]), playing: Object.keys(nodes) } : null; }
+
+  SG.SpaceAudio = { enabled, setEnabled, prefetch, begin, entry, flight, warp, stop, record, state };
+})();
+
+</script>
+<script>
 /* 宇宙の 3D 空間（指示101）の入り口と動かし方。並べ方は js/space-model.js、描くのは js/space-gl.js。
  * - 地図の道具帯の「3D」（パソコンだけ。指で触る端末・狭い画面・WebGL2 のない（速く描けない）ブラウザ・「動きを減らす」設定では出さない）。
  * - 入ると、白い図の枠に平泉澄先生のバブルからひびが入って割れ、破片が飛び散り、バブルはそれぞれの星へ飛んでいく。
@@ -11003,8 +11277,10 @@ void main(){
     // 手の空いたときに WebGL2 を確かめ、出せるなら、台本の準備も裏で先に始めておく（押したときに待たせない）
     const go = () => { probe(); syncButtons(); if (avail) prewarm(); };
     if (avail !== null) go(); else idle(go, 2500);
-    b.addEventListener("pointerenter", prewarm);
-    b.addEventListener("focus", prewarm);
+    // マウスを重ねたら、割れるときの一撃（65 KB）だけ先に取っておく（押してすぐ鳴らせるように。曲は押してから）
+    const warm = () => { prewarm(); if (SG.SpaceAudio) SG.SpaceAudio.prefetch(["impact"]); };
+    b.addEventListener("pointerenter", warm);
+    b.addEventListener("focus", warm);
   }
   window.addEventListener("resize", () => { if (avail !== null) syncButtons(); });
   ["(prefers-reduced-motion: reduce)", "(hover: hover) and (pointer: fine)"].forEach((q) => { try { window.matchMedia(q).addEventListener("change", () => { if (avail !== null) syncButtons(); }); } catch (e) { /* 古いブラウザ */ } });
@@ -11138,14 +11414,16 @@ void main(){
   // ── 入る ──（台本の準備がまだなら、済むまで待ってから始める）
   function enter(btn) {
     if (S || entering || !deviceOK() || !probe()) return;
+    // 音は、押したこの時にしか始められない（ブラウザの決まり）。曲の読み込みもここから（指示102）
+    const audio = SG.SpaceAudio && SG.SpaceAudio.begin();
     let P = pre;
     pre = null;
-    try { if (!P) P = make(); } catch (e) { avail = false; syncButtons(); return; }
+    try { if (!P) P = make(); } catch (e) { avail = false; syncButtons(); if (audio) SG.SpaceAudio.stop(); return; }
     entering = true;
     const tClick = performance.now();
     const go = () => {
       let ok = false;
-      try { ok = P.gl.poll(); } catch (e) { entering = false; avail = false; syncButtons(); try { P.gl.destroy(); } catch (e2) { /* なし */ } return; }
+      try { ok = P.gl.poll(); } catch (e) { entering = false; avail = false; syncButtons(); try { P.gl.destroy(); } catch (e2) { /* なし */ } if (audio) SG.SpaceAudio.stop(); return; }
       if (!ok) { requestAnimationFrame(go); return; }
       entering = false;
       P.waitMs = Math.round(performance.now() - tClick);
@@ -11339,6 +11617,7 @@ void main(){
     const chain = chainOf(n.id);
     try { if (SG.unlock) SG.unlock([n.id].concat(chain), ["s", n.id]); } catch (e) { /* 覚えておけない環境でも動く */ }
     const dur = flyTo(i);
+    if (SG.SpaceAudio) SG.SpaceAudio.flight(dur); // ワープの曲へ移り、着いたら一撃と和音（指示102）
     setRoute(chain, S.now + dur - 0.3);
     setVisBase();
     say(`${n.n}へ移動しています`);
@@ -11418,6 +11697,7 @@ void main(){
     const warpT = S.tr ? 0 : smooth(0.9, 3.2, rel);
     S.warp += (warpT - S.warp) * (1 - Math.exp(-dt * 8));
     S.fov = FOV * (1 + 0.14 * S.warp);
+    if (SG.SpaceAudio) SG.SpaceAudio.warp(S.warp); // 速いほど、風を切るうなりとワープの曲の高い音が開く
     camMatrices();
     fillDyn();
     labels();
@@ -11485,6 +11765,7 @@ void main(){
   function stepTransition(now, dt) {
     const tr = S.tr, T = now - tr.start;
     const m = S.m;
+    if (!tr.audio) { tr.audio = true; if (SG.SpaceAudio) SG.SpaceAudio.entry(T_SHATTER - T); } // ひび・割れる一撃・惑星を見る曲（指示102）
     // 背景・銀河・軌道・星が順に現れる
     tr.bgA = smooth(0.14, 0.72, T);
     tr.galA = smooth(0.5, 1.9, T);
@@ -11938,6 +12219,7 @@ void main(){
     st.exiting = true;
     unbind();
     cancelAnimationFrame(st.raf);
+    if (SG.SpaceAudio) SG.SpaceAudio.stop();
     const last = st.sel >= 0 ? st.m.nodes[st.sel].id : null;
     if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
     document.documentElement.classList.remove("sp-on");
@@ -12955,6 +13237,9 @@ void main(){
         <label class="toggle" for="fFamous">著名な人物・組織の名前を出す<input type="checkbox" class="sw" id="fFamous" ${state.famousLabels ? "checked" : ""}></label>
         <p class="f-note">著名な人物・組織は、ウィキペディア日本語版の閲覧数の多い人をもとに選んで固定した人物 53 人（学者・文人 25 人、武将・政治家・皇族・神など 20 人、天皇 8 人）と組織 6 つです。はじめの地図は、この人たちと平泉澄先生を描きます。</p>
       </section>
+      ${SG.Space3D && SG.Space3D.available() && SG.SpaceAudio ? `<section class="f-sec">
+        <label class="toggle" for="fSpaceMusic">「3D」の宇宙で音楽を鳴らす<input type="checkbox" class="sw" id="fSpaceMusic" ${SG.SpaceAudio.enabled() ? "checked" : ""}></label>
+        <p class="f-note">宇宙の 3D 空間に入ると、割れる音・惑星を見る曲・ワープの曲が鳴ります（曲は Stable Audio 3 で作ったもの、ほかはその場で合成する音。約 1 MB を、入ったときに初めて読み込みます）。切ると、この端末に覚え、音を読み込みません。</p></section>` : ""}
       <section class="f-sec"><div class="f-lab">点の大きさ</div><div class="seg">${sizes}</div></section>
       <section class="f-sec"><div class="f-lab">縦の目盛り</div><div class="seg">${scales}</div></section>
       ${current && current.showYears ? `<section class="f-sec"><div class="f-lab">時代へ移る</div><div class="eras">${eras}</div></section>` : ""}
@@ -13105,6 +13390,7 @@ void main(){
       if (id === "fOuter") { state.showOuter = ev.target.checked; SG.emit("filter"); }
       if (id === "fLinked") { state.onlyLinked = ev.target.checked; SG.emit("filter"); }
       if (id === "fUnver") { state.showUnverified = ev.target.checked; SG.emit("style"); }
+      if (id === "fSpaceMusic" && SG.SpaceAudio) SG.SpaceAudio.setEnabled(ev.target.checked); // 指示102
       if (id === "fFamous") {
         state.famousLabels = ev.target.checked;
         try { localStorage.setItem("sg-famous-v2", ev.target.checked ? "1" : "0"); } catch (e) { /* 覚えておけない環境では、その場だけ */ }
