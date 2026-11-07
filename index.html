@@ -919,7 +919,7 @@ button.grade:hover, button.grade[aria-expanded="true"] { box-shadow: 0 0 0 3px c
 
 @media (max-width: 900px) {
   .tb-in.axes .tb-groups { flex: 1 1 auto; }
-  .tb-in.axes .tb-actions { display: flex; flex: none; margin-left: auto; }
+  .tb-in.axes .tb-actions { display: flex; flex: none; flex-wrap: wrap; row-gap: 4px; max-width: 100%; margin-left: auto; } /* 入りきらないボタンは次の行へ（横向きのスマホで「先生へ」が画面の外に出ていた。指示104） */
   .tb-in.axes .tb-main { display: flex; flex: 1 1 100%; min-width: 0; }
   .tb-conds { flex: 1 1 100%; }
   .cb-count { margin-left: 0; }
@@ -1685,9 +1685,11 @@ html.rb-dock .stage.wrap { padding-right: calc(376px + max(var(--gutter), env(sa
 .clog .cl-by { color: var(--ink-3); font-size: 12px; }
 
 /* ── 宇宙の 3D 空間（指示101。js/space3d.js）──────────────────
-   パソコンだけ（狭い画面・指で触る端末・動きを減らす設定では「3D」を出さない）。3D の間は 2D の画面を隠すだけで、描き直さない */
+   パソコンとスマホ（スマホは指示104。動きを減らす設定では「3D」を出さない）。3D の間は 2D の画面を隠すだけで、描き直さない */
 .sp-btn[hidden] { display: none !important; }
-@media (max-width: 899px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) { .sp-btn { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .sp-btn { display: none !important; } }
+.sp-btn.is-busy { cursor: progress; animation: sp-busy 1s ease-in-out infinite; } /* 押してから入るまで（スマホでは組み立てに少しかかる） */
+@keyframes sp-busy { 50% { opacity: 0.45; } }
 html.sp-on { scrollbar-width: none; }
 html.sp-on .site, html.sp-on .inspector, html.sp-on .pill, html.sp-on .route-box, html.sp-on .pop, html.sp-on .tip, html.sp-on .boot { visibility: hidden !important; }
 .sp-root { position: fixed; inset: 0; z-index: 2147483000; overflow: hidden; contain: strict; color: #f3efe6; font-family: var(--font-body); -webkit-font-smoothing: antialiased; transition: opacity 0.45s ease; }
@@ -1734,6 +1736,31 @@ html.sp-on .site, html.sp-on .inspector, html.sp-on .pill, html.sp-on .route-box
 /* 入ったときに数秒だけ出す 1 行の案内（js/space3d.js の HINT。出すかは中島さんの答え待ち） */
 .sp-hint { position: absolute; top: 22px; left: 50%; translate: -50% 0; margin: 0; padding: 6px 16px; border-radius: 999px; background: rgb(8 10 20 / 0.5); color: rgb(236 232 222 / 0.82); font-size: 12.5px; letter-spacing: 0.1em; white-space: nowrap; pointer-events: none; animation: sp-hint 7s ease 2.8s both; }
 @keyframes sp-hint { 0% { opacity: 0; } 8% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+.sp-hint .hp { display: inline-block; } /* 句（「 ・ 」の間）の途中では折り返さない */
+/* 指で触る端末（.sp-root.touch。指示104）: 指の動きはページの拡大やスクロールに使わせず、3D に使う。長押しで文字を選ばない */
+.sp-root { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.sp-q { -webkit-user-select: text; user-select: text; touch-action: manipulation; }
+/* 上の左右に「地図へ」と「探す」（端末の切り欠き・角の丸みをよける。入りきってから出す） */
+.sp-ui { display: none; }
+.sp-root.touch .sp-ui { position: absolute; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); display: flex; justify-content: space-between; gap: 12px; pointer-events: none; opacity: 0; transition: opacity 0.5s ease; }
+.sp-root.touch.labels-on .sp-ui { opacity: 1; }
+.sp-ub { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin: 0; padding: 0 16px 0 12px; border: 1px solid rgb(255 220 160 / 0.3); border-radius: 999px; background: rgb(8 10 20 / 0.62); color: #f3efe6; font: 500 14px/1 var(--font-body); letter-spacing: 0.1em; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); pointer-events: none; }
+.sp-root.touch.labels-on .sp-ub { pointer-events: auto; }
+.sp-ub svg { width: 18px; height: 18px; flex: none; }
+.sp-ub:active { background: rgb(44 38 28 / 0.82); }
+.sp-ub[aria-expanded="true"] { border-color: rgb(255 214 140 / 0.75); color: #fff8e6; }
+.sp-ub:focus-visible { outline: 1px solid rgb(255 214 140 / 0.8); outline-offset: 2px; }
+.sp-root.touch .sp-hint { top: calc(max(12px, env(safe-area-inset-top)) + 58px); }
+.sp-root.touch .sp-title { left: max(clamp(22px, 3.2vw, 56px), env(safe-area-inset-left)); bottom: max(clamp(22px, 6vh, 64px), env(safe-area-inset-bottom)); } /* 横向きの切り欠きをよける */
+/* 検索の行は、画面のキーボードの上に出す（--sp-kb はキーボードの高さ、--sp-vvh は見えている高さ。js の keyboardInset） */
+.sp-root.touch .sp-search { width: min(520px, calc(100vw - 24px)); bottom: calc(max(14px, env(safe-area-inset-bottom)) + var(--sp-kb, 0px)); }
+.sp-root.touch .sp-sug { max-height: calc(var(--sp-vvh, 100vh) - 200px); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+/* 狭い画面: 道具帯でも「3D」の字を出す（印だけでは分かりにくい）。案内は折り返し、見ている星の名は幅いっぱいまで */
+@media (max-width: 640px) {
+  .tb-actions .sp-btn .l { display: inline; }
+  .sp-hint { white-space: normal; width: max-content; max-width: calc(100vw - 32px); text-align: center; line-height: 1.6; border-radius: 14px; }
+  .sp-title { max-width: calc(100vw - 36px); }
+}
 
 </style>
 
@@ -3379,7 +3406,7 @@ window.SHINTO_ADDITIONS_LOCKED = {"v":1,"iter":300000,"salt":"XiIQXXRhDxkVRoChy3
 })();
 
 </script>
-<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=fb3818f1f1";</script>
+<script>window.SHINTO_EVIDENCE_SRC_URL = "ev-src.json?v=53ce8296da";</script>
 <script>
 /* 関係の資料と信頼の段階（research/evidence.mjs が作る。手で書き換えない）
  * SHINTO_EVIDENCE.pairs["a>b"] = { g: 段階 A〜D, n: 資料の数 } / thin = [[古い人, 新しい人, 段階]] … まだ線のない細いつながり
@@ -5774,7 +5801,7 @@ window.SHINTO_FAME = {"amaterasu":60714,"koyane":8534,"futodama":3383,"murakumo"
         if (act === "route") SG.setRoute(SG.state.route === "to" ? "focus" : "to");
       });
       this.syncRouteBtn();
-      if (SG.Space3D) SG.Space3D.reveal(host); // 「3D」は、WebGL2 で速く描けるパソコンだと分かってから出す
+      if (SG.Space3D) SG.Space3D.reveal(host); // 「3D」は、WebGL2 で速く描ける端末だと分かってから出す（スマホも。指示104）
       // 狭い画面では分け方の説明を一行に縮め、押すと全文を出す
       host.querySelector("#axisRule").addEventListener("click", (ev) => ev.currentTarget.classList.toggle("open"));
       this.ts = new SG.TimeScroll(host.querySelector("#mapBody"), {
@@ -11000,7 +11027,7 @@ void main(){
   function graph() {
     out = ctx.createGain();
     out.gain.value = 0.8;
-    // 曲と効果音をまとめる軽い圧縮と、最後に上限（-2.5 dB）で抑える段。割れる一撃と曲が重なっても音割れしないように
+    // 曲と効果音をまとめる軽い圧縮と、最後に上限（-3.5 dB）で抑える段。割れる一撃と曲が重なっても音割れしないように
     const glue = ctx.createDynamicsCompressor();
     glue.threshold.value = -14; glue.knee.value = 10; glue.ratio.value = 3; glue.attack.value = 0.006; glue.release.value = 0.35;
     comp = ctx.createDynamicsCompressor();
@@ -11208,11 +11235,14 @@ void main(){
 </script>
 <script>
 /* 宇宙の 3D 空間（指示101）の入り口と動かし方。並べ方は js/space-model.js、描くのは js/space-gl.js。
- * - 地図の道具帯の「3D」（パソコンだけ。指で触る端末・狭い画面・WebGL2 のない（速く描けない）ブラウザ・「動きを減らす」設定では出さない）。
+ * - 地図の道具帯の「3D」（パソコンとスマホ。スマホは指示104。WebGL2 のない（速く描けない）ブラウザと「動きを減らす」設定では出さない）。
  * - 入ると、白い図の枠に平泉澄先生のバブルからひびが入って割れ、破片が飛び散り、バブルはそれぞれの星へ飛んでいく。
  *   カメラは割れた枠を抜けて、平泉澄先生の太陽系へ進む。そのあと全画面にする（押してから 5 秒のうちなら、ブラウザが全画面を許す）。
  * - 動かし方: 左ドラッグで回り込む、右ドラッグで見回す、真ん中のドラッグで横へずらす、ホイールで近づく・離れる、矢印キーと PageUp・PageDown で進む。
  *   名前（星の名前と道の関係の名）を押すと、その星へ飛ぶ。名前を打ち始めると画面の下に検索の行が出る（中島さんが選んだ案 A。11/6）。
+ * - 指（スマホ・タブレット。指示104）: 1 本でなぞって回り込む、2 本でつまんで近づく・離れる（2 本そろえて動かすと横へずらす）、星や名前を軽く押すと飛ぶ。
+ *   上の「地図へ」と、戻る操作（端からのスワイプ・戻るボタン）で 2D へ戻る。「探す」で検索の行とキーボードを出す。
+ *   指で触る端末では、検索の欄へ勝手に入らない（キーボードが出てしまうため）。台本の準備は押してから（地図を見るだけの人の電池とメモリを使わない）。
  * - 探した星へは、いったん引いてから近づく道すじで飛ぶ（van Wijk と Nuij の、なめらかに引いて寄る道すじ）。着くと、平泉澄先生への道
  *   （地図と同じ SG.pathInfo の道）に光が一本ずつ流れ、中心の太陽へ向かう。カメラは太陽がその星の奥に見える向きに着く。
  * - Esc で 2D の地図へ戻る。全画面のときの Esc はブラウザが全画面を抜けるのに使うので、全画面が終わったときも 2D へ戻す。
@@ -11226,6 +11256,9 @@ void main(){
   // 入ったときに数秒だけ出す 1 行の案内（11/7 の中島さんの答え「案内よしです」で出す。false にすると出ない）
   const HINT = true;
   const HINT_TEXT = "名前を打つと探せます ・ ドラッグで回る ・ ホイールで近づく ・ 矢印キーで進む ・ Esc で地図に戻る";
+  const HINT_TOUCH = "指でなぞると回る ・ 2 本の指で近づく・離れる ・ 星や名前を押すと飛ぶ"; // 指で触る端末（指示104）
+  // 案内は「 ・ 」の所でだけ折り返す（狭い画面で 2 行になるとき、句の途中で切らない）
+  const hintHTML = (text) => text.split(" ・ ").map((s) => `<span class="hp">${SG.esc(s)}</span>`).join(" ・ ");
   const FOV = (55 * Math.PI) / 180, NEAR = 0.01, FAR = 2e5, FC = 2 / Math.log2(FAR + 1);
   const MAG_LIM = 6.6, MAG_RANGE = 6.6;
   const LMAX = 44;
@@ -11239,12 +11272,13 @@ void main(){
   const easeIO = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   const esc = SG.esc;
 
-  // ── 出してよい端末か ──
+  // ── 出してよい端末か ──（指示104 で、スマホと狭い画面にも出す）
   function deviceOK() {
     if (SG.reducedMotion && SG.reducedMotion()) return false;
-    if (!mq("(hover: hover) and (pointer: fine)")) return false;
-    return window.innerWidth >= 900;
+    return Math.min(window.innerWidth, window.innerHeight) >= 280;
   }
+  // 指で触るのが主な端末（スマホ・タブレット）: 画面のボタンと指の操作にし、台本の準備を先にしない
+  const touchy = () => mq("(pointer: coarse)") || !mq("(hover: hover)");
   // WebGL2 が速く描けるか（ソフトウェアで描く端末では出さない。ラグになるため）。地図を開いて手の空いたときに一度だけ試す
   function probe() {
     if (avail !== null) return avail;
@@ -11275,10 +11309,11 @@ void main(){
     const b = host && host.querySelector('[data-act="space"]');
     if (!b) return;
     // 手の空いたときに WebGL2 を確かめ、出せるなら、台本の準備も裏で先に始めておく（押したときに待たせない）
-    const go = () => { probe(); syncButtons(); if (avail) prewarm(); };
+    // 指で触る端末は、押すまで作らない（3D を使わない人の電池とメモリを使わないため）
+    const go = () => { probe(); syncButtons(); if (avail && !touchy()) prewarm(); };
     if (avail !== null) go(); else idle(go, 2500);
-    // マウスを重ねたら、割れるときの一撃（65 KB）だけ先に取っておく（押してすぐ鳴らせるように。曲は押してから）
-    const warm = () => { prewarm(); if (SG.SpaceAudio) SG.SpaceAudio.prefetch(["impact"]); };
+    // マウスを重ねたら（指なら触れたら）、割れるときの一撃（65 KB）だけ先に取っておく（押してすぐ鳴らせるように。曲は押してから）
+    const warm = () => { if (!touchy()) prewarm(); if (SG.SpaceAudio) SG.SpaceAudio.prefetch(["impact"]); };
     b.addEventListener("pointerenter", warm);
     b.addEventListener("focus", warm);
   }
@@ -11296,6 +11331,7 @@ void main(){
       <div class="sp-title" aria-hidden="true"></div>
       <div class="sp-search" data-open="false"><ul class="sp-sug" id="spSug" role="listbox" aria-label="探した人物・組織の候補"></ul>
         <input class="sp-q" id="spQ" type="text" role="combobox" aria-autocomplete="list" aria-controls="spSug" aria-expanded="false" aria-label="人物・組織を、名前かよみで探す（ローマ字でも）" autocomplete="off" spellcheck="false" enterkeyhint="go"></div>
+      <div class="sp-ui"><button type="button" class="sp-ub sp-close" aria-label="2D の地図に戻る"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>地図へ</span></button><button type="button" class="sp-ub sp-find" aria-controls="spQ" aria-expanded="false" aria-label="人物・組織を探す"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.6" cy="8.6" r="5.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m12.6 12.6 4.4 4.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>探す</span></button></div>
       <p class="sp-hint" hidden></p><p class="vh sp-live" aria-live="polite"></p>`;
     const cv = root.querySelector("canvas");
     const gl = SG.SpaceGL.create(cv, m);
@@ -11306,7 +11342,7 @@ void main(){
     if (pre || S || warming || avail !== true || !deviceOK()) return;
     warming = true;
     idle(() => {
-      if (pre || S) { warming = false; return; }
+      if (pre || S || entering) { warming = false; return; }
       const t0 = performance.now();
       try { pre = make(); } catch (e) { pre = null; warming = false; return; }
       pre.makeMs = Math.round(performance.now() - t0);
@@ -11411,32 +11447,53 @@ void main(){
     return new Float32Array(out);
   }
 
-  // ── 入る ──（台本の準備がまだなら、済むまで待ってから始める）
+  // ── 入る ──（台本の準備がまだなら、済むまで待ってから始める。12 秒たっても済まない端末では、もう出さない）
+  function busy(btn, on) {
+    if (!btn) return;
+    btn.classList.toggle("is-busy", on);
+    if (on) btn.setAttribute("aria-busy", "true"); else btn.removeAttribute("aria-busy");
+  }
   function enter(btn) {
     if (S || entering || !deviceOK() || !probe()) return;
     // 音は、押したこの時にしか始められない（ブラウザの決まり）。曲の読み込みもここから（指示102）
     const audio = SG.SpaceAudio && SG.SpaceAudio.begin();
-    let P = pre;
-    pre = null;
-    try { if (!P) P = make(); } catch (e) { avail = false; syncButtons(); if (audio) SG.SpaceAudio.stop(); return; }
     entering = true;
+    busy(btn, true);
     const tClick = performance.now();
-    const go = () => {
-      let ok = false;
-      try { ok = P.gl.poll(); } catch (e) { entering = false; avail = false; syncButtons(); try { P.gl.destroy(); } catch (e2) { /* なし */ } if (audio) SG.SpaceAudio.stop(); return; }
-      if (!ok) { requestAnimationFrame(go); return; }
+    const fail = (P) => {
       entering = false;
-      P.waitMs = Math.round(performance.now() - tClick);
-      begin(P, btn);
+      busy(btn, false);
+      avail = false;
+      syncButtons();
+      if (P) { try { P.gl.destroy(); } catch (e) { /* なし */ } }
+      if (audio) SG.SpaceAudio.stop();
     };
-    go();
+    const start = () => {
+      let P = pre;
+      pre = null;
+      try { if (!P) P = make(); } catch (e) { fail(null); return; }
+      const go = () => {
+        let ok = false;
+        try { ok = P.gl.poll(); } catch (e) { fail(P); return; }
+        if (!ok) { if (performance.now() - tClick > 12000) fail(P); else requestAnimationFrame(go); return; }
+        entering = false;
+        busy(btn, false);
+        P.waitMs = Math.round(performance.now() - tClick);
+        begin(P, btn);
+      };
+      go();
+    };
+    // 先に作ってあればすぐ。まだなら、押した印を一度描いてから組み立てる（スマホでは組み立てと台本の準備に少しかかる）
+    if (pre) start(); else requestAnimationFrame(() => setTimeout(start, 0));
   }
   function begin(P, btn) {
     const m = P.m, N = m.N, gl = P.gl;
     const cap = capture2D(m);
+    // 指で触る端末は、描く画素の細かさを 1.5 倍までにする（スマホの GPU のため。遅ければ adapt がさらに下げる）
+    const touch = touchy(), dpr0 = Math.min(touch ? 1.5 : 2, window.devicePixelRatio || 1);
     S = {
       m, N, gl, root: P.root, cv: P.cv, btn: btn || null, t0: performance.now() / 1000,
-      W: window.innerWidth, H: window.innerHeight, dpr: Math.min(2, window.devicePixelRatio || 1), dprMax: Math.min(2, window.devicePixelRatio || 1),
+      W: window.innerWidth, H: window.innerHeight, dpr: dpr0, dprMax: dpr0,
       t: 0, now: 0, last: 0, pivot: new Float64Array(3), cam: new Float64Array(3), prevCam: new Float64Array(3), dist: 1, distT: 1, yaw: -0.7, pitch: -0.36, fov: FOV,
       f: [0, 0, -1], r: [1, 0, 0], u: [0, 1, 0], view: new Float32Array(9), iview: new Float32Array(9), proj: new Float32Array(16),
       focus: m.fi, track: true, sel: -1, hover: -1, fly: null, keys: new Set(), vel: [0, 0, 0], move: [0, 0, 0],
@@ -11445,7 +11502,8 @@ void main(){
       dynOff: new Int32Array(N), cand: [], score: new Float32Array(N),
       lb: [], lbOf: new Map(), rl: [], route: null, routeSet: new Set(),
       stats: { iv: new Float32Array(600), js: new Float32Array(600), n: 0, k: 0 }, ema: 16, slowT: 0, fastT: 0,
-      tr: null, warp: 0, F: null, fsByUs: false, exiting: false, waitMs: P.waitMs || 0, makeMs: P.makeMs || 0
+      tr: null, warp: 0, F: null, fsByUs: false, exiting: false, waitMs: P.waitMs || 0, makeMs: P.makeMs || 0,
+      touchUI: touch, lastPointer: touch ? "touch" : "mouse", tp: new Map(), tap: null, tdrag: false, pinch: null, tGuard: 0, kb: -1, pushed: false, popped: false
     };
     for (let i = 0; i < N; i++) S.dynOff[i] = ((Math.floor(i / 64) * gl.TW) + (i % 64) * 2) * 4;
     document.body.appendChild(S.root);
@@ -11457,6 +11515,8 @@ void main(){
     S.sug = S.root.querySelector(".sp-sug");
     S.live = S.root.querySelector(".sp-live");
     S.hint = S.root.querySelector(".sp-hint");
+    S.findBtn = S.root.querySelector(".sp-find");
+    if (S.touchUI) S.root.classList.add("touch");
     for (let k = 0; k < LMAX; k++) {
       const el = document.createElement("button");
       el.type = "button";
@@ -11494,9 +11554,12 @@ void main(){
     S.prevCam.set(c0);
     setVisBase();
     bind();
+    uiRects();
     S.raf = requestAnimationFrame(frame);
     SG.spaceOn = true;
-    if (HINT) { S.hint.textContent = HINT_TEXT; S.hint.hidden = false; }
+    if (HINT) { S.hint.innerHTML = hintHTML(S.touchUI ? HINT_TOUCH : HINT_TEXT); S.hint.hidden = false; }
+    // 指で触る端末では履歴を 1 段足す（端からのスワイプや戻るボタンで、サイトを離れずに地図へ戻る）
+    if (S.touchUI) { try { history.pushState({ sp3d: S.t0 }, ""); S.pushed = true; } catch (e) { /* 埋め込み表示では使えないことがある */ } }
   }
 
   // 星の見える・見えない（学統の外の人と天皇は、地図の「絞り込みと表示」に合わせる。選んだ人と道の人はいつも出す）
@@ -11532,7 +11595,7 @@ void main(){
   }
   function resize() {
     S.W = window.innerWidth; S.H = window.innerHeight;
-    S.dprMax = Math.min(2, window.devicePixelRatio || 1);
+    S.dprMax = Math.min(S.touchUI ? 1.5 : 2, window.devicePixelRatio || 1);
     S.dpr = Math.min(S.dpr, S.dprMax);
     S.gl.resize(S.W, S.H, S.dpr);
   }
@@ -11647,7 +11710,7 @@ void main(){
       el.tabIndex = -1;
       el.textContent = e ? SG.RT_SHORT[e.type] || "" : "";
       el.title = e ? `${m.nodes[a].n} と ${m.nodes[b].n}：${SG.EDGE_TYPES[e.type].label}（押すと ${m.nodes[b].n} へ）` : "";
-      el.addEventListener("click", (ev) => { ev.stopPropagation(); choose(b); refocus(); });
+      el.addEventListener("click", (ev) => { ev.stopPropagation(); if (S.tGuard > performance.now()) return; choose(b); refocus(); });
       S.labels.appendChild(el);
       S.rl.push({ el, a, b, start: t, dur, x: -1e4, y: -1e4, on: false });
       t += dur * 0.9;
@@ -11847,17 +11910,19 @@ void main(){
     }
     const a = 1 - Math.exp(-dt * 7);
     for (let k = 0; k < 3; k++) { S.move[k] += (want[k] - S.move[k]) * a; S.pivot[k] += S.move[k] * dt; }
-    // 手を離したあとの回転の惰性
-    if (!S.drag && (Math.abs(S.spin[0]) > 1e-4 || Math.abs(S.spin[1]) > 1e-4)) {
+    // 手を離したあとの回転の惰性（マウスも指も、触っている間は足さない）
+    const held = !!S.drag || S.tp.size > 0;
+    if (!held && (Math.abs(S.spin[0]) > 1e-4 || Math.abs(S.spin[1]) > 1e-4)) {
       S.yaw += S.spin[0] * dt;
       S.pitch = clamp(S.pitch + S.spin[1] * dt, -1.45, 1.45);
       const dmp = Math.exp(-dt * 3.8);
       S.spin[0] *= dmp; S.spin[1] *= dmp;
     }
     // しばらく触らなければ、ゆっくり回り込む
-    if (!S.drag && !S.fly && S.now - S.lastInput > 12) S.yaw += dt * 0.02 * smooth(12, 16, S.now - S.lastInput);
+    if (!held && !S.fly && S.now - S.lastInput > 12) S.yaw += dt * 0.02 * smooth(12, 16, S.now - S.lastInput);
   }
-  function pick(x, y) {
+  // 押した所の星（slop: 当たりの広げ幅。マウスは 2 画素、指は 14 画素）
+  function pick(x, y, slop) {
     const m = S.m, N = S.N;
     let best = -1, bs = Infinity;
     for (let i = 0; i < N; i++) {
@@ -11865,7 +11930,7 @@ void main(){
       const z = S.SZ[i];
       if (z <= NEAR) continue;
       const dx = S.SX[i] - x, dy = S.SY[i] - y, rpx = (m.R[i] * S.focal) / z;
-      const hr = Math.max(rpx, S.I[i] > 0.2 ? 9 : 6) + 2, d2 = dx * dx + dy * dy;
+      const hr = Math.max(rpx, S.I[i] > 0.2 ? 9 : 6) + (slop || 2), d2 = dx * dx + dy * dy;
       if (d2 > hr * hr) continue;
       const inside = rpx > 3 && d2 < rpx * rpx;
       const sc = (inside ? -10 + z / FAR : 0) + d2 / (hr * hr) - S.I[i] * 0.3;
@@ -11873,8 +11938,10 @@ void main(){
     }
     return best;
   }
+  // マウス（とペン）。指は下の onTouch* が受ける
   function onDown(ev) {
-    if (!S || S.tr) return;
+    if (!S || S.tr || ev.pointerType === "touch") return;
+    S.lastPointer = ev.pointerType || "mouse";
     ev.preventDefault();
     S.cv.setPointerCapture(ev.pointerId);
     S.drag = { id: ev.pointerId, b: ev.button === 0 && ev.shiftKey ? 2 : ev.button, x: ev.clientX, y: ev.clientY, x0: ev.clientX, y0: ev.clientY, t: performance.now(), moved: false };
@@ -11882,7 +11949,7 @@ void main(){
     S.lastInput = S.now;
   }
   function onMove(ev) {
-    if (!S || S.tr) return;
+    if (!S || S.tr || ev.pointerType === "touch") return;
     const d = S.drag;
     if (!d) {
       const i = pick(ev.clientX, ev.clientY);
@@ -11920,7 +11987,7 @@ void main(){
     }
   }
   function onUp(ev) {
-    if (!S) return;
+    if (!S || ev.pointerType === "touch") return;
     const d = S.drag;
     S.drag = null;
     S.root.classList.remove("dragging");
@@ -11942,6 +12009,112 @@ void main(){
     if (S.fly) { S.fly = null; S.track = S.focus >= 0; S.distT = S.dist; }
     S.distT = clamp(S.distT * Math.exp(ev.deltaY * k * 0.0012), minD, m.galR * 4);
     S.lastInput = S.now;
+  }
+
+  // ── 指（スマホ・タブレット。指示104）: 1 本でなぞって回り込む、2 本でつまんで近づく・離れる（そろえて動かすと横へずらす）、軽く押すとその星へ ──
+  // 指は押した部品に捕まるので、.sp-root で受ける（名前の上から始めても回せる）。名前を軽く押したときは、名前の click で飛ぶ
+  const TAP_SLOP = 10, PAN_SLOP = 14, TAP_MS = 700;
+  function setTouchUI() {
+    if (S.touchUI) return;
+    S.touchUI = true;
+    S.root.classList.add("touch");
+    if (S.hint && !S.hint.hidden) S.hint.innerHTML = hintHTML(HINT_TOUCH);
+    uiRects();
+  }
+  // 「地図へ」「探す」の場所（名前をその下に置かないため。入ったときと画面の大きさが変わったときに測る）
+  function uiRects() {
+    S.uiBoxes = null;
+    if (!S.touchUI) return;
+    const out = [];
+    for (const el of S.root.querySelectorAll(".sp-ub")) { const r = el.getBoundingClientRect(); if (r.width) out.push(r.left - 6, r.top - 6, r.width + 12, r.height + 12); }
+    S.uiBoxes = out;
+  }
+  function twoPts() {
+    const it = S.tp.values();
+    return [it.next().value, it.next().value];
+  }
+  function pinchBase() {
+    const [a, b] = twoPts();
+    if (!a || !b) { S.pinch = null; return; }
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    S.pinch = { d0: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), dist0: S.distT, mx, my, mx0: mx, my0: my, panned: false };
+  }
+  function onTouchDown(ev) {
+    if (!S || ev.pointerType !== "touch") return;
+    S.lastPointer = "touch";
+    setTouchUI();
+    if (ev.target.closest(".sp-ui, .sp-search")) return; // 上のボタンと検索の行は、ふつうに押せる
+    if (document.activeElement === S.input) S.input.blur(); // 打つ欄の外を触ったら、キーボードをしまう
+    if (S.tr) return;
+    S.tp.set(ev.pointerId, { x: ev.clientX, y: ev.clientY, t: performance.now() });
+    S.spin[0] = S.spin[1] = 0;
+    S.lastInput = S.now;
+    if (S.tp.size === 1) {
+      S.tap = { id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, t0: performance.now(), onLabel: !!ev.target.closest(".sp-lb, .sp-rl") };
+      S.tdrag = false;
+    } else {
+      S.tap = null; // 2 本目の指が来たら、押したことにはしない
+      if (S.tp.size === 2) pinchBase();
+    }
+  }
+  function onTouchMove(ev) {
+    if (!S || ev.pointerType !== "touch") return;
+    const p = S.tp.get(ev.pointerId);
+    if (!p) return;
+    const px = p.x, py = p.y, tnow = performance.now(), dtm = Math.max(1, tnow - p.t) / 1000;
+    p.x = ev.clientX; p.y = ev.clientY; p.t = tnow;
+    if (S.tr) return;
+    S.lastInput = S.now;
+    if (S.tp.size === 1) {
+      if (S.tap && Math.hypot(p.x - S.tap.x0, p.y - S.tap.y0) <= TAP_SLOP) return;
+      S.tap = null;
+      if (!S.tdrag) { S.tdrag = true; S.root.classList.add("dragging"); }
+      if (S.fly) { S.fly = null; S.track = S.focus >= 0; }
+      const dx = p.x - px, dy = p.y - py, ky = 0.0062, kp = 0.005;
+      S.yaw += dx * ky;
+      S.pitch = clamp(S.pitch + dy * kp, -1.45, 1.45);
+      S.spin[0] = ((dx * ky) / dtm) * 0.5 + S.spin[0] * 0.5;
+      S.spin[1] = ((dy * kp) / dtm) * 0.5 + S.spin[1] * 0.5;
+      return;
+    }
+    const pc = S.pinch;
+    if (!pc) return;
+    if (S.fly) { S.fly = null; S.track = S.focus >= 0; S.distT = S.dist; pinchBase(); return; }
+    const [a, b] = twoPts();
+    const m = S.m, minD = S.track && S.focus >= 0 ? m.R[S.focus] * 1.6 : 0.05;
+    S.distT = clamp(pc.dist0 * (pc.d0 / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y))), minD, m.galR * 4);
+    // 2 本そろって動いたら横へずらす（つまむだけのときは、見ている星を追い続ける。星は回っているので）
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = mx - pc.mx, dy = my - pc.my;
+    pc.mx = mx; pc.my = my;
+    if (!pc.panned && Math.hypot(mx - pc.mx0, my - pc.my0) > PAN_SLOP) pc.panned = true;
+    if (pc.panned) {
+      const k = (2 * S.dist * Math.tan(S.fov / 2)) / S.H;
+      for (let j = 0; j < 3; j++) S.pivot[j] += (-S.r[j] * dx + S.u[j] * dy) * k;
+      S.track = false;
+    }
+  }
+  function onTouchUp(ev) {
+    if (!S || ev.pointerType !== "touch") return;
+    const p = S.tp.get(ev.pointerId);
+    if (!p) return;
+    S.tp.delete(ev.pointerId);
+    const tap = S.tap;
+    if (tap && tap.id === ev.pointerId) {
+      S.tap = null;
+      if (ev.type === "pointerup" && !S.tr && !tap.onLabel && performance.now() - tap.t0 < TAP_MS) {
+        const i = pick(ev.clientX, ev.clientY, 14);
+        if (i >= 0) choose(i);
+      }
+    }
+    if (S.tp.size >= 2) { pinchBase(); return; }
+    S.pinch = null;
+    if (S.tp.size === 1) { S.tdrag = true; S.spin[0] = S.spin[1] = 0; return; } // 残った 1 本は、そこから回り込む（押した扱いにはしない）
+    if (S.tdrag) {
+      S.tGuard = performance.now() + 400; // なぞった指を名前の上で離しても、名前の click では飛ばない
+      if (performance.now() - p.t > 90) S.spin[0] = S.spin[1] = 0;
+    }
+    S.tdrag = false;
+    S.root.classList.remove("dragging");
   }
   const FLY_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown"]);
   // Esc（どこからでも）と、検索の欄の外で押したキー（窓の捕まえる段で受け、地図の画面のキー操作に渡さない）
@@ -11974,10 +12147,36 @@ void main(){
 
   // ── 検索の行（中島さんの案 A: 打ち始めると出る）──
   let results = [], active = 0;
-  function refocus() { if (S && !S.tr && document.activeElement !== S.input) { try { S.input.focus({ preventScroll: true }); } catch (e) { /* 動かなくても操作は続けられる */ } } }
+  // 検索の欄へ戻す（打てばすぐ探せるように）。指で触る端末では戻さない（キーボードが出てしまう。「探す」を押したときだけ出す）
+  function refocus() { if (S && !S.tr && !S.touchUI && S.lastPointer !== "touch" && document.activeElement !== S.input) { try { S.input.focus({ preventScroll: true }); } catch (e) { /* 動かなくても操作は続けられる */ } } }
   function openSearch(on) {
     S.search.dataset.open = on ? "true" : "false";
     S.input.setAttribute("aria-expanded", on && results.length ? "true" : "false");
+    if (S.findBtn) S.findBtn.setAttribute("aria-expanded", on ? "true" : "false");
+  }
+  // 「探す」（指で触る端末）: 検索の行を出して欄に入る（押したこの時に focus すると、iPhone でもキーボードが出る）。もう一度押すとしまう
+  function toggleFind() {
+    if (!S || S.tr) return;
+    if (S.search.dataset.open === "true") {
+      S.input.value = "";
+      results = [];
+      renderSug();
+      S.input.blur();
+      openSearch(false);
+      return;
+    }
+    openSearch(true);
+    try { S.input.focus({ preventScroll: true }); } catch (e) { /* 欄に入れなくても、地図には戻れる */ }
+  }
+  // 画面のキーボードの高さ（検索の行をその上に出す。visualViewport のある端末だけ）
+  function keyboardInset() {
+    const v = window.visualViewport;
+    if (!S || !v) return;
+    const kb = Math.max(0, Math.round(window.innerHeight - v.height - v.offsetTop));
+    if (kb === S.kb) return;
+    S.kb = kb;
+    S.root.style.setProperty("--sp-kb", kb + "px");
+    S.root.style.setProperty("--sp-vvh", Math.round(v.height) + "px");
   }
   function renderSug() {
     const m = S.m;
@@ -11992,7 +12191,8 @@ void main(){
     results = v.trim() ? SG.SpaceModel.search(v, 6) : [];
     active = 0;
     renderSug();
-    openSearch(!!v.trim() || S.composing);
+    // 指で触る端末では、欄に入っている間は空でも行を出したままにする（しまうのは、欄から出たとき）
+    openSearch(!!v.trim() || S.composing || (S.touchUI && document.activeElement === S.input));
   }
   function pickResult(k) {
     const i = results[k];
@@ -12001,6 +12201,7 @@ void main(){
     results = [];
     renderSug();
     openSearch(false);
+    if (S.touchUI) S.input.blur(); // 選んだら、画面のキーボードをしまう
     choose(i);
   }
   function onInputKey(ev) {
@@ -12080,6 +12281,9 @@ void main(){
       const j = occ[k], rj = (m.R[j] * S.focal) / S.SZ[j] * 0.82;
       boxes.push(S.SX[j] - rj, S.SY[j] - rj, rj * 2, rj * 2);
     }
+    // 指で触る端末の「地図へ」「探す」の下には、名前を置かない
+    const ub = S.uiBoxes;
+    if (ub) for (let k = 0; k < ub.length; k++) boxes.push(ub[k]);
     const keep = S.keepSet || (S.keepSet = new Set());
     keep.clear();
     const lim = Math.min(cand.length, 220);
@@ -12165,7 +12369,7 @@ void main(){
     S.on = {
       down: onDown, move: onMove, up: onUp, wheel: onWheel, key: onKeyCapture, keyup: onKeyUpCapture, blur: onBlurWin,
       ctx: (ev) => ev.preventDefault(),
-      resize: () => resize(),
+      resize: () => { resize(); keyboardInset(); uiRects(); },
       fs: () => { if (S && S.fsByUs && !document.fullscreenElement) exit(); },
       lost: (ev) => { ev.preventDefault(); exit(); },
       input: onInput,
@@ -12175,8 +12379,17 @@ void main(){
       cend: () => { S.composing = false; onInput(); },
       sug: (ev) => { const li = ev.target.closest("li[data-i]"); if (li) { const k = results.indexOf(+li.dataset.i); if (k >= 0) pickResult(k); } },
       sugDown: (ev) => ev.preventDefault(),
-      lab: (ev) => { const el = ev.target.closest(".sp-lb"); if (!el) return; const e = S.lb.find((q) => q.el === el); if (e && e.i >= 0) { choose(e.i); refocus(); } },
-      labMove: (ev) => { const el = ev.target.closest(".sp-lb"); const e = el && S.lb.find((q) => q.el === el); const i = e ? e.i : -1; if (i !== S.hover) S.hover = i; }
+      lab: (ev) => { const el = ev.target.closest(".sp-lb"); if (!el || S.tGuard > performance.now()) return; const e = S.lb.find((q) => q.el === el); if (e && e.i >= 0) { choose(e.i); refocus(); } },
+      labMove: (ev) => { if (ev.pointerType === "touch") return; const el = ev.target.closest(".sp-lb"); const e = el && S.lb.find((q) => q.el === el); const i = e ? e.i : -1; if (i !== S.hover) S.hover = i; },
+      // 指で触る端末（指示104）
+      tdown: onTouchDown, tmove: onTouchMove, tup: onTouchUp,
+      gesture: (ev) => ev.preventDefault(), // iPhone の 2 本指の拡大を、ページでなく 3D に使う
+      rctx: (ev) => { if (S && S.touchUI) ev.preventDefault(); }, // 長押しのメニューを出さない
+      close: (ev) => { ev.preventDefault(); exit(); },
+      find: (ev) => { ev.preventDefault(); toggleFind(); },
+      iblur: () => { if (S && S.touchUI && !S.input.value.trim() && !S.composing) openSearch(false); },
+      vv: () => keyboardInset(),
+      pop: () => { if (S && !S.exiting) { S.popped = true; exit(); } }
     };
     const o = S.on;
     cv.addEventListener("pointerdown", o.down);
@@ -12201,6 +12414,18 @@ void main(){
     S.sug.addEventListener("pointerdown", o.sugDown);
     S.labels.addEventListener("click", o.lab);
     S.labels.addEventListener("pointermove", o.labMove);
+    S.root.addEventListener("pointerdown", o.tdown);
+    S.root.addEventListener("pointermove", o.tmove);
+    S.root.addEventListener("pointerup", o.tup);
+    S.root.addEventListener("pointercancel", o.tup);
+    S.root.addEventListener("gesturestart", o.gesture);
+    S.root.addEventListener("gesturechange", o.gesture);
+    S.root.addEventListener("contextmenu", o.rctx);
+    S.root.querySelector(".sp-close").addEventListener("click", o.close);
+    S.findBtn.addEventListener("click", o.find);
+    S.input.addEventListener("blur", o.iblur);
+    if (window.visualViewport) { window.visualViewport.addEventListener("resize", o.vv); window.visualViewport.addEventListener("scroll", o.vv); }
+    window.addEventListener("popstate", o.pop);
   }
   function unbind() {
     const o = S.on;
@@ -12210,6 +12435,8 @@ void main(){
     window.removeEventListener("blur", o.blur);
     window.removeEventListener("resize", o.resize);
     document.removeEventListener("fullscreenchange", o.fs);
+    if (window.visualViewport) { window.visualViewport.removeEventListener("resize", o.vv); window.visualViewport.removeEventListener("scroll", o.vv); }
+    window.removeEventListener("popstate", o.pop);
   }
 
   // ── 2D へ戻る ──
@@ -12218,6 +12445,8 @@ void main(){
     const st = S;
     st.exiting = true;
     unbind();
+    // 指の端末で入ったときに足した履歴の 1 段を戻す（戻る操作で出たときは、もう戻っている）
+    if (st.pushed && !st.popped) { try { if (history.state && history.state.sp3d === st.t0) history.back(); } catch (e) { /* 埋め込み表示では使えないことがある */ } }
     cancelAnimationFrame(st.raf);
     if (SG.SpaceAudio) SG.SpaceAudio.stop();
     const last = st.sel >= 0 ? st.m.nodes[st.sel].id : null;
@@ -12249,7 +12478,8 @@ void main(){
       frames: st.n, ivP50: q(st.iv, 0.5), ivP95: q(st.iv, 0.95), jsP50: q(st.js, 0.5), jsP95: q(st.js, 0.95), gpuP50: gq(0.5), gpuP95: gq(0.95), gpuN: g.length,
       renderer: S.gl.info.renderer, parallel: S.gl.info.parallel, submitMs: S.gl.info.submitMs, compileMs: S.gl.info.compileMs, finishMs: S.gl.info.finishMs, initMs: S.gl.info.initMs,
       buildMs: S.m.stats.ms, makeMs: S.makeMs, waitMs: S.waitMs,
-      dpr: Math.round(S.dpr * 100) / 100, canvas: [S.gl.pw, S.gl.ph], css: [S.W, S.H], glError: S.gl.error(), lost: S.gl.lost(), transition: !!S.tr, fullscreen: !!document.fullscreenElement
+      dpr: Math.round(S.dpr * 100) / 100, canvas: [S.gl.pw, S.gl.ph], css: [S.W, S.H], glError: S.gl.error(), lost: S.gl.lost(), transition: !!S.tr, fullscreen: !!document.fullscreenElement,
+      touch: S.touchUI, pushed: S.pushed
     };
   }
   function resetStats() { if (S) { S.stats.n = 0; S.stats.k = 0; if (S.gl.gpuMs) S.gl.gpuMs.length = 0; } }
